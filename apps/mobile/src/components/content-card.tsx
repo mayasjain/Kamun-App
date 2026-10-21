@@ -22,7 +22,7 @@ export function ContentCard({ label, title, accent = false, children }: ContentC
           borderColor: accent ? theme.primary : theme.border,
         },
       ]}>
-      <ThemedText type="smallBold" style={{ color: accent ? '#FFFFFF' : theme.primary }}>
+      <ThemedText type="smallBold" style={[styles.label, { color: accent ? '#FFFFFF' : theme.primary }]}>
         {label}
       </ThemedText>
       <ThemedText type="subtitle" style={[styles.title, accent && styles.onAccent]}>
@@ -34,7 +34,8 @@ export function ContentCard({ label, title, accent = false, children }: ContentC
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 24, padding: 20, gap: 8 },
-  title: { fontSize: 24, lineHeight: 30 },
+  card: { borderWidth: 1, borderRadius: 18, padding: 20, gap: 8 },
+  label: { fontSize: 12, letterSpacing: 1.1 },
+  title: { fontSize: 22, lineHeight: 28 },
   onAccent: { color: '#FFFFFF' },
 });

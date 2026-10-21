@@ -1,12 +1,15 @@
-import 'expo-sqlite/localStorage/install';
+import '../lib/install-local-storage';
 
 import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
-export type AttendeePosition = 'delegate' | 'chair';
-
 export type AttendeeProfile = {
+  conferenceId: string;
+  conferenceSlug: string;
   accessLabel: string;
-  position: AttendeePosition;
+  accessType: 'member' | 'chair';
+  committeeId: string | null;
+  committeeName: string | null;
+  committeeAbbreviation: string | null;
 };
 
 type AttendeeProfileContextValue = {
@@ -23,10 +26,15 @@ function readStoredProfile(): AttendeeProfile | null {
     const value = globalThis.localStorage?.getItem(STORAGE_KEY);
     if (!value) return null;
     const parsed = JSON.parse(value) as Partial<AttendeeProfile>;
-    if (!parsed.accessLabel || !parsed.position) return null;
+    if (!parsed.conferenceId || !parsed.conferenceSlug || !parsed.accessLabel || !parsed.accessType) return null;
     return {
+      conferenceId: parsed.conferenceId,
+      conferenceSlug: parsed.conferenceSlug,
       accessLabel: parsed.accessLabel,
-      position: parsed.position,
+      accessType: parsed.accessType,
+      committeeId: parsed.committeeId ?? null,
+      committeeName: parsed.committeeName ?? null,
+      committeeAbbreviation: parsed.committeeAbbreviation ?? null,
     };
   } catch {
     return null;

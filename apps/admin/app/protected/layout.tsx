@@ -32,7 +32,7 @@ export default function ProtectedLayout({
         </div>
 
         <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-8">
-          <p>KAMUN 2026 · Organiser foundation</p>
+          <p>KAMUN 2026 · Organiser dashboard</p>
           <ThemeSwitcher />
         </footer>
       </div>

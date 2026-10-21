@@ -36,6 +36,8 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>More</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="ellipsis.circle" md="more_horiz" />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="committees" hidden />
     </NativeTabs>
   );
 }

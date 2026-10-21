@@ -119,7 +119,7 @@ begin
     v_code.access_type,
     v_code.committee_id
   )
-  on conflict (conference_id, user_id) do update set
+  on conflict on constraint attendee_memberships_pkey do update set
     access_code_id = excluded.access_code_id,
     access_type = excluded.access_type,
     committee_id = excluded.committee_id,

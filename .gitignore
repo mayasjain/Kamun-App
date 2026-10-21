@@ -8,3 +8,14 @@ node_modules/
 dist/
 coverage/
 *.log
+
+# Local planning documents and skills
+*.[mM][dD]
+.skill-build/
+.skills/
+skills/
+.agents/
+.codex/
+
+# Generated TypeScript build cache
+*.tsbuildinfo

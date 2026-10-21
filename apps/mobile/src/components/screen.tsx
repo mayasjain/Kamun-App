@@ -1,5 +1,5 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,19 +11,28 @@ type ScreenProps = PropsWithChildren<{
   eyebrow: string;
   title: string;
   subtitle?: ReactNode;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }>;
 
-export function Screen({ eyebrow, title, subtitle, children }: ScreenProps) {
+export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false }: ScreenProps) {
   const theme = useTheme();
 
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+          refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>{eyebrow}</ThemedText>
+            <View style={styles.eyebrowRow}>
+              <View style={[styles.eyebrowRule, { backgroundColor: theme.accent }]} />
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>{eyebrow}</ThemedText>
+            </View>
             <ThemedText type="title" style={styles.title}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
+            {onRefresh ? <Pressable accessibilityRole="button" disabled={refreshing} onPress={onRefresh} style={{ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }}>
+              <ThemedText type="smallBold" themeColor="primary">{refreshing ? 'Refreshing…' : 'Refresh information ↻'}</ThemedText>
+            </Pressable> : null}
           </View>
           <View style={styles.body}>{children}</View>
         </ScrollView>
@@ -43,7 +52,9 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.five,
     gap: Spacing.five,
   },
-  header: { gap: Spacing.two },
-  title: { fontSize: 40, lineHeight: 44 },
+  header: { gap: Spacing.two, paddingTop: Spacing.two },
+  eyebrowRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
+  eyebrowRule: { borderRadius: 2, height: 3, width: 28 },
+  title: { fontSize: 38, lineHeight: 43 },
   body: { gap: Spacing.three },
 });
