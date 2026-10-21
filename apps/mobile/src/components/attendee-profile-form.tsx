@@ -6,12 +6,15 @@ import { Brand, Spacing } from '@/constants/theme';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { claimAttendeeAccess } from '@/lib/attendee-access';
 import { useTheme } from '@/hooks/use-theme';
+import { useOrganizer } from '@/contexts/organizer';
+import { DevelopmentCodes } from '@/components/development-codes';
 
 type Props = { submitLabel?: string };
 
 export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props) {
   const theme = useTheme();
   const { saveProfile } = useAttendeeProfile();
+  const organizer = useOrganizer();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,14 +24,15 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props
     setError('');
     setIsSubmitting(true);
     try {
-      const access = await claimAttendeeAccess(code);
-      saveProfile(access);
+      try {
+        const access = await claimAttendeeAccess(code);
+        saveProfile(access);
+      } catch {
+        await organizer.signIn(code);
+      }
       setCode('');
-    } catch (claimError) {
-      const message = claimError instanceof Error ? claimError.message : '';
-      setError(message.toLowerCase().includes('anonymous')
-        ? 'Anonymous sign-in must be enabled in Supabase.'
-        : 'This code is invalid or the backend is not ready yet.');
+    } catch {
+      setError('This access code could not be verified. Check the code and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -55,11 +59,7 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props
         {error ? <ThemedText type="small" style={styles.error}>{error}</ThemedText> : null}
       </View>
 
-      <View style={[styles.hint, { backgroundColor: theme.primarySoft }]}>
-        <ThemedText type="smallBold" style={{ color: theme.primary }}>DEVELOPMENT CODES</ThemedText>
-        <ThemedText type="small">Chair: KAMUN-CHAIR</ThemedText>
-        <ThemedText type="small">Delegate: KAMUN-MEMBER</ThemedText>
-      </View>
+      {__DEV__ ? <DevelopmentCodes onSelect={(selected) => { setCode(selected); setError(''); }} /> : null}
 
       <Pressable
         accessibilityRole="button"
@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   field: { gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: 12, fontSize: 17, minHeight: 54, paddingHorizontal: 16, paddingVertical: 14 },
   error: { color: '#B42318' },
-  hint: { borderRadius: 12, gap: Spacing.one, padding: 14 },
   submit: { alignItems: 'center', borderRadius: 12, justifyContent: 'center', minHeight: 54, padding: 16 },
   submitText: { color: Brand.black },
 });

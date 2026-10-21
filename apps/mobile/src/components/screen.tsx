@@ -21,7 +21,7 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
             <View style={styles.eyebrowRow}>
@@ -39,8 +39,9 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
+  root: { flex: 1, minHeight: 0 },
+  safeArea: { flex: 1, minHeight: 0, alignItems: 'center' },
+  scroll: { flex: 1, minHeight: 0, width: '100%' },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,

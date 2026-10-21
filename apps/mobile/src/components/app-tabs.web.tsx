@@ -16,7 +16,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+      <TabSlot style={{ flex: 1, minHeight: 0 }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
@@ -36,6 +36,7 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
+          <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
         </CustomTabList>
       </TabList>
     </Tabs>

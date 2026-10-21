@@ -42,6 +42,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>Emergency</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="cross.case.fill" md="emergency" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="gossip" hidden />
     </NativeTabs>
   );
 }

@@ -57,19 +57,11 @@ insert into public.locations (
   true
 );
 
--- Development codes only. Replace these before production and distribute them privately.
+-- Development delegate code only. Generate private committee-specific chair
+-- codes with chair_code_setup.sql after the gossip migration is applied.
 insert into public.attendee_access_codes (
   conference_id, label, access_type, code_hash, active, expires_at
-) values
-  (
-    '10000000-0000-4000-8000-000000000001',
-    'Chair',
-    'chair',
-    encode(digest('KAMUN-CHAIR', 'sha256'), 'hex'),
-    true,
-    '2026-11-16 23:59:59+01'
-  ),
-  (
+) values (
     '10000000-0000-4000-8000-000000000001',
     'Delegate',
     'member',

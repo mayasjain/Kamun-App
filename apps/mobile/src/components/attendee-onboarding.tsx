@@ -1,14 +1,12 @@
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useOrganizer } from '@/contexts/organizer';
 
 export function AttendeeOnboarding() {
-  const organizer = useOrganizer();
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -28,16 +26,13 @@ export function AttendeeOnboarding() {
             <View style={styles.copy}>
               <ThemedText type="smallBold" style={styles.eyebrow}>WELCOME TO KAMUN</ThemedText>
               <ThemedText type="title">Enter your access code</ThemedText>
-              <ThemedText themeColor="textSecondary">Enter your chair or delegate code from the conference organiser.</ThemedText>
+              <ThemedText themeColor="textSecondary">Enter the access code provided by the KAMUN team.</ThemedText>
             </View>
             <AttendeeProfileForm />
             <ThemedText type="small" themeColor="textSecondary" style={styles.privacy}>
               No email or password is required. Your access stays on this device.
             </ThemedText>
           </View>
-          <Pressable accessibilityRole="button" onPress={organizer.enter} style={styles.organizerLink}>
-            <ThemedText type="smallBold" themeColor="primary">Organiser sign in →</ThemedText>
-          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -56,5 +51,4 @@ const styles = StyleSheet.create({
   copy: { gap: Spacing.two },
   eyebrow: { color: Brand.goldDark, fontSize: 12, letterSpacing: 1.2 },
   privacy: { textAlign: 'center' },
-  organizerLink: { alignItems: 'center', minHeight: 48, justifyContent: 'center', marginBottom: Spacing.four },
 });

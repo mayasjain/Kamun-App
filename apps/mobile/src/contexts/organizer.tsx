@@ -5,13 +5,11 @@ import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, 
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { supabase } from '@/lib/supabase';
 
-type OrganizerMode = 'attendee' | 'login' | 'organizer';
+type OrganizerMode = 'attendee' | 'organizer';
 type OrganizerContextValue = {
   mode: OrganizerMode;
   isLoading: boolean;
   conferenceId: string | null;
-  enter: () => void;
-  cancel: () => Promise<void>;
   signIn: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -32,13 +30,14 @@ export function OrganizerProvider({ children }: PropsWithChildren) {
         if (globalThis.localStorage?.getItem(STORAGE_KEY) !== '1' || !supabase) return;
         const { data: userResult } = await supabase.auth.getUser();
         if (!userResult.user) {
-          if (active) setMode('login');
+          globalThis.localStorage?.removeItem(STORAGE_KEY);
           return;
         }
         const { data: permittedConference, error } = await supabase.rpc('my_organizer_message_conference');
         if (active) {
           setConferenceId(!error && typeof permittedConference === 'string' ? permittedConference : null);
-          setMode(!error && permittedConference ? 'organizer' : 'login');
+          setMode(!error && permittedConference ? 'organizer' : 'attendee');
+          if (error || !permittedConference) globalThis.localStorage?.removeItem(STORAGE_KEY);
         }
       } finally {
         if (active) setIsLoading(false);
@@ -52,17 +51,6 @@ export function OrganizerProvider({ children }: PropsWithChildren) {
     mode,
     isLoading,
     conferenceId,
-    enter() {
-      clearProfile();
-      globalThis.localStorage?.setItem(STORAGE_KEY, '1');
-      setMode('login');
-    },
-    async cancel() {
-      await supabase?.auth.signOut();
-      globalThis.localStorage?.removeItem(STORAGE_KEY);
-      setConferenceId(null);
-      setMode('attendee');
-    },
     async signIn(code) {
       if (!supabase) throw new Error('The KAMUN backend is not configured.');
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -73,6 +61,7 @@ export function OrganizerProvider({ children }: PropsWithChildren) {
       }
       const { data: claimedConference, error } = await supabase.rpc('claim_organizer_message_code', { p_code: code.trim() });
       if (error || typeof claimedConference !== 'string') throw error ?? new Error('Invalid organiser code.');
+      clearProfile();
       globalThis.localStorage?.setItem(STORAGE_KEY, '1');
       setConferenceId(claimedConference);
       setMode('organizer');

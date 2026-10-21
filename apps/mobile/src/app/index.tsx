@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, Fonts, MaxContentWidth } from '@/constants/theme';
-import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
@@ -18,19 +17,6 @@ function getGreeting(now: number) {
   return { text: 'Good evening', symbol: '🌙' };
 }
 
-function getCountdown(now: number, startsAt?: string, endsAt?: string) {
-  const start = startsAt ? Date.parse(startsAt) : NaN;
-  const end = endsAt ? Date.parse(endsAt) : NaN;
-  if (!Number.isFinite(start)) return { label: 'CONFERENCE', value: 'See you in Karlsruhe' };
-  if (Number.isFinite(end) && now >= end) return { label: 'UNTIL NEXT TIME', value: 'Thank you for joining us' };
-  if (now >= start) return { label: 'WELCOME TO KAMUN', value: 'The summit is underway' };
-  const distance = start - now;
-  const days = Math.floor(distance / 86_400_000);
-  const hours = Math.floor((distance % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((distance % 3_600_000) / 60_000);
-  return { label: 'KAMUN STARTS IN', value: `${days}d ${hours}h ${minutes}m` };
-}
-
 type ExploreItem = { icon: string; title: string; subtitle: string; href: Href };
 
 const exploreItems: ExploreItem[] = [
@@ -39,7 +25,7 @@ const exploreItems: ExploreItem[] = [
   { icon: '📣', title: 'Updates', subtitle: 'Announcements', href: '/updates' },
   { icon: '📖', title: 'Resources', subtitle: 'Guides & policies', href: '/resources' },
   { icon: '🛡️', title: 'Emergency', subtitle: 'Safety contacts', href: '/emergency' },
-  { icon: '🌐', title: 'Committees', subtitle: 'Topics & chairs', href: '/committees' },
+  { icon: '💬', title: 'Gossip box', subtitle: 'Send or read messages', href: '/gossip' },
 ];
 
 function SectionHeading({ children, action }: { children: string; action?: React.ReactNode }) {
@@ -65,15 +51,10 @@ export default function HomeScreen() {
     });
     return () => { clearInterval(timer); subscription.remove(); };
   }, []);
-  const { profile } = useAttendeeProfile();
   const { content, error, isLoading, source } = useConferenceContent();
   const nextEvent = content?.scheduleEvents.find((event) => Date.parse(event.endsAt) > now);
   const announcement = content?.announcements[0];
   const greeting = getGreeting(now);
-  const countdown = getCountdown(now, content?.conference.startsAt, content?.conference.endsAt);
-  const dateLabel = content ? new Date(content.conference.startsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: content.conference.timezone }) : 'Conference dates coming soon';
-  const committeeTitle = profile?.committeeAbbreviation ?? profile?.accessLabel ?? 'KAMUN attendee';
-  const roleLabel = profile?.accessType === 'chair' ? 'Chair' : 'Delegate';
   const announcementAccent = announcement?.priority === 'urgent' ? theme.danger : theme.primary;
 
   return (
@@ -102,20 +83,6 @@ export default function HomeScreen() {
         <ThemedText themeColor="textSecondary" style={styles.intro}>Your KAMUN conference, all in one place.</ThemedText>
 
         <View style={styles.section}>
-          <SectionHeading>{profile?.committeeAbbreviation ? 'YOUR COMMITTEE' : 'YOUR CONFERENCE ACCESS'}</SectionHeading>
-          <Link href="/committees" asChild>
-            <Pressable accessibilityRole="link" style={({ pressed }) => [styles.committeeCard, pressed && styles.pressed]}>
-              <View style={styles.committeeBadge}><ThemedText type="smallBold" style={styles.badgeText}>{profile?.committeeAbbreviation ?? (profile?.accessType === 'chair' ? 'CHAIR' : 'DELEGATE')}</ThemedText></View>
-              <View style={styles.committeeCopy}>
-                <ThemedText type="subtitle" style={styles.lightText}>{committeeTitle}</ThemedText>
-                <ThemedText style={styles.mutedLightText}>{profile?.committeeName ?? `${roleLabel} access · Explore committees and chairs`}</ThemedText>
-              </View>
-              <ThemedText style={styles.cardArrow}>→</ThemedText>
-            </Pressable>
-          </Link>
-        </View>
-
-        <View style={styles.section}>
           <SectionHeading action={<Link href="/updates" asChild><Pressable accessibilityRole="link" hitSlop={8}><ThemedText type="smallBold" style={{ color: theme.primary }}>See all →</ThemedText></Pressable></Link>}>
             LATEST ANNOUNCEMENT
           </SectionHeading>
@@ -136,15 +103,6 @@ export default function HomeScreen() {
             <ThemedText themeColor="textSecondary">{formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}{nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}</ThemedText>
           </Pressable>
         </Link> : null}
-
-        <View style={styles.section}>
-          <SectionHeading>COUNTDOWN</SectionHeading>
-          <View style={[styles.countdownCard, { backgroundColor: Brand.pine }]}>
-            <ThemedText type="smallBold" style={styles.countdownLabel}>{countdown.label}</ThemedText>
-            <ThemedText style={styles.countdownValue}>{countdown.value}</ThemedText>
-            <ThemedText style={styles.countdownMeta}>{dateLabel} · Karlsruhe</ThemedText>
-          </View>
-        </View>
 
         <View style={styles.section}>
           <SectionHeading>EXPLORE</SectionHeading>
@@ -187,21 +145,10 @@ const styles = StyleSheet.create({
   section: { gap: 12 },
   sectionHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   sectionLabel: { fontSize: 12, letterSpacing: 2.2 },
-  committeeCard: { alignItems: 'center', backgroundColor: Brand.black, borderRadius: 22, flexDirection: 'row', gap: 16, minHeight: 116, padding: 18 },
-  committeeBadge: { alignItems: 'center', backgroundColor: Brand.pine, borderRadius: 16, justifyContent: 'center', minHeight: 74, width: 74, padding: 8 },
-  badgeText: { color: Brand.white, fontSize: 12, textAlign: 'center' },
-  committeeCopy: { minWidth: 0, flex: 1, gap: 4 },
-  lightText: { color: Brand.cream },
-  mutedLightText: { color: '#BBB8AE', fontFamily: Fonts.serif, fontStyle: 'italic' },
-  cardArrow: { color: '#B6D7BB', fontSize: 23 },
   announcementCard: { borderLeftWidth: 6, borderRadius: 18, gap: 7, minHeight: 116, padding: 18 },
   announcementTitle: { fontSize: 17, lineHeight: 23 },
   nextEvent: { borderRadius: 18, gap: 5, padding: 18 },
   nextEventHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
-  countdownCard: { borderRadius: 22, gap: 5, padding: 22 },
-  countdownLabel: { color: '#D7E3D8', fontSize: 11, letterSpacing: 1.2 },
-  countdownValue: { color: Brand.white, fontSize: 35, fontWeight: '800', letterSpacing: -0.5, lineHeight: 42 },
-  countdownMeta: { color: '#D7E3D8', fontFamily: Fonts.serif, fontStyle: 'italic' },
   exploreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   exploreCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexBasis: '46%', flexGrow: 1, gap: 3, justifyContent: 'center', minHeight: 124, padding: 10 },
   exploreCardWide: { flexBasis: '30%' },

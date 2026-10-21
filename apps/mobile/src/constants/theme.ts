@@ -54,5 +54,5 @@ export const Brand = {
   white: '#FFFFFF',
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const BottomTabInset = Platform.select({ ios: 50, android: 80, web: 112 }) ?? 0;
 export const MaxContentWidth = 800;
