@@ -38,7 +38,7 @@ const exploreItems: ExploreItem[] = [
   { icon: '📍', title: 'Locations', subtitle: 'Venue details', href: '/more' },
   { icon: '📣', title: 'Updates', subtitle: 'Announcements', href: '/updates' },
   { icon: '📖', title: 'Resources', subtitle: 'Guides & policies', href: '/resources' },
-  { icon: '🛡️', title: 'Emergency', subtitle: 'Safety contacts', href: '/more' },
+  { icon: '🛡️', title: 'Emergency', subtitle: 'Safety contacts', href: '/emergency' },
   { icon: '🌐', title: 'Committees', subtitle: 'Topics & chairs', href: '/committees' },
 ];
 

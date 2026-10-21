@@ -16,6 +16,7 @@ type AttendeeProfileContextValue = {
   isLoading: boolean;
   profile: AttendeeProfile | null;
   saveProfile: (profile: AttendeeProfile) => void;
+  clearProfile: () => void;
 };
 
 const STORAGE_KEY = 'kamun.attendee-profile.v1';
@@ -67,6 +68,14 @@ export function AttendeeProfileProvider({ children }: PropsWithChildren) {
         // The profile still works for this session if device storage is unavailable.
       }
       setProfile(nextProfile);
+    },
+    clearProfile() {
+      try {
+        globalThis.localStorage?.removeItem(STORAGE_KEY);
+      } catch {
+        // The in-memory profile is still cleared.
+      }
+      setProfile(null);
     },
   }), [isLoading, profile]);
 

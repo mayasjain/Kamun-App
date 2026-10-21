@@ -6,11 +6,12 @@ import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
+import { useOrganizer } from '@/contexts/organizer';
 
 export default function MoreScreen() {
   const { content, isLoading } = useConferenceContent();
+  const organizer = useOrganizer();
   const locations = content?.locations ?? [];
-  const contacts = content?.emergencyContacts ?? [];
 
   return (
     <Screen eyebrow="KAMUN 2026" title="More" subtitle="Locations, safety and app preferences">
@@ -34,13 +35,16 @@ export default function MoreScreen() {
           <ThemedText themeColor="textSecondary">Approved venue information will appear here.</ThemedText>
         </ContentCard>
       ) : null}
-      <ContentCard label="SAFETY" title="Emergency & welfare">
-        {contacts.length ? contacts.map((contact) => (
-          <ThemedText key={contact.id} themeColor="textSecondary">
-            {contact.label}{contact.phone ? ` · ${contact.phone}` : ''}{contact.email ? ` · ${contact.email}` : ''}
-          </ThemedText>
-        )) : <ThemedText themeColor="textSecondary">Awareness contacts will appear here after confirmation.</ThemedText>}
-      </ContentCard>
+      <Link href="/emergency" asChild>
+        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
+          <ContentCard label="SAFETY" title="Emergency contacts">
+            <View style={styles.linkRow}>
+              <ThemedText themeColor="textSecondary">Secretary General, Deputy Secretary General and USG Safety and Security</ThemedText>
+              <ThemedText themeColor="primary">→</ThemedText>
+            </View>
+          </ContentCard>
+        </Pressable>
+      </Link>
       {Platform.OS === 'web' ? (
         <ContentCard label="HOME SCREEN" title="Keep KAMUN on your phone">
           <ThemedText themeColor="textSecondary">
@@ -52,6 +56,9 @@ export default function MoreScreen() {
         <ThemedText themeColor="textSecondary">Replace the chair or delegate access stored on this device.</ThemedText>
         <AttendeeProfileForm submitLabel="Update access" />
       </ContentCard>
+      <Pressable accessibilityRole="button" onPress={organizer.enter} style={styles.organizerLink}>
+        <ThemedText type="smallBold" themeColor="primary">Organiser sign in →</ThemedText>
+      </Pressable>
       <ContentCard label="SUPPORT" title="vorstand@munika.org">
         <ThemedText themeColor="textSecondary">App version 0.1 foundation</ThemedText>
       </ContentCard>
@@ -62,4 +69,5 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   linkRow: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   pressed: { opacity: 0.7 },
+  organizerLink: { alignItems: 'center', minHeight: 48, justifyContent: 'center' },
 });

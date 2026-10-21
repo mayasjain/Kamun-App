@@ -3,7 +3,7 @@ import { EnvVarWarning } from "@/components/env-var-warning";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasEnvVars } from "@/lib/utils";
-import { CalendarDays, Megaphone, ShieldCheck } from "lucide-react";
+import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -14,9 +14,9 @@ const capabilities = [
     body: "Manage committees, rooms and the three-day schedule from one place.",
   },
   {
-    icon: Megaphone,
-    title: "Publish clear updates",
-    body: "Create announcements and control when attendee content becomes visible.",
+    icon: FileText,
+    title: "Publish approved resources",
+    body: "Upload documents and control when attendee resources become visible.",
   },
   {
     icon: ShieldCheck,
@@ -40,7 +40,7 @@ export default function Home() {
             Run the conference from one calm dashboard.
           </h1>
           <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
-            Prepare the KAMUN schedule, publish updates and keep essential attendee information current across iPhone and Android.
+            Prepare the KAMUN schedule and resources. Send attendee updates from organiser mode in the KAMUN app.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link href="/protected">Open dashboard</Link></Button>

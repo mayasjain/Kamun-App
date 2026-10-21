@@ -34,6 +34,8 @@ export default function AppTabs() {
           <TabTrigger name="more" href="/more" asChild>
             <TabButton>More</TabButton>
           </TabTrigger>
+          <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
+          <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
         </CustomTabList>
       </TabList>
     </Tabs>
@@ -97,6 +99,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   tabButton: { flex: 1, minWidth: 0 },
+  hiddenTab: { display: 'none' },
   tabLabel: { fontSize: 11, textAlign: 'center' },
   tabButtonView: {
     minHeight: 44,
