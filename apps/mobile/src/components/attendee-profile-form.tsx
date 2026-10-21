@@ -58,7 +58,7 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props
       <View style={[styles.hint, { backgroundColor: theme.primarySoft }]}>
         <ThemedText type="smallBold" style={{ color: theme.primary }}>DEVELOPMENT CODES</ThemedText>
         <ThemedText type="small">Chair: KAMUN-CHAIR</ThemedText>
-        <ThemedText type="small">Committee member: KAMUN-MEMBER</ThemedText>
+        <ThemedText type="small">Delegate: KAMUN-MEMBER</ThemedText>
       </View>
 
       <Pressable

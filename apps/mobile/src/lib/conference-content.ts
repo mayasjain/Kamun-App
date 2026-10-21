@@ -36,6 +36,7 @@ export type ScheduleEvent = {
 export type Announcement = {
   id: string;
   committeeId: string | null;
+  audience: 'all' | 'chair' | 'member';
   title: string;
   body: string;
   priority: 'normal' | 'important' | 'urgent';
@@ -83,6 +84,7 @@ export type ConferenceContent = {
 export async function fetchConferenceContent(
   conferenceId: string,
   committeeId: string | null,
+  accessType: 'chair' | 'member',
 ): Promise<ConferenceContent> {
   if (!supabase) throw new Error('The KAMUN backend is not configured.');
 
@@ -97,14 +99,19 @@ export async function fetchConferenceContent(
     ? await supabase.from('committees').select('id,name,abbreviation,topic,colour,room_name').eq('conference_id', conferenceId).eq('published', true).order('name')
     : detailedCommitteesResult;
 
-  const [conferenceResult, scheduleResult, announcementsResult, resourcesResult, locationsResult, contactsResult] = await Promise.all([
+  const [conferenceResult, scheduleResult, currentAnnouncementsResult, resourcesResult, locationsResult, contactsResult] = await Promise.all([
     supabase.from('conferences').select('id,name,theme,starts_at,ends_at,timezone,venue_name').eq('id', conferenceId).single(),
     supabase.from('schedule_events').select('id,committee_id,title,description,event_type,room_name,starts_at,ends_at').eq('conference_id', conferenceId).eq('published', true).order('starts_at'),
-    supabase.from('announcements').select('id,committee_id,title,body,priority,published_at').eq('conference_id', conferenceId).eq('published', true).order('published_at', { ascending: false }),
+    supabase.from('announcements').select('id,committee_id,audience,title,body,priority,published_at').eq('conference_id', conferenceId).eq('published', true).order('published_at', { ascending: false }),
     supabase.from('resources').select('id,committee_id,title,kind,url,sort_order').eq('conference_id', conferenceId).eq('published', true).order('sort_order'),
     supabase.from('locations').select('id,name,category,address,description,external_maps_url').eq('conference_id', conferenceId).eq('published', true).order('sort_order'),
     supabase.from('emergency_contacts').select('id,label,person_name,role,phone,email,is_emergency').eq('conference_id', conferenceId).eq('published', true).order('sort_order'),
   ]);
+
+  // Keep the existing app usable until the audience migration reaches Supabase.
+  const announcementsResult = currentAnnouncementsResult.error?.code === '42703'
+    ? await supabase.from('announcements').select('id,committee_id,title,body,priority,published_at').eq('conference_id', conferenceId).eq('published', true).order('published_at', { ascending: false })
+    : currentAnnouncementsResult;
 
   const error = [conferenceResult, committeesResult, scheduleResult, announcementsResult, resourcesResult, locationsResult, contactsResult]
     .find((result) => result.error)?.error;
@@ -141,8 +148,10 @@ export async function fetchConferenceContent(
       id: item.id, committeeId: item.committee_id, title: item.title, description: item.description,
       eventType: item.event_type, roomName: item.room_name, startsAt: item.starts_at, endsAt: item.ends_at,
     })),
-    announcements: (announcementsResult.data ?? []).filter(matchesAudience).map((item) => ({
-      id: item.id, committeeId: item.committee_id, title: item.title, body: item.body,
+    announcements: (announcementsResult.data ?? []).filter((item) =>
+      matchesAudience(item) && (!('audience' in item) || item.audience === 'all' || item.audience === accessType)
+    ).map((item) => ({
+      id: item.id, committeeId: item.committee_id, audience: 'audience' in item ? item.audience as Announcement['audience'] : 'all', title: item.title, body: item.body,
       priority: item.priority as Announcement['priority'], publishedAt: item.published_at,
     })),
     resources: (resourcesResult.data ?? []).filter(matchesAudience).map((item) => ({

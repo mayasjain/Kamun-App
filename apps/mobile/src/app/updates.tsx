@@ -12,6 +12,11 @@ export default function UpdatesScreen() {
     <Screen onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
       {announcements.map((announcement) => (
         <ContentCard key={announcement.id} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>
+          {announcement.audience !== 'all' ? (
+            <ThemedText type="smallBold" themeColor="primary">
+              {announcement.audience === 'chair' ? 'For chairs' : 'For delegates'}
+            </ThemedText>
+          ) : null}
           <ThemedText themeColor="textSecondary">{announcement.body}</ThemedText>
         </ContentCard>
       ))}

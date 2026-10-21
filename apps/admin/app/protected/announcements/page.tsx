@@ -13,8 +13,11 @@ export default async function AnnouncementsPage() {
   const [conferences, committees, announcements] = await Promise.all([
     client.from("conferences").select("id,name").order("starts_at"),
     client.from("committees").select("id,name,conference_id").order("name"),
-    client.from("announcements").select("id,title,body,priority,conference_id,committee_id,published,published_at,expires_at").order("created_at", { ascending: false }),
+    client.from("announcements").select("id,title,body,priority,audience,conference_id,committee_id,published,published_at,expires_at").order("created_at", { ascending: false }),
   ]);
+  if (announcements.error?.code === "42703") {
+    return <div role="alert" className="rounded-xl border p-6">The audience migration has not been applied in Supabase yet. Run <code>202610210003_announcement_audiences.sql</code>, then reload this page.</div>;
+  }
   if (conferences.error || committees.error || announcements.error) {
     return <div role="alert" className="rounded-xl border p-6">Announcements could not be loaded. Refresh this page to try again.</div>;
   }

@@ -26,7 +26,7 @@ export function AttendeeOnboarding() {
             <View style={styles.copy}>
               <ThemedText type="smallBold" style={styles.eyebrow}>WELCOME TO KAMUN</ThemedText>
               <ThemedText type="title">Enter your access code</ThemedText>
-              <ThemedText themeColor="textSecondary">Use the code supplied by your chair or conference organiser.</ThemedText>
+              <ThemedText themeColor="textSecondary">Enter your chair or delegate code from the conference organiser.</ThemedText>
             </View>
             <AttendeeProfileForm />
             <ThemedText type="small" themeColor="textSecondary" style={styles.privacy}>

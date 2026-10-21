@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContentCard } from '@/components/content-card';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
@@ -41,8 +41,15 @@ export default function MoreScreen() {
           </ThemedText>
         )) : <ThemedText themeColor="textSecondary">Awareness contacts will appear here after confirmation.</ThemedText>}
       </ContentCard>
+      {Platform.OS === 'web' ? (
+        <ContentCard label="HOME SCREEN" title="Keep KAMUN on your phone">
+          <ThemedText themeColor="textSecondary">
+            On iPhone, open this site in Safari, tap Share, then Add to Home Screen. On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.
+          </ThemedText>
+        </ContentCard>
+      ) : null}
       <ContentCard label="SETTINGS" title="Change access code">
-        <ThemedText themeColor="textSecondary">Replace the chair or committee-member access stored on this device.</ThemedText>
+        <ThemedText themeColor="textSecondary">Replace the chair or delegate access stored on this device.</ThemedText>
         <AttendeeProfileForm submitLabel="Update access" />
       </ContentCard>
       <ContentCard label="SUPPORT" title="vorstand@munika.org">

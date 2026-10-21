@@ -56,6 +56,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const compact = width < 360 || fontScale > 1.2;
+  const wide = width >= 700 && fontScale <= 1.2;
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -72,6 +73,8 @@ export default function HomeScreen() {
   const countdown = getCountdown(now, content?.conference.startsAt, content?.conference.endsAt);
   const dateLabel = content ? new Date(content.conference.startsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: content.conference.timezone }) : 'Conference dates coming soon';
   const committeeTitle = profile?.committeeAbbreviation ?? profile?.accessLabel ?? 'KAMUN attendee';
+  const roleLabel = profile?.accessType === 'chair' ? 'Chair' : 'Delegate';
+  const announcementAccent = announcement?.priority === 'urgent' ? theme.danger : theme.primary;
 
   return (
     <ThemedView style={styles.root}>
@@ -96,15 +99,16 @@ export default function HomeScreen() {
           <ThemedText style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</ThemedText>
           <ThemedText style={styles.greetingSymbol}>{greeting.symbol}</ThemedText>
         </View>
+        <ThemedText themeColor="textSecondary" style={styles.intro}>Your KAMUN conference, all in one place.</ThemedText>
 
         <View style={styles.section}>
           <SectionHeading>{profile?.committeeAbbreviation ? 'YOUR COMMITTEE' : 'YOUR CONFERENCE ACCESS'}</SectionHeading>
           <Link href="/committees" asChild>
             <Pressable accessibilityRole="link" style={({ pressed }) => [styles.committeeCard, pressed && styles.pressed]}>
-              <View style={styles.committeeBadge}><ThemedText type="smallBold" style={styles.badgeText}>{profile?.committeeAbbreviation ?? (profile?.accessType === 'chair' ? 'CHAIR' : 'MEMBER')}</ThemedText></View>
+              <View style={styles.committeeBadge}><ThemedText type="smallBold" style={styles.badgeText}>{profile?.committeeAbbreviation ?? (profile?.accessType === 'chair' ? 'CHAIR' : 'DELEGATE')}</ThemedText></View>
               <View style={styles.committeeCopy}>
                 <ThemedText type="subtitle" style={styles.lightText}>{committeeTitle}</ThemedText>
-                <ThemedText style={styles.mutedLightText}>{profile?.committeeName ?? 'Explore committees, topics and chairs'}</ThemedText>
+                <ThemedText style={styles.mutedLightText}>{profile?.committeeName ?? `${roleLabel} access · Explore committees and chairs`}</ThemedText>
               </View>
               <ThemedText style={styles.cardArrow}>→</ThemedText>
             </Pressable>
@@ -116,21 +120,22 @@ export default function HomeScreen() {
             LATEST ANNOUNCEMENT
           </SectionHeading>
           <Link href="/updates" asChild>
-            <Pressable accessibilityRole="link" style={({ pressed }) => [styles.announcementCard, { backgroundColor: theme.backgroundElement, borderColor: theme.accent }, pressed && styles.pressed]}>
-              <ThemedText type="smallBold">{announcement?.title ?? (isLoading ? 'Loading updates…' : 'Welcome to KAMUN 2026')}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{announcement?.body ?? 'Important conference information will appear here.'}</ThemedText>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>Tap for details →</ThemedText>
+            <Pressable accessibilityRole="link" accessibilityLabel={`View updates. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.announcementCard, { backgroundColor: theme.backgroundElement, borderColor: announcementAccent }, pressed && styles.pressed]}>
+              {announcement?.priority === 'urgent' ? <ThemedText type="smallBold" style={{ color: theme.danger }}>URGENT UPDATE</ThemedText> : null}
+              <ThemedText type="smallBold" style={styles.announcementTitle}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>Read update →</ThemedText>
             </Pressable>
           </Link>
         </View>
 
-        {nextEvent ? (
-          <View style={[styles.nextEvent, { backgroundColor: theme.primarySoft }]}>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>UP NEXT</ThemedText>
+        {nextEvent ? <Link href="/schedule" asChild>
+          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.nextEvent, { backgroundColor: theme.primarySoft }, pressed && styles.pressed]}>
+            <View style={styles.nextEventHeading}><ThemedText type="smallBold" style={{ color: theme.primary }}>UP NEXT</ThemedText><ThemedText type="smallBold" style={{ color: theme.primary }}>Full schedule →</ThemedText></View>
             <ThemedText type="subtitle">{nextEvent.title}</ThemedText>
-            <ThemedText themeColor="textSecondary">{formatEventTime(nextEvent.startsAt, nextEvent.endsAt)} · {nextEvent.roomName ?? 'Room TBA'}</ThemedText>
-          </View>
-        ) : null}
+            <ThemedText themeColor="textSecondary">{formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}{nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}</ThemedText>
+          </Pressable>
+        </Link> : null}
 
         <View style={styles.section}>
           <SectionHeading>COUNTDOWN</SectionHeading>
@@ -146,7 +151,7 @@ export default function HomeScreen() {
           <View style={styles.exploreGrid}>
             {exploreItems.map((item) => (
               <Link href={item.href} asChild key={item.title}>
-                <Pressable accessibilityLabel={`${item.title}, ${item.subtitle}`} accessibilityRole="link" style={({ pressed }) => [styles.exploreCard, compact && styles.exploreCardCompact, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, pressed && styles.pressed]}>
+                <Pressable accessibilityLabel={`${item.title}, ${item.subtitle}`} accessibilityRole="link" style={({ pressed }) => [styles.exploreCard, wide && styles.exploreCardWide, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, pressed && styles.pressed]}>
                   <ThemedText style={styles.exploreIcon}>{item.icon}</ThemedText>
                   <ThemedText type="smallBold" style={styles.exploreTitle}>{item.title}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.exploreSubtitle}>{item.subtitle}</ThemedText>
@@ -171,32 +176,35 @@ const styles = StyleSheet.create({
   logo: { height: 62, width: 62 },
   brandCopy: { gap: 1, flexShrink: 1 },
   brandName: { color: Brand.cream, fontSize: 28, fontWeight: '800', letterSpacing: 1.2, lineHeight: 34 },
-  brandTagline: { color: Brand.gold, fontSize: 10, letterSpacing: 1.6 },
+  brandTagline: { color: '#B6D7BB', fontSize: 10, letterSpacing: 1.6 },
   dates: { alignItems: 'flex-end' },
   dateText: { color: Brand.cream, letterSpacing: 1.4 },
-  content: { alignSelf: 'center', gap: 28, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + 34, paddingHorizontal: 20, paddingTop: 30, width: '100%' },
+  content: { alignSelf: 'center', gap: 24, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + 34, paddingHorizontal: 20, paddingTop: 28, width: '100%' },
   greetingRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   greeting: { fontFamily: Fonts.serif, fontSize: 31, fontStyle: 'italic', lineHeight: 38 },
   greetingSymbol: { fontSize: 28 },
+  intro: { marginTop: -20 },
   section: { gap: 12 },
   sectionHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   sectionLabel: { fontSize: 12, letterSpacing: 2.2 },
   committeeCard: { alignItems: 'center', backgroundColor: Brand.black, borderRadius: 22, flexDirection: 'row', gap: 16, minHeight: 116, padding: 18 },
-  committeeBadge: { alignItems: 'center', backgroundColor: Brand.gold, borderRadius: 16, justifyContent: 'center', minHeight: 74, width: 74, padding: 8 },
-  badgeText: { color: Brand.black, fontSize: 12, textAlign: 'center' },
+  committeeBadge: { alignItems: 'center', backgroundColor: Brand.pine, borderRadius: 16, justifyContent: 'center', minHeight: 74, width: 74, padding: 8 },
+  badgeText: { color: Brand.white, fontSize: 12, textAlign: 'center' },
   committeeCopy: { minWidth: 0, flex: 1, gap: 4 },
   lightText: { color: Brand.cream },
   mutedLightText: { color: '#BBB8AE', fontFamily: Fonts.serif, fontStyle: 'italic' },
-  cardArrow: { color: Brand.gold, fontSize: 23 },
-  announcementCard: { borderLeftWidth: 6, borderRadius: 18, gap: 7, padding: 18 },
+  cardArrow: { color: '#B6D7BB', fontSize: 23 },
+  announcementCard: { borderLeftWidth: 6, borderRadius: 18, gap: 7, minHeight: 116, padding: 18 },
+  announcementTitle: { fontSize: 17, lineHeight: 23 },
   nextEvent: { borderRadius: 18, gap: 5, padding: 18 },
+  nextEventHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
   countdownCard: { borderRadius: 22, gap: 5, padding: 22 },
   countdownLabel: { color: '#D7E3D8', fontSize: 11, letterSpacing: 1.2 },
   countdownValue: { color: Brand.white, fontSize: 35, fontWeight: '800', letterSpacing: -0.5, lineHeight: 42 },
   countdownMeta: { color: '#D7E3D8', fontFamily: Fonts.serif, fontStyle: 'italic' },
   exploreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  exploreCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexBasis: '31%', flexGrow: 1, gap: 3, justifyContent: 'center', minHeight: 128, padding: 10 },
-  exploreCardCompact: { flexBasis: '46%' },
+  exploreCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexBasis: '46%', flexGrow: 1, gap: 3, justifyContent: 'center', minHeight: 124, padding: 10 },
+  exploreCardWide: { flexBasis: '30%' },
   exploreIcon: { fontSize: 27, lineHeight: 34 },
   exploreTitle: { textAlign: 'center' },
   exploreSubtitle: { fontFamily: Fonts.serif, fontSize: 12, fontStyle: 'italic', lineHeight: 16, textAlign: 'center' },

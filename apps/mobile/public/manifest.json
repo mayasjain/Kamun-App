@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "KAMUN 2026",
+  "short_name": "KAMUN",
+  "description": "The KAMUN 2026 conference companion for chairs and delegates.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F1E8",
+  "theme_color": "#10261A",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -23,7 +23,7 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [source, setSource] = useState<ContentSource>(null);
-  const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.committeeId ?? 'all'}.v2`;
+  const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.accessType ?? 'none'}.${profile?.committeeId ?? 'all'}.v3`;
   const requestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -32,7 +32,7 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
     setIsLoading(true);
     setError(null);
     try {
-      const liveContent = await fetchConferenceContent(profile.conferenceId, profile.committeeId);
+      const liveContent = await fetchConferenceContent(profile.conferenceId, profile.committeeId, profile.accessType);
       if (version !== requestVersion.current) return;
       setContent(liveContent);
       setSource('live');

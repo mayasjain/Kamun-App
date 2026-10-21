@@ -71,7 +71,7 @@ insert into public.attendee_access_codes (
   ),
   (
     '10000000-0000-4000-8000-000000000001',
-    'Committee member',
+    'Delegate',
     'member',
     encode(digest('KAMUN-MEMBER', 'sha256'), 'hex'),
     true,
