@@ -1,14 +1,24 @@
-import { StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ContentCard } from '@/components/content-card';
+import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
-import { useTheme } from '@/hooks/use-theme';
 import { formatDay, formatEventTime } from '@/lib/date-format';
 
+const palette = {
+  black: Brand.black,
+  cream: Brand.cream,
+  green: Brand.pine,
+  white: Brand.white,
+  muted: '#D6E2D9',
+  divider: 'rgba(255, 255, 255, 0.24)',
+};
+
 export default function ScheduleScreen() {
-  const theme = useTheme();
+  const { profile } = useAttendeeProfile();
   const { content, error, isLoading, source, refresh } = useConferenceContent();
   const events = content?.scheduleEvents ?? [];
   const groupedEvents = events.reduce<Record<string, typeof events>>((groups, event) => {
@@ -16,40 +26,61 @@ export default function ScheduleScreen() {
     (groups[day] ??= []).push(event);
     return groups;
   }, {});
+  const audience = profile?.committeeAbbreviation ?? profile?.accessLabel ?? 'KAMUN 2026';
 
   return (
-    <Screen onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="KAMUN 2026" title="Schedule" subtitle="Conference programme · available offline">
-      {Object.entries(groupedEvents).map(([day, dayEvents]) => (
-        <View key={day} style={styles.day}>
-          <ThemedText type="subtitle" style={styles.dayTitle}>{day}</ThemedText>
-          {dayEvents.map((event) => (
-            <View key={event.id} style={styles.row}>
-              <ThemedText type="smallBold" style={[styles.time, { color: theme.primary }]}>
-                {formatEventTime(event.startsAt, event.endsAt)}
-              </ThemedText>
-              <View style={[styles.event, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold">{event.title}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">{event.roomName ?? 'Room to be announced'}</ThemedText>
-              </View>
-            </View>
-          ))}
+    <SafeAreaView style={styles.root} edges={['top']}>
+      <StatusBar style="light" />
+      <View style={styles.header}>
+        <View style={styles.headerInner}>
+          <ThemedText style={styles.headerTitle}>Schedule</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>{audience} · KAMUN 2026</ThemedText>
         </View>
-      ))}
-      {!events.length ? (
-        <ContentCard label="PROGRAMME" title={isLoading ? 'Loading schedule…' : 'Schedule coming soon'}>
-          <ThemedText themeColor="textSecondary">The programme will appear after times and rooms are approved.</ThemedText>
-        </ContentCard>
-      ) : null}
-      {error ? <ThemedText type="small" themeColor="danger">{error}</ThemedText> : null}
-      {source === 'cache' ? <ThemedText type="small" themeColor="textSecondary">Showing the last saved offline copy.</ThemedText> : null}
-    </Screen>
+      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={palette.green} />}>
+        {Object.entries(groupedEvents).map(([day, dayEvents]) => (
+          <View key={day} style={styles.dayPanel}>
+            <ThemedText style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
+            {dayEvents.map((event, index) => (
+              <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
+                <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
+                <ThemedText style={styles.eventDetail}>
+                  {formatEventTime(event.startsAt, event.endsAt)} · {event.roomName || 'Venue to be announced'}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        ))}
+        {!events.length ? (
+          <View style={styles.dayPanel}>
+            <ThemedText style={styles.eventTitle}>{isLoading ? 'Loading schedule…' : 'Schedule coming soon'}</ThemedText>
+            <ThemedText style={styles.eventDetail}>Pull down to check for the latest programme.</ThemedText>
+          </View>
+        ) : null}
+        {error ? <ThemedText accessibilityRole="alert" style={styles.status}>{error}</ThemedText> : null}
+        {source === 'cache' ? <ThemedText style={styles.status}>Showing the last saved offline copy.</ThemedText> : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  day: { gap: 12 },
-  dayTitle: { fontSize: 24, lineHeight: 30 },
-  row: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
-  time: { width: 76, paddingTop: 15 },
-  event: { flex: 1, borderLeftWidth: 2, padding: 14, gap: 4 },
+  root: { flex: 1, backgroundColor: palette.black },
+  header: { backgroundColor: palette.black, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: Spacing.four },
+  headerInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: 4 },
+  headerTitle: { color: palette.white, fontSize: 34, lineHeight: 40, fontWeight: '700' },
+  headerSubtitle: { color: palette.muted, fontSize: 16, lineHeight: 22, fontStyle: 'italic' },
+  scroll: { flex: 1, backgroundColor: palette.cream },
+  content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: BottomTabInset + Spacing.five, gap: Spacing.three },
+  dayPanel: { backgroundColor: palette.green, borderRadius: 24, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },
+  dayTitle: { color: palette.muted, fontSize: 13, lineHeight: 20, fontWeight: '800', letterSpacing: 1.6, marginBottom: 4 },
+  event: { paddingVertical: Spacing.three, gap: 2 },
+  eventDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.divider },
+  eventTitle: { color: palette.white, fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  eventDetail: { color: palette.muted, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
+  status: { color: palette.black, fontSize: 14, lineHeight: 20 },
 });

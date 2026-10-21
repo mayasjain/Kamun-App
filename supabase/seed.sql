@@ -32,13 +32,8 @@ on conflict (id) do update set
   room_name = excluded.room_name,
   published = excluded.published;
 
-insert into public.schedule_events (
-  conference_id, title, event_type, room_name, starts_at, ends_at, published
-) values
-  ('10000000-0000-4000-8000-000000000001', 'Opening ceremony', 'ceremony', 'Main hall', '2026-11-13 09:00:00+01', '2026-11-13 10:00:00+01', true),
-  ('10000000-0000-4000-8000-000000000001', 'Committee session I', 'session', 'Committee room', '2026-11-13 10:15:00+01', '2026-11-13 12:30:00+01', true),
-  ('10000000-0000-4000-8000-000000000001', 'Lunch break', 'break', 'Conference area', '2026-11-13 12:30:00+01', '2026-11-13 13:30:00+01', true),
-  ('10000000-0000-4000-8000-000000000001', 'Committee session II', 'session', 'Committee room', '2026-11-13 13:30:00+01', '2026-11-13 16:00:00+01', true);
+-- Programme drafts are imported by 202610210001_import_schedule_drafts.sql.
+-- Do not recreate the superseded placeholder schedule here.
 
 insert into public.announcements (
   conference_id, title, body, priority, published_at, published
