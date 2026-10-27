@@ -1,5 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import { useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -7,6 +9,7 @@ import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/the
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { formatDay, formatEventTime } from '@/lib/date-format';
+import { scheduleVenueMapUrl } from '@/lib/schedule-maps';
 
 const palette = {
   black: Brand.black,
@@ -18,6 +21,7 @@ const palette = {
 };
 
 export default function ScheduleScreen() {
+  const [mapError, setMapError] = useState('');
   const { profile } = useAttendeeProfile();
   const { content, error, isLoading, source, refresh } = useConferenceContent();
   const events = content?.scheduleEvents ?? [];
@@ -27,6 +31,15 @@ export default function ScheduleScreen() {
     return groups;
   }, {});
   const audience = profile?.committeeAbbreviation ?? profile?.accessLabel ?? 'KAMUN 2026';
+
+  async function openMap(url: string) {
+    setMapError('');
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setMapError('The map could not be opened on this device.');
+    }
+  }
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
@@ -45,14 +58,24 @@ export default function ScheduleScreen() {
         {Object.entries(groupedEvents).map(([day, dayEvents]) => (
           <View key={day} style={styles.dayPanel}>
             <ThemedText style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
-            {dayEvents.map((event, index) => (
-              <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
-                <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
-                <ThemedText style={styles.eventDetail}>
-                  {formatEventTime(event.startsAt, event.endsAt)} · {event.roomName || 'Venue to be announced'}
-                </ThemedText>
-              </View>
-            ))}
+            {dayEvents.map((event, index) => {
+              const mapUrl = scheduleVenueMapUrl(event.roomName);
+              return (
+                <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
+                  <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
+                  <ThemedText style={styles.eventDetail}>
+                    {formatEventTime(event.startsAt, event.endsAt)} · {event.roomName || 'Venue to be announced'}
+                  </ThemedText>
+                  {event.description ? <ThemedText style={styles.eventDescription}>{event.description}</ThemedText> : null}
+                  {mapUrl ? (
+                    <Pressable accessibilityRole="link" accessibilityLabel={`View ${event.roomName} on Google Maps`}
+                      onPress={() => void openMap(mapUrl)} style={styles.mapLink}>
+                      <ThemedText type="smallBold" style={styles.mapLinkText}>View on map ↗</ThemedText>
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })}
           </View>
         ))}
         {!events.length ? (
@@ -62,6 +85,7 @@ export default function ScheduleScreen() {
           </View>
         ) : null}
         {error ? <ThemedText accessibilityRole="alert" style={styles.status}>{error}</ThemedText> : null}
+        {mapError ? <ThemedText accessibilityRole="alert" style={styles.status}>{mapError}</ThemedText> : null}
         {source === 'cache' ? <ThemedText style={styles.status}>Showing the last saved offline copy.</ThemedText> : null}
       </ScrollView>
     </SafeAreaView>
@@ -82,5 +106,8 @@ const styles = StyleSheet.create({
   eventDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.divider },
   eventTitle: { color: palette.white, fontSize: 18, lineHeight: 24, fontWeight: '700' },
   eventDetail: { color: palette.muted, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
+  eventDescription: { color: palette.white, fontSize: 14, lineHeight: 20, marginTop: 4 },
+  mapLink: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44, paddingRight: Spacing.three },
+  mapLinkText: { color: palette.white, textDecorationLine: 'underline' },
   status: { color: palette.black, fontSize: 14, lineHeight: 20 },
 });

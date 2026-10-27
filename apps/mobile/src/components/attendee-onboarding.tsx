@@ -11,22 +11,24 @@ export function AttendeeOnboarding() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.hero}>
-            <Image
-              accessibilityLabel="KAMUN Black Forest Summit logo"
-              resizeMode="contain"
-              source={require('../../assets/branding/kamun-logo-v2.png')}
-              style={styles.logo}
-            />
-            <ThemedText type="smallBold" style={styles.kicker}>13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
-            <ThemedText type="subtitle" style={styles.heroTitle}>From the Black Forest to the global stage.</ThemedText>
+          <View style={styles.header}>
+            <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={styles.headerLogo} />
+            <View style={styles.headerCopy}>
+              <ThemedText style={styles.headerTitle}>KAMUN 2026</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Black Forest Summit · Karlsruhe</ThemedText>
+            </View>
+          </View>
+
+          <View accessible accessibilityLabel="KAMUN 2026 banner showing Karlsruhe Palace and the Black Forest" style={styles.banner}>
+            <Image source={require('../../assets/branding/kamun-banner.png')} resizeMode="cover" style={styles.bannerArt} accessible={false} />
+            <Image source={require('../../assets/branding/kamun-logo-v2.png')} resizeMode="contain" style={styles.bannerLogo} accessible={false} />
           </View>
 
           <View style={styles.panel}>
             <View style={styles.copy}>
-              <ThemedText type="smallBold" style={styles.eyebrow}>WELCOME TO KAMUN</ThemedText>
+              <ThemedText type="smallBold" style={styles.eyebrow}>13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
               <ThemedText type="title">Enter your access code</ThemedText>
-              <ThemedText themeColor="textSecondary">Enter the access code provided by the KAMUN team.</ThemedText>
+              <ThemedText themeColor="textSecondary">Use the code provided by the KAMUN team.</ThemedText>
             </View>
             <AttendeeProfileForm />
             <ThemedText type="small" themeColor="textSecondary" style={styles.privacy}>
@@ -42,12 +44,15 @@ export function AttendeeOnboarding() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safeArea: { flex: 1 },
-  scroll: { alignSelf: 'center', maxWidth: MaxContentWidth, width: '100%' },
-  hero: { alignItems: 'center', backgroundColor: Brand.black, gap: Spacing.two, paddingBottom: Spacing.four, paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
-  logo: { height: 220, width: 220 },
-  kicker: { color: Brand.gold, fontSize: 12, letterSpacing: 1.2, textAlign: 'center' },
-  heroTitle: { color: Brand.white, fontSize: 21, lineHeight: 28, maxWidth: 360, textAlign: 'center' },
-  panel: { gap: Spacing.four, padding: Spacing.four, paddingBottom: Spacing.five },
+  scroll: { alignSelf: 'center', maxWidth: MaxContentWidth, paddingBottom: Spacing.five, paddingHorizontal: Spacing.four, paddingTop: Spacing.two, width: '100%' },
+  header: { alignItems: 'center', flexDirection: 'row', gap: 10, marginBottom: Spacing.three, minHeight: 54 },
+  headerLogo: { height: 52, width: 52 },
+  headerCopy: { flex: 1, gap: 1 },
+  headerTitle: { color: Brand.black, fontSize: 22, fontWeight: '800', lineHeight: 27 },
+  banner: { backgroundColor: Brand.black, borderRadius: 20, height: 180, justifyContent: 'center', overflow: 'hidden' },
+  bannerArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
+  bannerLogo: { height: 132, marginLeft: 12, width: 132 },
+  panel: { gap: Spacing.four, paddingTop: Spacing.four },
   copy: { gap: Spacing.two },
   eyebrow: { color: Brand.goldDark, fontSize: 12, letterSpacing: 1.2 },
   privacy: { textAlign: 'center' },

@@ -1,48 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Link, type Href } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import { AppState, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Brand, Fonts, MaxContentWidth } from '@/constants/theme';
+import { BottomTabInset, Brand, MaxContentWidth } from '@/constants/theme';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
 
-function getGreeting(now: number) {
-  const hour = new Date(now).getHours();
-  if (hour < 12) return { text: 'Good morning', symbol: '☀️' };
-  if (hour < 18) return { text: 'Good afternoon', symbol: '🌲' };
-  return { text: 'Good evening', symbol: '🌙' };
-}
+type QuickLink = { title: string; detail: string; href: Href; symbol: string; urgent?: boolean };
 
-type ExploreItem = { icon: string; title: string; subtitle: string; href: Href };
-
-const exploreItems: ExploreItem[] = [
-  { icon: '📅', title: 'Schedule', subtitle: 'Full programme', href: '/schedule' },
-  { icon: '📍', title: 'Locations', subtitle: 'Venue details', href: '/more' },
-  { icon: '📣', title: 'Updates', subtitle: 'Announcements', href: '/updates' },
-  { icon: '📖', title: 'Resources', subtitle: 'Guides & policies', href: '/resources' },
-  { icon: '🛡️', title: 'Emergency', subtitle: 'Safety contacts', href: '/emergency' },
-  { icon: '💬', title: 'Gossip box', subtitle: 'Send or read messages', href: '/gossip' },
+const quickLinks: QuickLink[] = [
+  { title: 'Emergency', detail: 'Help and contacts', href: '/emergency', symbol: '!', urgent: true },
+  { title: 'Gossip box', detail: 'Send a message', href: '/gossip', symbol: '✉' },
 ];
 
-function SectionHeading({ children, action }: { children: string; action?: React.ReactNode }) {
-  const theme = useTheme();
-  return (
-    <View style={styles.sectionHeading}>
-      <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>{children}</ThemedText>
-      {action}
-    </View>
-  );
-}
-
 export default function HomeScreen() {
+  const router = useRouter();
   const theme = useTheme();
   const { width, fontScale } = useWindowDimensions();
-  const compact = width < 360 || fontScale > 1.2;
-  const wide = width >= 700 && fontScale <= 1.2;
+  const compact = width < 375 || fontScale > 1.2;
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -51,109 +30,118 @@ export default function HomeScreen() {
     });
     return () => { clearInterval(timer); subscription.remove(); };
   }, []);
+
   const { content, error, isLoading, source } = useConferenceContent();
   const nextEvent = content?.scheduleEvents.find((event) => Date.parse(event.endsAt) > now);
   const announcement = content?.announcements[0];
-  const greeting = getGreeting(now);
   const announcementAccent = announcement?.priority === 'urgent' ? theme.danger : theme.primary;
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.hero} edges={['top']}>
-        <View style={[styles.heroInner, compact && styles.heroCompact]}>
-          <View style={styles.brandLockup}>
-            <Image accessibilityLabel="KAMUN Black Forest Summit logo" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={styles.logo} />
-            <View style={styles.brandCopy}>
-              <ThemedText style={styles.brandName}>KAMUN</ThemedText>
-              <ThemedText type="small" style={styles.brandTagline}>BLACK FOREST SUMMIT</ThemedText>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={styles.headerLogo} />
+            <View style={styles.headerCopy}>
+              <ThemedText style={styles.headerTitle}>KAMUN 2026</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Black Forest Summit · Karlsruhe</ThemedText>
             </View>
           </View>
-          <View style={styles.dates}>
-            <ThemedText type="smallBold" style={styles.dateText}>{content ? new Date(content.conference.startsAt).toLocaleDateString('en-GB', { month: 'short', timeZone: content.conference.timezone }).toUpperCase() : 'KAMUN'}</ThemedText>
-            <ThemedText type="smallBold" style={styles.dateText}>{content ? `${new Date(content.conference.startsAt).toLocaleDateString('en-GB', { day: 'numeric', timeZone: content.conference.timezone })}–${new Date(content.conference.endsAt).toLocaleDateString('en-GB', { day: 'numeric', timeZone: content.conference.timezone })}` : '2026'}</ThemedText>
+
+          <View accessible accessibilityLabel="KAMUN 2026 banner showing Karlsruhe Palace and the Black Forest" style={[styles.banner, compact && styles.bannerCompact]}>
+            <Image source={require('../../assets/branding/kamun-banner.png')} resizeMode="cover" style={styles.bannerArt} accessible={false} />
+            <Image source={require('../../assets/branding/kamun-logo-v2.png')} resizeMode="contain" style={[styles.bannerLogo, compact && styles.bannerLogoCompact]} accessible={false} />
           </View>
-        </View>
-      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.greetingRow}>
-          <ThemedText style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</ThemedText>
-          <ThemedText style={styles.greetingSymbol}>{greeting.symbol}</ThemedText>
-        </View>
-        <ThemedText themeColor="textSecondary" style={styles.intro}>Your KAMUN conference, all in one place.</ThemedText>
+          <View style={styles.welcomeRow}>
+            <View>
+              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>13–15 NOVEMBER · KARLSRUHE</ThemedText>
+              <ThemedText style={styles.welcomeTitle}>Your conference, at a glance.</ThemedText>
+            </View>
+          </View>
 
-        <View style={styles.section}>
-          <SectionHeading action={<Link href="/updates" asChild><Pressable accessibilityRole="link" hitSlop={8}><ThemedText type="smallBold" style={{ color: theme.primary }}>See all →</ThemedText></Pressable></Link>}>
-            LATEST ANNOUNCEMENT
-          </SectionHeading>
-          <Link href="/updates" asChild>
-            <Pressable accessibilityRole="link" accessibilityLabel={`View updates. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.announcementCard, { backgroundColor: theme.backgroundElement, borderColor: announcementAccent }, pressed && styles.pressed]}>
-              {announcement?.priority === 'urgent' ? <ThemedText type="smallBold" style={{ color: theme.danger }}>URGENT UPDATE</ThemedText> : null}
-              <ThemedText type="smallBold" style={styles.announcementTitle}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>Read update →</ThemedText>
+          <Link href="/schedule" asChild>
+            <Pressable accessibilityRole="link" accessibilityLabel={nextEvent ? `Next event: ${nextEvent.title}. Open schedule` : 'Open conference schedule'} style={({ pressed }) => [styles.featureCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, pressed && styles.pressed]}>
+              <View style={styles.cardTopline}>
+                <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>UP NEXT</ThemedText>
+                <ThemedText type="smallBold" style={{ color: theme.primary }}>Schedule →</ThemedText>
+              </View>
+              <ThemedText style={styles.eventTitle}>{nextEvent?.title ?? (isLoading ? 'Loading programme…' : 'No upcoming sessions')}</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.eventDetail}>
+                {nextEvent ? `${formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}${nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}` : 'See the full conference programme.'}
+              </ThemedText>
             </Pressable>
           </Link>
-        </View>
 
-        {nextEvent ? <Link href="/schedule" asChild>
-          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.nextEvent, { backgroundColor: theme.primarySoft }, pressed && styles.pressed]}>
-            <View style={styles.nextEventHeading}><ThemedText type="smallBold" style={{ color: theme.primary }}>UP NEXT</ThemedText><ThemedText type="smallBold" style={{ color: theme.primary }}>Full schedule →</ThemedText></View>
-            <ThemedText type="subtitle">{nextEvent.title}</ThemedText>
-            <ThemedText themeColor="textSecondary">{formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}{nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}</ThemedText>
-          </Pressable>
-        </Link> : null}
-
-        <View style={styles.section}>
-          <SectionHeading>EXPLORE</SectionHeading>
-          <View style={styles.exploreGrid}>
-            {exploreItems.map((item) => (
-              <Link href={item.href} asChild key={item.title}>
-                <Pressable accessibilityLabel={`${item.title}, ${item.subtitle}`} accessibilityRole="link" style={({ pressed }) => [styles.exploreCard, wide && styles.exploreCardWide, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, pressed && styles.pressed]}>
-                  <ThemedText style={styles.exploreIcon}>{item.icon}</ThemedText>
-                  <ThemedText type="smallBold" style={styles.exploreTitle}>{item.title}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.exploreSubtitle}>{item.subtitle}</ThemedText>
-                </Pressable>
-              </Link>
-            ))}
+          <View style={styles.section}>
+            <View style={styles.sectionHeading}>
+              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>LATEST UPDATE</ThemedText>
+              <Link href="/updates" asChild><Pressable accessibilityRole="link" hitSlop={8}><ThemedText type="smallBold" style={{ color: theme.primary }}>All updates →</ThemedText></Pressable></Link>
+            </View>
+            <Link href="/updates" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel={`View updates. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: announcementAccent }, pressed && styles.pressed]}>
+                {announcement?.priority === 'urgent' ? <ThemedText type="smallBold" style={{ color: theme.danger }}>URGENT</ThemedText> : null}
+                <ThemedText type="smallBold" style={styles.updateTitle}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
+              </Pressable>
+            </Link>
           </View>
-        </View>
 
-        {source === 'cache' || error ? <ThemedText type="small" themeColor="textSecondary">{source === 'cache' ? 'Showing saved conference information.' : 'Live updates are temporarily unavailable.'}</ThemedText> : null}
-      </ScrollView>
+          <View style={styles.section}>
+            <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>QUICK ACCESS</ThemedText>
+            <View style={[styles.quickList, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+              {quickLinks.map((item, index) => (
+                <Pressable key={item.title} onPress={() => router.push(item.href)} accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`} style={({ pressed }) => [styles.quickRow, index > 0 && { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
+                    <View style={[styles.quickIcon, { backgroundColor: item.urgent ? '#FBE8E5' : theme.primarySoft }]}>
+                      <ThemedText style={[styles.quickSymbol, { color: item.urgent ? theme.danger : theme.primary }]}>{item.symbol}</ThemedText>
+                    </View>
+                    <View style={styles.quickCopy}>
+                      <ThemedText type="smallBold" style={styles.quickTitle}>{item.title}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
+                    </View>
+                    <ThemedText style={[styles.quickArrow, { color: theme.primary }]}>→</ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {source === 'cache' || error ? <ThemedText type="small" themeColor="textSecondary">{source === 'cache' ? 'Showing saved conference information.' : 'Live updates are temporarily unavailable.'}</ThemedText> : null}
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  hero: { alignItems: 'center', backgroundColor: Brand.black },
-  heroInner: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', maxWidth: MaxContentWidth, paddingHorizontal: 22, paddingVertical: 22, width: '100%' },
-  heroCompact: { flexWrap: 'wrap', gap: 12 },
-  brandLockup: { flexShrink: 1, alignItems: 'center', flexDirection: 'row', gap: 12 },
-  logo: { height: 62, width: 62 },
-  brandCopy: { gap: 1, flexShrink: 1 },
-  brandName: { color: Brand.cream, fontSize: 28, fontWeight: '800', letterSpacing: 1.2, lineHeight: 34 },
-  brandTagline: { color: '#B6D7BB', fontSize: 10, letterSpacing: 1.6 },
-  dates: { alignItems: 'flex-end' },
-  dateText: { color: Brand.cream, letterSpacing: 1.4 },
-  content: { alignSelf: 'center', gap: 24, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + 34, paddingHorizontal: 20, paddingTop: 28, width: '100%' },
-  greetingRow: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  greeting: { fontFamily: Fonts.serif, fontSize: 31, fontStyle: 'italic', lineHeight: 38 },
-  greetingSymbol: { fontSize: 28 },
-  intro: { marginTop: -20 },
-  section: { gap: 12 },
-  sectionHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  sectionLabel: { fontSize: 12, letterSpacing: 2.2 },
-  announcementCard: { borderLeftWidth: 6, borderRadius: 18, gap: 7, minHeight: 116, padding: 18 },
-  announcementTitle: { fontSize: 17, lineHeight: 23 },
-  nextEvent: { borderRadius: 18, gap: 5, padding: 18 },
-  nextEventHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
-  exploreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  exploreCard: { alignItems: 'center', borderRadius: 18, borderWidth: 1, flexBasis: '46%', flexGrow: 1, gap: 3, justifyContent: 'center', minHeight: 124, padding: 10 },
-  exploreCardWide: { flexBasis: '30%' },
-  exploreIcon: { fontSize: 27, lineHeight: 34 },
-  exploreTitle: { textAlign: 'center' },
-  exploreSubtitle: { fontFamily: Fonts.serif, fontSize: 12, fontStyle: 'italic', lineHeight: 16, textAlign: 'center' },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  safeArea: { flex: 1 },
+  content: { alignSelf: 'center', gap: 22, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + 34, paddingHorizontal: 20, paddingTop: 16, width: '100%' },
+  header: { alignItems: 'center', flexDirection: 'row', gap: 10, minHeight: 58 },
+  headerLogo: { height: 52, width: 52 },
+  headerCopy: { flex: 1, gap: 1 },
+  headerTitle: { color: Brand.black, fontSize: 22, fontWeight: '800', letterSpacing: 0.2, lineHeight: 27 },
+  banner: { backgroundColor: Brand.black, borderRadius: 22, height: 220, justifyContent: 'center', overflow: 'hidden', width: '100%' },
+  bannerCompact: { height: 180 },
+  bannerArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
+  bannerLogo: { height: 168, marginLeft: 24, width: 168 },
+  bannerLogoCompact: { height: 132, marginLeft: 12, width: 132 },
+  welcomeRow: { paddingTop: 2 },
+  eyebrow: { fontSize: 11, letterSpacing: 1.7 },
+  welcomeTitle: { color: Brand.black, fontSize: 27, fontWeight: '800', lineHeight: 33, marginTop: 5 },
+  featureCard: { borderRadius: 20, borderWidth: 1, gap: 11, minHeight: 132, padding: 20 },
+  cardTopline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
+  eventTitle: { color: Brand.black, fontSize: 25, fontWeight: '800', lineHeight: 30 },
+  eventDetail: { fontSize: 15, lineHeight: 21 },
+  section: { gap: 11 },
+  sectionHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
+  updateCard: { borderLeftWidth: 4, borderRadius: 17, gap: 7, minHeight: 92, padding: 17 },
+  updateTitle: { fontSize: 17, lineHeight: 23 },
+  quickList: { borderRadius: 18, borderWidth: 1, maxWidth: 680, overflow: 'hidden', width: '100%' },
+  quickRow: { alignItems: 'center', flexDirection: 'row', gap: 13, minHeight: 76, paddingHorizontal: 16, paddingVertical: 12, width: '100%' },
+  quickIcon: { alignItems: 'center', borderRadius: 12, height: 42, justifyContent: 'center', width: 42 },
+  quickSymbol: { fontSize: 23, fontWeight: '600', lineHeight: 28 },
+  quickCopy: { flex: 1, gap: 2 },
+  quickTitle: { fontSize: 16 },
+  quickArrow: { fontSize: 22, lineHeight: 28, marginLeft: 4 },
+  pressed: { opacity: 0.72 },
 });

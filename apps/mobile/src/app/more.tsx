@@ -6,16 +6,13 @@ import { ContentCard } from '@/components/content-card';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { useConferenceContent } from '@/contexts/conference-content';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { supabase } from '@/lib/supabase';
 
 export default function MoreScreen() {
-  const { content, isLoading } = useConferenceContent();
   const { clearProfile } = useAttendeeProfile();
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState('');
-  const locations = content?.locations ?? [];
 
   async function signOut() {
     if (signingOut) return;
@@ -35,17 +32,7 @@ export default function MoreScreen() {
   }
 
   return (
-    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Locations, safety and app preferences">
-      {locations.map((location) => (
-        <ContentCard key={location.id} label={location.category.toUpperCase()} title={location.name}>
-          <ThemedText themeColor="textSecondary">{location.address ?? location.description ?? 'Details coming soon'}</ThemedText>
-        </ContentCard>
-      ))}
-      {!locations.length ? (
-        <ContentCard label="VENUES" title={isLoading ? 'Loading locations…' : 'Locations coming soon'}>
-          <ThemedText themeColor="textSecondary">Approved venue information will appear here.</ThemedText>
-        </ContentCard>
-      ) : null}
+    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Safety and app preferences">
       <Link href="/emergency" asChild>
         <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
           <ContentCard label="SAFETY" title="Emergency contacts">
