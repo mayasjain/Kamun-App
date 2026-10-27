@@ -12,6 +12,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { primaryNavigation } from '@/constants/navigation';
 
 export default function AppTabs() {
   return (
@@ -19,21 +20,11 @@ export default function AppTabs() {
       <TabSlot style={{ flex: 1, minHeight: 0 }} />
       <TabList asChild>
         <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
-          </TabTrigger>
-          <TabTrigger name="schedule" href="/schedule" asChild>
-            <TabButton>Schedule</TabButton>
-          </TabTrigger>
-          <TabTrigger name="updates" href="/updates" asChild>
-            <TabButton>Updates</TabButton>
-          </TabTrigger>
-          <TabTrigger name="resources" href="/resources" asChild>
-            <TabButton>Resources</TabButton>
-          </TabTrigger>
-          <TabTrigger name="more" href="/more" asChild>
-            <TabButton>More</TabButton>
-          </TabTrigger>
+          {primaryNavigation.map((item) => (
+            <TabTrigger key={item.name} name={item.name === 'index' ? 'home' : item.name} href={item.href} asChild>
+              <TabButton>{item.label}</TabButton>
+            </TabTrigger>
+          ))}
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
           <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
@@ -49,7 +40,7 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <ThemedText style={styles.tabLabel} type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText style={[styles.tabLabel, isFocused && styles.tabLabelActive]} type="small" themeColor={isFocused ? 'primary' : 'textSecondary'}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -78,32 +69,42 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    padding: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
   },
   innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.five,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
     flexGrow: 1,
-    gap: 2,
+    gap: 4,
     maxWidth: MaxContentWidth,
+    borderWidth: 1,
+    borderColor: 'rgba(127, 127, 127, 0.22)',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
   },
   brandText: {
     marginRight: 'auto',
+    paddingHorizontal: Spacing.two,
+    letterSpacing: 0.8,
   },
   pressed: {
     opacity: 0.7,
   },
   tabButton: { flex: 1, minWidth: 0 },
   hiddenTab: { display: 'none' },
-  tabLabel: { fontSize: 11, textAlign: 'center' },
+  tabLabel: { fontSize: 12, textAlign: 'center' },
+  tabLabelActive: { fontWeight: '700' },
   tabButtonView: {
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingVertical: Spacing.one,
     paddingHorizontal: 2,

@@ -40,9 +40,19 @@ export const Fonts = Platform.select({
 export const Spacing = {
   one: 4,
   two: 8,
+  twoAndHalf: 12,
   three: 16,
   four: 24,
   five: 32,
+  six: 40,
+  seven: 48,
+} as const;
+
+export const Radius = {
+  control: 12,
+  card: 16,
+  feature: 24,
+  pill: 999,
 } as const;
 
 export const Brand = {
@@ -52,6 +62,8 @@ export const Brand = {
   cream: '#F5F1E8',
   pine: '#173D2C',
   white: '#FFFFFF',
+  parchment: '#FFFCF6',
+  burgundy: '#8E2E2B',
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80, web: 112 }) ?? 0;
