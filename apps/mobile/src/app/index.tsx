@@ -6,9 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useAttendeeProfile } from '@/contexts/attendee-profile';
+import { AccessExpiredError } from '@/lib/function-errors';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
+
+import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
 type QuickLink = { title: string; detail: string; href: Href; symbol: string; urgent?: boolean };
 
@@ -20,9 +24,27 @@ const quickLinks: QuickLink[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { profile, clearProfile, restoreError } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
   const compact = width < 375 || fontScale > 1.2;
   const [now, setNow] = useState(Date.now);
+  const [openingEcg, setOpeningEcg] = useState(false);
+  const [ecgError, setEcgError] = useState<string | null>(null);
+  async function openEcg() {
+    if (openingEcg) return;
+    setEcgError(null);
+    setOpeningEcg(true);
+    try {
+      if (profile?.identitySource !== 'ecg') {
+        throw new Error('Use your personal ECE code in More → Change access code to connect coffee ordering.');
+      }
+      await openEcgWithKamunIdentity();
+    }
+    catch (error) {
+      if (error instanceof AccessExpiredError) clearProfile();
+      setEcgError(error instanceof Error ? error.message : 'ECE is unavailable right now.');
+    } finally { setOpeningEcg(false); }
+  }
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -116,8 +138,21 @@ export default function HomeScreen() {
               <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>QUICK ACCESS</ThemedText>
             </View>
             <View style={[styles.quickList, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-              {quickLinks.map((item, index) => (
-                <Pressable key={item.title} onPress={() => router.push(item.href)} accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`} style={({ pressed }) => [styles.quickRow, index > 0 && { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
+              <Pressable onPress={() => void openEcg()} disabled={openingEcg}
+                accessibilityRole="link" accessibilityLabel="Open ECE coffee ordering"
+                accessibilityState={{ busy: openingEcg, disabled: openingEcg }}
+                style={({ pressed }) => [styles.quickRow, pressed && styles.pressed]}>
+                <View style={[styles.quickIcon, { backgroundColor: theme.primarySoft }]}>
+                  <ThemedText style={[styles.quickSymbol, { color: theme.primary }]}>☕</ThemedText>
+                </View>
+                <View style={styles.quickCopy}>
+                  <ThemedText type="smallBold" style={styles.quickTitle}>ECE coffee bar</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{openingEcg ? 'Opening ECE…' : 'Order and track your coffee'}</ThemedText>
+                </View>
+                <ThemedText accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.quickArrow, { color: theme.primary }]}>→</ThemedText>
+              </Pressable>
+              {quickLinks.map((item) => (
+                <Pressable key={item.title} onPress={() => router.push(item.href)} accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`} style={({ pressed }) => [styles.quickRow, { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
                   <View style={[styles.quickIcon, { backgroundColor: item.urgent ? theme.danger : theme.primarySoft }]}>
                     <ThemedText style={[styles.quickSymbol, { color: item.urgent ? Brand.white : theme.primary }]}>{item.symbol}</ThemedText>
                   </View>
@@ -129,12 +164,13 @@ export default function HomeScreen() {
                 </Pressable>
               ))}
             </View>
+            {ecgError ? <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.danger }}>{ecgError}</ThemedText> : null}
           </View>
 
-          {source === 'cache' || error ? (
+          {source === 'cache' || error || restoreError ? (
             <View accessibilityRole="alert" style={[styles.connectionNotice, { backgroundColor: theme.primarySoft, borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>{source === 'cache' ? 'Saved information' : 'Live updates unavailable'}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{source === 'cache' ? 'You are viewing the latest conference information saved on this device.' : 'Check your connection and try again shortly.'}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{restoreError ?? (source === 'cache' ? 'You are viewing the latest conference information saved on this device.' : 'Check your connection and try again shortly.')}</ThemedText>
             </View>
           ) : null}
         </ScrollView>

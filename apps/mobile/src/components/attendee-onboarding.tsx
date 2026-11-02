@@ -5,8 +5,10 @@ import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAttendeeProfile } from '@/contexts/attendee-profile';
 
 export function AttendeeOnboarding() {
+  const { restoreError } = useAttendeeProfile();
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -27,12 +29,13 @@ export function AttendeeOnboarding() {
           <View style={styles.panel}>
             <View style={styles.copy}>
               <ThemedText type="smallBold" style={styles.eyebrow}>13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
-              <ThemedText type="title">Enter your access code</ThemedText>
-              <ThemedText themeColor="textSecondary">Use the code provided by the KAMUN team.</ThemedText>
+              <ThemedText type="title">Enter your code</ThemedText>
+              <ThemedText themeColor="textSecondary">Use your personal delegate or chair code. Your committee and country or chair role will be recognised automatically.</ThemedText>
             </View>
+            {restoreError ? <ThemedText themeColor="danger">{restoreError}</ThemedText> : null}
             <AttendeeProfileForm />
             <ThemedText type="small" themeColor="textSecondary" style={styles.privacy}>
-              No email or password is required. Your access stays on this device.
+              One code for KAMUN and ECE. You stay signed in on this device until you sign out or your access expires.
             </ThemedText>
           </View>
         </ScrollView>

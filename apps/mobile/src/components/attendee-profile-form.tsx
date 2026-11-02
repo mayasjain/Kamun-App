@@ -4,46 +4,64 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Brand, Spacing } from '@/constants/theme';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { claimAttendeeAccess } from '@/lib/attendee-access';
+import { claimAttendeeAccess, claimLegacyChairAccess, claimLegacyMemberAccess } from '@/lib/attendee-access';
 import { useTheme } from '@/hooks/use-theme';
 import { useOrganizer } from '@/contexts/organizer';
-import { DevelopmentCodes } from '@/components/development-codes';
+import { closeEcgSession } from '@/lib/ecg-handoff';
+import { codeKind } from '@/lib/code-kind';
 
-type Props = { submitLabel?: string };
+type Props = { submitLabel?: string; disabled?: boolean; onSubmittingChange?: (busy: boolean) => void };
 
-export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props) {
+export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN', disabled = false, onSubmittingChange }: Props) {
   const theme = useTheme();
-  const { saveProfile } = useAttendeeProfile();
+  const { saveProfile, clearProfile, profile } = useAttendeeProfile();
   const organizer = useOrganizer();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submit() {
-    if (!code.trim() || isSubmitting) return;
+    if (!code.trim() || isSubmitting || disabled) return;
     setError('');
     setIsSubmitting(true);
+    onSubmittingChange?.(true);
     try {
-      try {
-        const access = await claimAttendeeAccess(code);
-        saveProfile(access);
-      } catch {
+      const kind = codeKind(code);
+      if (profile?.identitySource === 'ecg' && kind !== 'ecg') {
+        await closeEcgSession();
+        clearProfile();
+      }
+      if (kind === 'organizer') {
         await organizer.signIn(code);
+      } else {
+        const access = kind === 'chair' ? await claimLegacyChairAccess(code)
+          : kind === 'legacy_member' ? await claimLegacyMemberAccess(code)
+            : await claimAttendeeAccess(code);
+        saveProfile(access);
       }
       setCode('');
-    } catch {
-      setError('This access code could not be verified. Check the code and try again.');
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : '';
+      setError(reason === 'unavailable' || reason.includes('Failed to fetch')
+        ? 'Verification is unavailable. Check your connection and try again.'
+        : reason === 'rate_limited'
+          ? 'Too many attempts. Please wait 15 minutes before trying again.'
+          : reason === 'unauthorized'
+            ? 'Your session has expired. Reload KAMUN and try again.'
+          : 'This code could not be verified. Check it and try again.');
     } finally {
       setIsSubmitting(false);
+      onSubmittingChange?.(false);
     }
   }
 
   return (
     <View style={styles.form}>
       <View style={styles.field}>
-        <ThemedText type="smallBold">ACCESS CODE</ThemedText>
+        <ThemedText type="smallBold">YOUR CODE</ThemedText>
         <TextInput
-          accessibilityLabel="KAMUN access code"
+          accessibilityLabel="Your KAMUN code"
+          editable={!disabled && !isSubmitting}
           autoCapitalize="characters"
           autoCorrect={false}
           onChangeText={(value) => {
@@ -59,11 +77,9 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN' }: Props
         {error ? <ThemedText type="small" style={styles.error}>{error}</ThemedText> : null}
       </View>
 
-      {__DEV__ ? <DevelopmentCodes onSelect={(selected) => { setCode(selected); setError(''); }} /> : null}
-
       <Pressable
         accessibilityRole="button"
-        disabled={!code.trim() || isSubmitting}
+        disabled={!code.trim() || isSubmitting || disabled}
         onPress={() => void submit()}
         style={[styles.submit, { backgroundColor: code.trim() && !isSubmitting ? Brand.gold : theme.border }]}
       >

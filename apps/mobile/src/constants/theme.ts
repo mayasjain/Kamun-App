@@ -44,8 +44,6 @@ export const Spacing = {
   three: 16,
   four: 24,
   five: 32,
-  six: 40,
-  seven: 48,
 } as const;
 
 export const Radius = {
@@ -63,7 +61,6 @@ export const Brand = {
   pine: '#173D2C',
   white: '#FFFFFF',
   parchment: '#FFFCF6',
-  burgundy: '#8E2E2B',
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80, web: 112 }) ?? 0;

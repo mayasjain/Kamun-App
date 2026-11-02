@@ -7,25 +7,28 @@ import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
+import { signOutOfBothApps } from '@/lib/ecg-handoff';
 import { supabase } from '@/lib/supabase';
 
 export default function MoreScreen() {
-  const { clearProfile } = useAttendeeProfile();
+  const { clearProfile, profile } = useAttendeeProfile();
   const [signingOut, setSigningOut] = useState(false);
+  const [changingAccess, setChangingAccess] = useState(false);
   const [signOutError, setSignOutError] = useState('');
 
   async function signOut() {
-    if (signingOut) return;
+    if (signingOut || changingAccess) return;
     setSigningOut(true);
     setSignOutError('');
     try {
-      if (supabase) {
-        const { error } = await supabase.auth.signOut();
+      if (profile?.identitySource === 'ecg') await signOutOfBothApps();
+      else if (supabase) {
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
       }
       clearProfile();
-    } catch {
-      setSignOutError('Could not sign out. Check your connection and try again.');
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : 'Could not sign out. Check your connection and try again.');
     } finally {
       setSigningOut(false);
     }
@@ -51,12 +54,13 @@ export default function MoreScreen() {
         </ContentCard>
       ) : null}
       <ContentCard label="SETTINGS" title="Change access code">
-        <ThemedText themeColor="textSecondary">Replace the chair or delegate access stored on this device.</ThemedText>
-        <AttendeeProfileForm submitLabel="Update access" />
-        <Pressable accessibilityRole="button" disabled={signingOut} onPress={() => void signOut()} style={styles.signOutButton}>
-          <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : 'Sign out on this device'}</ThemedText>
+        <ThemedText themeColor="textSecondary">Signed in as {profile?.committeeName ?? 'KAMUN'}{profile?.seatLabel ? ` · ${profile.seatLabel}` : profile?.accessType === 'chair' ? ' · Chair' : ''}.</ThemedText>
+        <ThemedText themeColor="textSecondary">Enter a different code to change access on this device.</ThemedText>
+        <AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} />
+        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} onPress={() => void signOut()} style={styles.signOutButton}>
+          <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : profile?.identitySource === 'ecg' ? 'Sign out of KAMUN and ECE' : 'Sign out on this device'}</ThemedText>
         </Pressable>
-        <ThemedText type="small" themeColor="textSecondary">You will need an access code to sign in again.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{profile?.identitySource === 'ecg' ? 'This ends KAMUN and the ECE sessions opened from this login. Internet is required to sign out of both.' : 'You will need an access code to sign in again.'}</ThemedText>
         {signOutError ? <ThemedText type="small" themeColor="danger">{signOutError}</ThemedText> : null}
       </ContentCard>
     </Screen>

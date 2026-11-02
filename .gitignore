@@ -19,3 +19,6 @@ skills/
 
 # Generated TypeScript build cache
 *.tsbuildinfo
+
+# Supabase CLI scratch metadata
+supabase/.temp/

@@ -57,20 +57,4 @@ insert into public.locations (
   true
 );
 
--- Development delegate code only. Generate private committee-specific chair
--- codes with chair_code_setup.sql after the gossip migration is applied.
-insert into public.attendee_access_codes (
-  conference_id, label, access_type, code_hash, active, expires_at
-) values (
-    '10000000-0000-4000-8000-000000000001',
-    'Delegate',
-    'member',
-    encode(digest('KAMUN-MEMBER', 'sha256'), 'hex'),
-    true,
-    '2026-11-16 23:59:59+01'
-  )
-on conflict (conference_id, code_hash) do update set
-  label = excluded.label,
-  access_type = excluded.access_type,
-  active = excluded.active,
-  expires_at = excluded.expires_at;
+-- Delegate codes are issued by ECG; never seed a shared delegate credential.

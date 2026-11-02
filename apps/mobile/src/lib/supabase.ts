@@ -8,7 +8,7 @@ const authStorage = typeof globalThis.localStorage?.getItem === 'function'
   ? globalThis.localStorage
   : undefined;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
+const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabasePublishableKey!, {

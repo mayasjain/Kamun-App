@@ -1,0 +1,2 @@
+[functions.ecg-revocation]
+verify_jwt = false

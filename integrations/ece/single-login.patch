@@ -1,0 +1,1036 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 70f92c7..342a2c1 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -2,6 +2,13 @@
+ 
+ Newest entries first. Every agent session ends with an entry. The format is in [`AGENTS.md`](AGENTS.md).
+ 
++## 2026-10-28 22:00 (Europe/Berlin) — Astra
++**What:** Restored the previously reverted private KAMUN code verification and one-use ECE handoff on a new branch. Added installation-scoped linked-session logout, generation checks against logout/exchange races, and regression coverage.
++**Why:** Approved workflow is one personal code in KAMUN, then automatic ECE access as the matching delegate or chair, with remembered sessions and linked logout.
++**Files:** participant integration route, core identity/handoff/sessions, participant auth UI, staff revocation notification, D1 migrations 0011/0012, tests and deployment contract in PLAN.md.
++**Heads-up for Claude:** No remote deployments, resets, secrets or roster changes. Existing integration branch remains reverted. KAMUN must deploy ecg-logout and send the server-derived scope; participant tickets now require that scope at the private endpoint. This logout affects linked ECE sessions only.
++**Next:** Review/merge this branch, recreate paired disposable staging, then verify browser/phone delegate and chair login, restoration and logout before owner deployment. All 481 tests, typecheck and both builds pass.
++
+ ## 2026-10-13 16:48 (Europe/Berlin) — Claude
+ **What:** The design system is in Claude Design (playbook step 2, `/design-sync`):
+ - New claude.ai/design project **"ECE"**: 40 of the apps' real components (participant, Jad's board, admin),
+diff --git a/apps/cafe/functions/api/integration/identity.ts b/apps/cafe/functions/api/integration/identity.ts
+new file mode 100644
+index 0000000..ed23871
+--- /dev/null
++++ b/apps/cafe/functions/api/integration/identity.ts
+@@ -0,0 +1,68 @@
++import {
++  checkKamunIdentity,
++  issueKamunHandoff,
++  revokeKamunSessions,
++  verifyKamunCode,
++  type Env,
++} from '@covfefe/core';
++
++const noStore = { 'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8' };
++const respond = (body: object, status = 200) =>
++  new Response(JSON.stringify(body), { status, headers: noStore });
++
++async function matchesSecret(actual: string | null, expected: string | undefined): Promise<boolean> {
++  if (!actual || !expected || expected.length < 32) return false;
++  const encode = (value: string) => new TextEncoder().encode(value);
++  const [a, b] = await Promise.all([
++    crypto.subtle.digest('SHA-256', encode(actual)),
++    crypto.subtle.digest('SHA-256', encode(expected)),
++  ]);
++  let difference = 0;
++  const left = new Uint8Array(a);
++  const right = new Uint8Array(b);
++  for (let i = 0; i < left.length; i++) difference |= left[i]! ^ right[i]!;
++  return difference === 0;
++}
++
++/** Exact Pages route overrides the participant API catch-all. Never accepts browser credentials. */
++export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
++  if (new URL(request.url).protocol !== 'https:' && env.ENVIRONMENT !== 'development')
++    return respond({ error: 'not_found' }, 404);
++  if (!(await matchesSecret(request.headers.get('X-Kamun-Integration-Key'), env.KAMUN_INTEGRATION_KEY)))
++    return respond({ error: 'not_found' }, 404);
++  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type') ?? ''))
++    return respond({ error: 'invalid_input' }, 400);
++  const raw = await request.text();
++  if (raw.length > 512) return respond({ error: 'invalid_input' }, 400);
++  let body: unknown;
++  try {
++    body = JSON.parse(raw);
++  } catch {
++    return respond({ error: 'invalid_input' }, 400);
++  }
++  if (!body || typeof body !== 'object') return respond({ error: 'invalid_input' }, 400);
++  const data = body as Record<string, unknown>;
++  if (data.action === 'verify' && typeof data.code === 'string' && data.code.length <= 20) {
++    const identity = await verifyKamunCode(env.DB, env.LOGIN_PEPPER, data.code);
++    return identity ? respond(identity) : respond({ error: 'invalid_code' }, 401);
++  }
++  if (data.action === 'status' && typeof data.personId === 'number' && typeof data.revision === 'string') {
++    const identity = await checkKamunIdentity(env.DB, data.personId, data.revision);
++    return identity ? respond(identity) : respond({ error: 'inactive' }, 401);
++  }
++  if (data.action === 'logout' && typeof data.scope === 'string' && /^[a-f0-9]{64}$/.test(data.scope)) {
++    await revokeKamunSessions(env.DB, data.scope);
++    return respond({ ok: true });
++  }
++  if (
++    data.action === 'ticket' &&
++    typeof data.scope === 'string' &&
++    /^[a-f0-9]{64}$/.test(data.scope) &&
++    typeof data.personId === 'number' &&
++    typeof data.revision === 'string'
++  ) {
++    const handoff = await issueKamunHandoff(env.DB, new Date(), data.personId, data.revision, data.scope);
++    return handoff ? respond(handoff) : respond({ error: 'inactive' }, 401);
++  }
++  return respond({ error: 'invalid_input' }, 400);
++};
+diff --git a/apps/cafe/src/App.tsx b/apps/cafe/src/App.tsx
+index b13d6d9..e3d1392 100644
+--- a/apps/cafe/src/App.tsx
++++ b/apps/cafe/src/App.tsx
+@@ -9,7 +9,7 @@ import {
+   SESSION_EXPIRED,
+   type ApiResult,
+ } from './api';
+-import { consumeCodeLink } from './code-link';
++import { consumeCodeLink, consumeHandoffLink } from './code-link';
+ import { loginError, message } from './copy';
+ import { Home } from './Home';
+ import { PullToRefresh, showRefreshing } from './PullToRefresh';
+@@ -48,6 +48,7 @@ function useParticipant(at: string) {
+   const lastInteraction = useRef(Date.now());
+   const [readyCode, setReadyCode] = useState<string | null>(null);
+   const changingAuth = useRef(false);
++  const handoffBlocked = useRef(new URLSearchParams(location.hash.slice(1)).has('handoff'));
+ 
+   const poller = useMemo(
+     () =>
+@@ -91,7 +92,8 @@ function useParticipant(at: string) {
+     [at],
+   );
+   const refresh = useCallback(
+-    (force = false) => (changingAuth.current ? Promise.resolve() : poller.refresh(force)),
++    (force = false) =>
++      changingAuth.current || handoffBlocked.current ? Promise.resolve() : poller.refresh(force),
+     [poller],
+   );
+ 
+@@ -114,15 +116,23 @@ function useParticipant(at: string) {
+       forget();
+       setAuth('out');
+     };
+-    const changing = () => {
++    const changing = (event: Event) => {
++      handoffBlocked.current =
++        (event as CustomEvent<{ path: string }>).detail?.path === '/api/integration/handoff';
+       changingAuth.current = true;
+       forget();
+       // Hide a logged-in account while it changes. A logged-out login form stays on screen, so a
+       // mistyped code keeps its text and its error next to the field.
+       setAuth((current) => (current === 'out' ? current : 'unknown'));
+     };
+-    const changed = () => {
++    const changed = (event: Event) => {
+       changingAuth.current = false;
++      const detail = (event as CustomEvent<ApiResult<unknown> & { path: string }>).detail;
++      if (detail.path === '/api/integration/handoff' && detail.error) {
++        setAuth('out');
++        return;
++      }
++      handoffBlocked.current = false;
+       void refresh(true);
+     };
+     window.addEventListener(AUTH_CHANGING, changing);
+@@ -210,9 +220,22 @@ export function App() {
+     const changed = (event: Event) => {
+       if (!fromLink.current) return;
+       const { error } = (event as CustomEvent<ApiResult<unknown>>).detail;
+-      setLinkError(error ? message(loginError, error) : null);
++      setLinkError(
++        error === 'invalid_ticket'
++          ? 'This KAMUN link expired or was already used. Open ECG from KAMUN again, or enter your code below.'
++          : error
++            ? message(loginError, error)
++            : null,
++      );
+     };
+     const consume = () => {
++      const ticket = consumeHandoffLink(location, history);
++      if (ticket !== null) {
++        void apiPost('/api/integration/handoff', { ticket });
++        fromLink.current = true;
++        setLoginForm((n) => n + 1);
++        return;
++      }
+       const code = consumeCodeLink(location, history);
+       if (code === null) return;
+       void apiPost('/api/login', { code }); // dispatches AUTH_CHANGING synchronously
+diff --git a/apps/cafe/src/api.ts b/apps/cafe/src/api.ts
+index fe0fa94..7bd9251 100644
+--- a/apps/cafe/src/api.ts
++++ b/apps/cafe/src/api.ts
+@@ -40,7 +40,13 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown, ext
+     const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
+     // A rejected mutation must clear the participant screen immediately, even if polling is idle.
+     // Login's generic credential failures are unrelated to an existing session.
+-    if (method === 'POST' && path !== '/api/login' && res.status === 401 && generation === sessionGeneration)
++    if (
++      method === 'POST' &&
++      path !== '/api/login' &&
++      path !== '/api/integration/handoff' &&
++      res.status === 401 &&
++      generation === sessionGeneration
++    )
+       window.dispatchEvent(new Event(SESSION_EXPIRED));
+     if (res.status === 410 && json?.error === 'data_purged') window.dispatchEvent(new Event(DATA_PURGED));
+     return {
+@@ -56,16 +62,21 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown, ext
+ export const apiGet = <T>(path: string, extra?: Record<string, string>) =>
+   call<T>('GET', path, undefined, extra);
+ export const apiPost = <T>(path: string, body?: unknown): Promise<ApiResult<T>> => {
+-  if (path !== '/api/login' && path !== '/api/logout') return call<T>('POST', path, body);
++  if (path !== '/api/login' && path !== '/api/logout' && path !== '/api/integration/handoff')
++    return call<T>('POST', path, body);
+   const generation = ++sessionGeneration;
+-  window.dispatchEvent(new Event(AUTH_CHANGING));
++  window.dispatchEvent(new CustomEvent(AUTH_CHANGING, { detail: { path } }));
+   // Fetch applies Set-Cookie before resolving. Serialize account changes so an older link cannot
+   // overwrite a newer login's cookie, and a pending login cannot undo an explicit logout.
+   const next = authQueue.then(() => call<T>('POST', path, body));
+   authQueue = next.then(() => undefined);
+   return next.then((result) => {
+     if (generation === sessionGeneration)
+-      window.dispatchEvent(new CustomEvent(AUTH_CHANGED, { detail: result }));
++      window.dispatchEvent(
++        new CustomEvent(AUTH_CHANGED, {
++          detail: path === '/api/integration/handoff' ? { ...result, path } : result,
++        }),
++      );
+     return result;
+   });
+ };
+diff --git a/apps/cafe/src/code-link.ts b/apps/cafe/src/code-link.ts
+index 3018b91..2d97687 100644
+--- a/apps/cafe/src/code-link.ts
++++ b/apps/cafe/src/code-link.ts
+@@ -8,3 +8,14 @@ export function consumeCodeLink(
+   history.replaceState(null, '', location.pathname + location.search);
+   return code;
+ }
++
++/** Strip a one-use KAMUN ticket from the address bar before exchanging it. */
++export function consumeHandoffLink(
++  location: Pick<Location, 'hash' | 'pathname' | 'search'>,
++  history: Pick<History, 'replaceState'>,
++): string | null {
++  const ticket = new URLSearchParams(location.hash.slice(1)).get('handoff');
++  if (ticket === null) return null;
++  history.replaceState(null, '', location.pathname + location.search);
++  return ticket;
++}
+diff --git a/apps/cafe/test/login-code.test.ts b/apps/cafe/test/login-code.test.ts
+index c6f2ffd..0eae617 100644
+--- a/apps/cafe/test/login-code.test.ts
++++ b/apps/cafe/test/login-code.test.ts
+@@ -1,6 +1,6 @@
+ import { expect, it } from 'vitest';
+ import { formatCodeInput } from '../src/Login';
+-import { consumeCodeLink } from '../src/code-link';
++import { consumeCodeLink, consumeHandoffLink } from '../src/code-link';
+ 
+ it('formats typed or pasted access codes as two groups of four', () => {
+   expect(formatCodeInput('k7qf')).toBe('K7QF');
+@@ -41,3 +41,15 @@ it('removes empty or malformed code fragments too, but leaves unrelated anchors
+   expect(consumeCodeLink(location, history)).toBeNull();
+   expect(removed).toBe(2);
+ });
++
++it('removes a KAMUN handoff ticket before its one-use exchange', () => {
++  const location = { hash: '#handoff=' + 'A'.repeat(43), pathname: '/', search: '' };
++  const history = {
++    replaceState: (_state: unknown, _unused: string, url?: string | URL | null) => {
++      expect(url).toBe('/');
++      location.hash = '';
++    },
++  };
++  expect(consumeHandoffLink(location, history)).toBe('A'.repeat(43));
++  expect(consumeHandoffLink(location, history)).toBeNull();
++});
+diff --git a/db/migrations/0011_kamun_handoff.sql b/db/migrations/0011_kamun_handoff.sql
+new file mode 100644
+index 0000000..a8388a7
+--- /dev/null
++++ b/db/migrations/0011_kamun_handoff.sql
+@@ -0,0 +1,11 @@
++CREATE TABLE kamun_handoff_tickets (
++  token_hash TEXT PRIMARY KEY,
++  person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
++  key_hash TEXT NOT NULL,
++  committee_id INTEGER NOT NULL,
++  seat_id INTEGER,
++  created_at TEXT NOT NULL,
++  expires_at TEXT NOT NULL
++);
++
++CREATE INDEX kamun_handoff_tickets_expiry ON kamun_handoff_tickets(expires_at);
+diff --git a/db/migrations/0012_kamun_linked_sessions.sql b/db/migrations/0012_kamun_linked_sessions.sql
+new file mode 100644
+index 0000000..491181e
+--- /dev/null
++++ b/db/migrations/0012_kamun_linked_sessions.sql
+@@ -0,0 +1,10 @@
++-- A KAMUN installation can revoke its handoffs without logging out other devices.
++CREATE TABLE kamun_session_groups (
++  scope TEXT PRIMARY KEY,
++  generation INTEGER NOT NULL DEFAULT 0
++);
++ALTER TABLE kamun_handoff_tickets ADD COLUMN scope TEXT;
++ALTER TABLE kamun_handoff_tickets ADD COLUMN generation INTEGER;
++ALTER TABLE sessions ADD COLUMN kamun_scope TEXT;
++CREATE INDEX sessions_kamun_scope ON sessions(kamun_scope);
++CREATE INDEX kamun_tickets_scope ON kamun_handoff_tickets(scope);
+diff --git a/docs/PLAN.md b/docs/PLAN.md
+index 3fde4c7..94ad216 100644
+--- a/docs/PLAN.md
++++ b/docs/PLAN.md
+@@ -1149,3 +1149,13 @@ Parts marked *done* already exist in M0.
+ **Smaller gaps:**
+ - Overlapping schedule blocks are rejected by the editor, validated on the server.
+ - Override expiry, "+ spots" and paid-tab semantics: see R4.
++
++## KAMUN shared login — 28 October 2026
++
++Approved workflow: one personal ECE-issued code in KAMUN identifies the delegate committee-country or the individual chair committee/role. A private HTTPS endpoint verifies that identity; a one-minute, single-use ticket opens ECE as the same person without entering the code again. The normal ECE HTTP-only cookie remembers access until its configured expiry. An existing different-account cookie must not take precedence over the handoff. KAMUN does not store the reusable code or ECE login pepper.
++
++This restores the integration reverted in a59a9af in a separate branch. Participant and staff endpoints use a separate KAMUN_INTEGRATION_KEY; the staff endpoint can notify KAMUN_REVOCATION_URL on credential changes. Secrets and environments must be paired explicitly. This branch is not a deployment.
++
++Linked tickets and sessions carry an opaque installation scope derived server-side by KAMUN from its Supabase project, conference and user ID. KAMUN logout invalidates its binding, then asks the private ECE endpoint to increment that scope's generation and remove its tickets and sessions. Ticket consumption checks the generation atomically when creating a session, preventing a concurrent exchange from surviving logout. Independent device sessions are unaffected. This does not revoke unrelated ECE sessions created by entering a code directly. ECE logout still affects its own cookie; it does not sign out KAMUN.
++
++Deploy additive migrations 0011 and 0012 and the new participant/staff code together with KAMUN's claim, refresh, handoff, logout and revocation functions. Rehearse on fake staging accounts. Never run provision:demo as part of deployment or import the existing real code roster into another database. The connected account in this session cannot deploy the friend's live domains.
+diff --git a/docs/TASKS.md b/docs/TASKS.md
+index 1c2ceee..c942d03 100644
+--- a/docs/TASKS.md
++++ b/docs/TASKS.md
+@@ -103,3 +103,6 @@ Tick it `[x]` when it's merged. Owner-only tasks are marked 👤. Spec: [`PLAN.m
+ - [ ] Code freeze Nov 9 (bug fixes only)
+ - [ ] 👤 Live Nov 14–15
+ - [ ] 👤 Nov 16–22: export stats, purge data, cancel Workers Paid
++
++## KAMUN single login
++- [ ] Restore identity handoff; add linked-session logout, account switching and regression tests — claimed: Astra 2026-10-28. Implemented on astra/kamun-single-login; 481 tests, typecheck and builds pass. Pending review/merge and paired staging/live deployment.
+diff --git a/local/functions/api/integration/identity.ts b/local/functions/api/integration/identity.ts
+new file mode 100644
+index 0000000..63eff6d
+--- /dev/null
++++ b/local/functions/api/integration/identity.ts
+@@ -0,0 +1,2 @@
++// The local API uses the same private verifier as the deployed participant Pages project.
++export { onRequestPost } from '../../../../apps/cafe/functions/api/integration/identity';
+diff --git a/packages/core/src/env.ts b/packages/core/src/env.ts
+index 28d5a6a..75101d8 100644
+--- a/packages/core/src/env.ts
++++ b/packages/core/src/env.ts
+@@ -9,6 +9,10 @@ export interface Env {
+   REDIRECT_HOSTS?: string;
+   /** HMAC key for login/import keys (R2). Pages secret; differs per environment; local: local/.dev.vars. */
+   LOGIN_PEPPER?: string;
++  /** Separate server-to-server secret for KAMUN identity verification. */
++  KAMUN_INTEGRATION_KEY?: string;
++  /** Supabase Edge Function URL for immediate KAMUN code-revocation notices. */
++  KAMUN_REVOCATION_URL?: string;
+   /** Staff bootstrap passwords (R3): used only while that role has no stored hash. Secrets. */
+   BARISTA_PASSWORD_INITIAL?: string;
+   RUNNER_PASSWORD_INITIAL?: string;
+diff --git a/packages/core/src/index.ts b/packages/core/src/index.ts
+index 42c8065..5555a21 100644
+--- a/packages/core/src/index.ts
++++ b/packages/core/src/index.ts
+@@ -6,6 +6,7 @@ export * from './now';
+ export * from './identity';
+ export { createParticipantApi, createStaffApi } from './api';
+ export * from './sessions';
++export * from './kamun-handoff';
+ export * from './rate-limit';
+ export * from './auth';
+ export * from './accounts';
+@@ -21,3 +22,5 @@ export * from './admin-catalog';
+ export * from './admin-records';
+ export * from './csv';
+ export * from './ceremony-stats';
++
++export { verifyKamunCode, checkKamunIdentity } from './kamun-integration';
+diff --git a/packages/core/src/kamun-handoff.ts b/packages/core/src/kamun-handoff.ts
+new file mode 100644
+index 0000000..f56d5d5
+--- /dev/null
++++ b/packages/core/src/kamun-handoff.ts
+@@ -0,0 +1,135 @@
++import { getSettings } from './catalog';
++import { iso } from './engine-common';
++import { checkKamunIdentity } from './kamun-integration';
++import { sha256Hex, createParticipantSession } from './sessions';
++
++const TICKET_LIFETIME_MS = 60_000;
++
++function randomTicket(): string {
++  const bytes = crypto.getRandomValues(new Uint8Array(32));
++  return btoa(String.fromCharCode(...bytes))
++    .replace(/\+/g, '-')
++    .replace(/\//g, '_')
++    .replace(/=+$/, '');
++}
++
++/** The private KAMUN server may mint a one-minute, single-use participant handoff. */
++export async function issueKamunHandoff(
++  db: D1Database,
++  now: Date,
++  personId: number,
++  revision: string,
++  scope?: string,
++): Promise<{ ticket: string; identity: NonNullable<Awaited<ReturnType<typeof checkKamunIdentity>>> } | null> {
++  if (scope !== undefined && !/^[a-f0-9]{64}$/.test(scope)) return null;
++  if (scope)
++    await db.prepare('INSERT OR IGNORE INTO kamun_session_groups (scope) VALUES (?)').bind(scope).run();
++  const identity = await checkKamunIdentity(db, personId, revision);
++  if (!identity) return null;
++  const ticket = randomTicket();
++  const hash = await sha256Hex(ticket);
++  const expiresAt = iso(new Date(now.getTime() + TICKET_LIFETIME_MS));
++  const [_, inserted] = await db.batch([
++    db.prepare('DELETE FROM kamun_handoff_tickets WHERE expires_at <= ?').bind(iso(now)),
++    db
++      .prepare(
++        `INSERT INTO kamun_handoff_tickets
++      (token_hash, person_id, key_hash, committee_id, seat_id, created_at, expires_at, scope, generation)
++      SELECT ?, p.id, k.key_hash, p.committee_id, p.seat_id, ?, ?, ?,
++        (SELECT generation FROM kamun_session_groups WHERE scope = ?)
++      FROM people p JOIN login_keys k ON k.person_id = p.id AND k.kind = 'code'
++      WHERE p.id = ? AND p.active = 1 AND p.committee_id =
++        (SELECT id FROM committees WHERE short_name = ?)
++        AND (p.seat_id IS NULL AND ? IS NULL OR p.seat_id =
++          (SELECT s.id FROM seats s WHERE s.committee_id = p.committee_id AND s.label = ?))
++      RETURNING token_hash`,
++      )
++      .bind(
++        hash,
++        iso(now),
++        expiresAt,
++        scope ?? null,
++        scope ?? null,
++        personId,
++        identity.committee,
++        identity.seat,
++        identity.seat,
++      ),
++  ]);
++  if (!inserted?.results.length) return null;
++  // A credential can rotate between the identity lookup and INSERT. The ticket is never exposed then.
++  const stillCurrent = await checkKamunIdentity(db, personId, revision);
++  if (!stillCurrent || stillCurrent.committee !== identity.committee || stillCurrent.seat !== identity.seat) {
++    await db.prepare('DELETE FROM kamun_handoff_tickets WHERE token_hash = ?').bind(hash).run();
++    return null;
++  }
++  return { ticket, identity };
++}
++
++/** Atomic DELETE makes replay and two simultaneous exchanges fail after the first one. */
++export async function consumeKamunHandoff(
++  db: D1Database,
++  now: Date,
++  ticket: string,
++): Promise<{ token: string; expiresAt: string } | null> {
++  if (!/^[A-Za-z0-9_-]{43}$/.test(ticket)) return null;
++  const consumed = await db
++    .prepare(
++      `DELETE FROM kamun_handoff_tickets
++    WHERE token_hash = ? AND expires_at > ?
++    RETURNING person_id, key_hash, committee_id, seat_id, scope, generation`,
++    )
++    .bind(await sha256Hex(ticket), iso(now))
++    .first<{
++      person_id: number;
++      key_hash: string;
++      committee_id: number;
++      seat_id: number | null;
++      scope: string | null;
++      generation: number | null;
++    }>();
++  if (!consumed) return null;
++  const settings = await getSettings(db);
++  const expiresAt = settings.get('participant_session_until');
++  if (
++    typeof expiresAt !== 'string' ||
++    !Number.isFinite(Date.parse(expiresAt)) ||
++    Date.parse(expiresAt) <= now.getTime()
++  )
++    return null;
++  const token = await createParticipantSession(
++    db,
++    now,
++    consumed.person_id,
++    expiresAt,
++    {
++      sql: `EXISTS (SELECT 1 FROM people p JOIN login_keys k ON k.person_id = p.id AND k.kind = 'code'
++      WHERE p.id = ? AND p.active = 1 AND k.key_hash = ? AND p.committee_id = ?
++        AND (p.seat_id = ? OR (p.seat_id IS NULL AND ? IS NULL)))`,
++      values: [
++        consumed.person_id,
++        consumed.key_hash,
++        consumed.committee_id,
++        consumed.seat_id,
++        consumed.seat_id,
++      ],
++    },
++    consumed.scope ? { scope: consumed.scope, generation: consumed.generation! } : undefined,
++  );
++  return token ? { token, expiresAt } : null;
++}
++
++/** Invalidates outstanding tickets and sessions together, including exchanges racing with logout. */
++export async function revokeKamunSessions(db: D1Database, scope: string): Promise<void> {
++  if (!/^[a-f0-9]{64}$/.test(scope)) throw new Error('invalid_scope');
++  await db.batch([
++    db
++      .prepare(
++        `INSERT INTO kamun_session_groups (scope, generation) VALUES (?, 1)
++      ON CONFLICT(scope) DO UPDATE SET generation = generation + 1`,
++      )
++      .bind(scope),
++    db.prepare('DELETE FROM kamun_handoff_tickets WHERE scope = ?').bind(scope),
++    db.prepare('DELETE FROM sessions WHERE kamun_scope = ?').bind(scope),
++  ]);
++}
+diff --git a/packages/core/src/kamun-integration.ts b/packages/core/src/kamun-integration.ts
+new file mode 100644
+index 0000000..33d2d9c
+--- /dev/null
++++ b/packages/core/src/kamun-integration.ts
+@@ -0,0 +1,100 @@
++import { deriveCodeKey } from './identity';
++
++export interface VerifiedKamunIdentity {
++  personId: number;
++  kind: 'delegate' | 'chair';
++  committee: string;
++  seat: string | null;
++  revision: string;
++}
++
++/** Only called by the separately authenticated KAMUN integration endpoint. */
++export async function verifyKamunCode(
++  db: D1Database,
++  pepper: string | undefined,
++  code: string,
++): Promise<VerifiedKamunIdentity | null> {
++  if (!pepper?.trim()) return null;
++  let key: string;
++  try {
++    key = await deriveCodeKey(pepper, code);
++  } catch {
++    return null;
++  }
++  const row = await db
++    .prepare(
++      `SELECT p.id AS personId, p.kind, c.short_name AS committee,
++      s.label AS seat, k.key_hash AS keyHash
++    FROM login_keys k JOIN people p ON p.id = k.person_id
++    JOIN committees c ON c.id = p.committee_id
++    LEFT JOIN seats s ON s.id = p.seat_id
++    WHERE k.kind = 'code' AND k.key_hash = ? AND p.active = 1
++    LIMIT 1`,
++    )
++    .bind(key)
++    .first<{
++      personId: number;
++      kind: 'delegate' | 'chair';
++      committee: string;
++      seat: string | null;
++      keyHash: string;
++    }>();
++  if (!row || (row.kind === 'delegate' && !row.seat)) return null;
++  return {
++    personId: row.personId,
++    kind: row.kind,
++    committee: row.committee,
++    seat: row.kind === 'delegate' ? row.seat : null,
++    revision: await revision(row.keyHash),
++  };
++}
++
++export async function checkKamunIdentity(
++  db: D1Database,
++  personId: number,
++  expectedRevision: string,
++): Promise<VerifiedKamunIdentity | null> {
++  if (!Number.isSafeInteger(personId) || personId < 1 || !/^[0-9a-f]{64}$/.test(expectedRevision))
++    return null;
++  const row = await db
++    .prepare(
++      `SELECT p.id AS personId, p.kind, c.short_name AS committee,
++      s.label AS seat, k.key_hash AS keyHash
++    FROM people p JOIN login_keys k ON k.person_id = p.id AND k.kind = 'code'
++    JOIN committees c ON c.id = p.committee_id
++    LEFT JOIN seats s ON s.id = p.seat_id
++    WHERE p.id = ? AND p.active = 1 LIMIT 1`,
++    )
++    .bind(personId)
++    .first<{
++      personId: number;
++      kind: 'delegate' | 'chair';
++      committee: string;
++      seat: string | null;
++      keyHash: string;
++    }>();
++  if (!row || (row.kind === 'delegate' && !row.seat)) return null;
++  const currentRevision = await revision(row.keyHash);
++  if (currentRevision !== expectedRevision) return null;
++  return {
++    personId: row.personId,
++    kind: row.kind,
++    committee: row.committee,
++    seat: row.kind === 'delegate' ? row.seat : null,
++    revision: currentRevision,
++  };
++}
++
++export async function currentKamunRevision(db: D1Database, personId: number): Promise<string | null> {
++  if (!Number.isSafeInteger(personId) || personId < 1) return null;
++  const row = await db
++    .prepare("SELECT key_hash AS keyHash FROM login_keys WHERE kind = 'code' AND person_id = ?")
++    .bind(personId)
++    .first<{ keyHash: string }>();
++  return row ? revision(row.keyHash) : null;
++}
++
++async function revision(keyHash: string): Promise<string> {
++  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`kamun-revision|${keyHash}`));
++  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
++}
+diff --git a/packages/core/src/participant-api.ts b/packages/core/src/participant-api.ts
+index d85bbf5..6cab667 100644
+--- a/packages/core/src/participant-api.ts
++++ b/packages/core/src/participant-api.ts
+@@ -6,6 +6,7 @@ import { Hono, type Context } from 'hono';
+ import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+ import { z } from 'zod';
+ import { loginParticipant } from './auth';
++import { consumeKamunHandoff } from './kamun-handoff';
+ import { isParticipantDataPurged } from './admin-records';
+ import { getMenu, getSchedule, getSettings, getVersion, publicSettings } from './catalog';
+ import { type Env, isProduction } from './env';
+@@ -123,6 +124,30 @@ export function createParticipantApi() {
+     return c.json({ ok: true });
+   });
+ 
++  app.post('/integration/handoff', async (c) => {
++    const body = await readJson(c);
++    const ticket = body && typeof body === 'object' && 'ticket' in body ? body.ticket : null;
++    if (typeof ticket !== 'string' || ticket.length > 100) {
++      await revokeSession(c.env.DB, getCookie(c, cookieName(c)));
++      deleteCookie(c, cookieName(c), { path: '/', secure: isHttps(c) });
++      return c.json({ error: 'invalid_input' }, 400);
++    }
++    const result = await consumeKamunHandoff(c.env.DB, new Date(), ticket);
++    if (!result) {
++      await revokeSession(c.env.DB, getCookie(c, cookieName(c)));
++      deleteCookie(c, cookieName(c), { path: '/', secure: isHttps(c) });
++      return c.json({ error: 'invalid_ticket' }, 401);
++    }
++    setCookie(c, cookieName(c), result.token, {
++      httpOnly: true,
++      secure: isHttps(c),
++      sameSite: 'Lax',
++      path: '/',
++      expires: new Date(result.expiresAt),
++    });
++    return c.json({ ok: true });
++  });
++
+   app.post('/logout', async (c) => {
+     await revokeSession(c.env.DB, getCookie(c, cookieName(c)));
+     deleteCookie(c, cookieName(c), { path: '/', secure: isHttps(c) });
+diff --git a/packages/core/src/sessions.ts b/packages/core/src/sessions.ts
+index 07c0ff9..bf26128 100644
+--- a/packages/core/src/sessions.ts
++++ b/packages/core/src/sessions.ts
+@@ -27,6 +27,7 @@ export async function createParticipantSession(
+   personId: number,
+   expiresAt: string,
+   credentials: SqlCondition = { sql: '1', values: [] },
++  kamun?: { scope: string; generation: number },
+ ): Promise<string | null> {
+   const token = randomToken();
+   const tokenHash = await sha256Hex(token);
+@@ -34,12 +35,24 @@ export async function createParticipantSession(
+   const [insert] = await db.batch([
+     db
+       .prepare(
+-        `INSERT INTO sessions (token_hash, subject, person_id, created_at, expires_at, last_seen_at)
+-         SELECT ?, 'participant', ?, ?, ?, ?
++        `INSERT INTO sessions (token_hash, subject, person_id, created_at, expires_at, last_seen_at${kamun ? ', kamun_scope' : ''})
++         SELECT ?, 'participant', ?, ?, ?, ?${kamun ? ', ?' : ''}
+            WHERE EXISTS (SELECT 1 FROM people WHERE id = ? AND active = 1)
+-             AND ${credentials.sql} RETURNING token_hash`,
++             AND ${credentials.sql}
++             ${kamun ? 'AND EXISTS (SELECT 1 FROM kamun_session_groups WHERE scope = ? AND generation = ?)' : ''}
++             RETURNING token_hash`,
+       )
+-      .bind(tokenHash, personId, t, expiresAt, t, personId, ...credentials.values),
++      .bind(
++        tokenHash,
++        personId,
++        t,
++        expiresAt,
++        t,
++        ...(kamun ? [kamun.scope] : []),
++        personId,
++        ...credentials.values,
++        ...(kamun ? [kamun.scope, kamun.generation] : []),
++      ),
+     db
+       .prepare(
+         `DELETE FROM sessions WHERE person_id = ?1 AND token_hash NOT IN (
+diff --git a/packages/core/src/staff-api.ts b/packages/core/src/staff-api.ts
+index 73cfb4b..abbefbb 100644
+--- a/packages/core/src/staff-api.ts
++++ b/packages/core/src/staff-api.ts
+@@ -41,6 +41,7 @@ import { ceremonyStats } from './ceremony-stats';
+ import { ACTIVE_SQL, type StaffRole } from './engine-common';
+ import { type Env, isProduction } from './env';
+ import { apiSecurityHeaders, jsonMutations, sameOriginMutations } from './http';
++import { currentKamunRevision } from './kamun-integration';
+ import { setItemAvailability, setOptionAvailability } from './menu-admin';
+ import { requestNow } from './now';
+ import { createAllCodes, revealCodes, syncAccounts } from './accounts';
+@@ -54,6 +55,23 @@ import { staffBoard } from './views';
+ 
+ type Ctx = { Bindings: Env; Variables: { role: StaffRole } };
+ 
++/** A failed notice never restores an ECG code. KAMUN's five-minute lease fails closed. */
++async function notifyKamunRevocation(env: Env, personId: number, revision: string): Promise<void> {
++  const url = env.KAMUN_REVOCATION_URL;
++  const key = env.KAMUN_INTEGRATION_KEY;
++  if (!url || !url.startsWith('https://') || !key || key.length < 32) return;
++  try {
++    await fetch(url, {
++      method: 'POST',
++      headers: { 'Content-Type': 'application/json', 'X-Kamun-Integration-Key': key },
++      body: JSON.stringify({ personId, revision }),
++      signal: AbortSignal.timeout(3000),
++    });
++  } catch {
++    /* Lease expiry is the fallback when KAMUN is temporarily unavailable. */
++  }
++}
++
+ const cookieName = (c: Context) => (new URL(c.req.url).protocol === 'https:' ? '__Host-cvf_s' : 'cvf_s');
+ const isHttps = (c: Context) => new URL(c.req.url).protocol === 'https:';
+ 
+@@ -509,13 +527,18 @@ export function createStaffApi() {
+     const personId = id.safeParse(c.req.param('id'));
+     const b = await body(c, z.object({ active: z.boolean() }));
+     if (!personId.success || !b) return c.json({ error: 'invalid_input' }, 400);
+-    return reply(c, await setPersonActive(c.env.DB, new Date(), c.get('role'), personId.data, b.active));
++    const previous = !b.active ? await currentKamunRevision(c.env.DB, personId.data) : null;
++    const result = await setPersonActive(c.env.DB, new Date(), c.get('role'), personId.data, b.active);
++    if (result.ok && previous) await notifyKamunRevocation(c.env, personId.data, previous);
++    return reply(c, result);
+   });
+ 
+   app.post('/admin/people/:id/code', async (c) => {
+     const personId = id.safeParse(c.req.param('id'));
+     if (!personId.success) return c.json({ error: 'invalid_input' }, 400);
++    const previous = await currentKamunRevision(c.env.DB, personId.data);
+     const r = await newCodeFor(c.env.DB, c.env.LOGIN_PEPPER, new Date(), c.get('role'), personId.data);
++    if (r.ok && previous) await notifyKamunRevocation(c.env, personId.data, previous);
+     return reply(c, r, r.ok ? r.value : undefined);
+   });
+ 
+diff --git a/packages/core/test/kamun-handoff.test.ts b/packages/core/test/kamun-handoff.test.ts
+new file mode 100644
+index 0000000..ba7b41b
+--- /dev/null
++++ b/packages/core/test/kamun-handoff.test.ts
+@@ -0,0 +1,112 @@
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++import { newCodeFor } from '../src/admin';
++import { consumeKamunHandoff, issueKamunHandoff, revokeKamunSessions } from '../src/kamun-handoff';
++import { verifyKamunCode } from '../src/kamun-integration';
++import { participantFromToken } from '../src/sessions';
++import { addPerson, codeFor, createTestDb, TEST_PEPPER, type TestDb } from './helpers/db';
++
++let testDb: TestDb;
++let personId: number;
++let revision: string;
++const now = new Date('2026-11-14T08:00:00Z');
++beforeAll(async () => {
++  testDb = await createTestDb('kamun-handoff');
++}, 60_000);
++beforeEach(async () => {
++  await testDb.reset();
++  personId = await addPerson(testDb.db, { committee: 'ILO', seat: 'France' });
++  const code = await codeFor(testDb.db, personId);
++  revision = (await verifyKamunCode(testDb.db, TEST_PEPPER, code))!.revision;
++});
++afterAll(() => testDb?.dispose());
++
++describe('KAMUN handoff tickets', () => {
++  it('creates a participant session once for the verified person', async () => {
++    const handoff = await issueKamunHandoff(testDb.db, now, personId, revision);
++    expect(handoff?.identity).toMatchObject({ personId, committee: 'ILO', seat: 'France' });
++    expect(handoff?.ticket).toMatch(/^[A-Za-z0-9_-]{43}$/);
++    const session = await consumeKamunHandoff(testDb.db, now, handoff!.ticket);
++    expect(session).not.toBeNull();
++    expect((await participantFromToken(testDb.db, now, session!.token))?.personId).toBe(personId);
++    expect(await consumeKamunHandoff(testDb.db, now, handoff!.ticket)).toBeNull();
++  });
++
++  it('rejects a forged revision, expiry and simultaneous replay', async () => {
++    expect(await issueKamunHandoff(testDb.db, now, personId, '0'.repeat(64))).toBeNull();
++    const expired = await issueKamunHandoff(testDb.db, now, personId, revision);
++    expect(
++      await consumeKamunHandoff(testDb.db, new Date(now.getTime() + 60_001), expired!.ticket),
++    ).toBeNull();
++    const handoff = await issueKamunHandoff(testDb.db, now, personId, revision);
++    const results = await Promise.allSettled([
++      consumeKamunHandoff(testDb.db, now, handoff!.ticket),
++      consumeKamunHandoff(testDb.db, now, handoff!.ticket),
++    ]);
++    expect(results.filter((r) => r.status === 'fulfilled' && r.value !== null)).toHaveLength(1);
++  });
++
++  it('rejects a rotated code or changed seat before session creation', async () => {
++    const handoff = await issueKamunHandoff(testDb.db, now, personId, revision);
++    await newCodeFor(testDb.db, TEST_PEPPER, now, 'admin', personId);
++    expect(await consumeKamunHandoff(testDb.db, now, handoff!.ticket)).toBeNull();
++
++    const code = await codeFor(testDb.db, personId);
++    const nextRevision = (await verifyKamunCode(testDb.db, TEST_PEPPER, code))!.revision;
++    const next = await issueKamunHandoff(testDb.db, now, personId, nextRevision);
++    await testDb.db
++      .prepare(
++        `UPDATE people SET seat_id =
++      (SELECT s.id FROM seats s JOIN committees c ON c.id = s.committee_id
++       WHERE c.short_name = 'ILO' AND s.label = 'Germany') WHERE id = ?`,
++      )
++      .bind(personId)
++      .run();
++    expect(await consumeKamunHandoff(testDb.db, now, next!.ticket)).toBeNull();
++  });
++});
++
++const scope = 'b'.repeat(64);
++it('remembers a linked session and logout revokes only that KAMUN installation', async () => {
++  const first = await issueKamunHandoff(testDb.db, now, personId, revision, scope);
++  const session = await consumeKamunHandoff(testDb.db, now, first!.ticket);
++  const other = await issueKamunHandoff(testDb.db, now, personId, revision, 'c'.repeat(64));
++  const otherSession = await consumeKamunHandoff(testDb.db, now, other!.ticket);
++  expect(
++    await participantFromToken(testDb.db, new Date(now.getTime() + 86_400_000), session!.token),
++  ).not.toBeNull();
++  const pending = await issueKamunHandoff(testDb.db, now, personId, revision, scope);
++  await revokeKamunSessions(testDb.db, scope);
++  expect(await participantFromToken(testDb.db, now, session!.token)).toBeNull();
++  expect(await consumeKamunHandoff(testDb.db, now, pending!.ticket)).toBeNull();
++  expect(await participantFromToken(testDb.db, now, otherSession!.token)).not.toBeNull();
++  // A later explicit KAMUN login can open ECE again.
++  const next = await issueKamunHandoff(testDb.db, now, personId, revision, scope);
++  expect(await consumeKamunHandoff(testDb.db, now, next!.ticket)).not.toBeNull();
++});
++
++it('logout racing with ticket consumption cannot leave a live session', async () => {
++  const handoff = await issueKamunHandoff(testDb.db, now, personId, revision, scope);
++  const [session] = await Promise.all([
++    consumeKamunHandoff(testDb.db, now, handoff!.ticket),
++    revokeKamunSessions(testDb.db, scope),
++  ]);
++  if (session) expect(await participantFromToken(testDb.db, now, session.token)).toBeNull();
++  expect(
++    await testDb.db
++      .prepare('SELECT COUNT(*) AS count FROM sessions WHERE kamun_scope = ?')
++      .bind(scope)
++      .first('count'),
++  ).toBe(0);
++});
++
++it('opens the individual chair account with its committee and no delegate country', async () => {
++  const chairId = await addPerson(testDb.db, { kind: 'chair', committee: 'ILO' });
++  const chairCode = await codeFor(testDb.db, chairId);
++  const identity = await verifyKamunCode(testDb.db, TEST_PEPPER, chairCode);
++  expect(identity).toMatchObject({ personId: chairId, kind: 'chair', committee: 'ILO', seat: null });
++  const handoff = await issueKamunHandoff(testDb.db, now, chairId, identity!.revision, scope);
++  const session = await consumeKamunHandoff(testDb.db, now, handoff!.ticket);
++  expect((await participantFromToken(testDb.db, now, session!.token))?.personId).toBe(chairId);
++  await revokeKamunSessions(testDb.db, scope);
++  expect(await participantFromToken(testDb.db, now, session!.token)).toBeNull();
++});
+diff --git a/packages/core/test/kamun-integration-api.test.ts b/packages/core/test/kamun-integration-api.test.ts
+new file mode 100644
+index 0000000..740f8d2
+--- /dev/null
++++ b/packages/core/test/kamun-integration-api.test.ts
+@@ -0,0 +1,65 @@
++import { afterAll, beforeAll, describe, expect, it } from 'vitest';
++import { onRequestPost } from '../../../apps/cafe/functions/api/integration/identity';
++import { addPerson, codeFor, createTestDb, TEST_PEPPER, type TestDb } from './helpers/db';
++
++let testDb: TestDb;
++const secret = 'a-long-separate-test-integration-secret-123456789';
++beforeAll(async () => {
++  testDb = await createTestDb('kamun-integration-api');
++}, 60_000);
++afterAll(() => testDb?.dispose());
++
++const invoke = (payload: object, supplied: string | null = secret, protocol = 'https:') => {
++  const request = new Request(`${protocol}//cafe.example.test/api/integration/identity`, {
++    method: 'POST',
++    headers: {
++      'Content-Type': 'application/json',
++      ...(supplied ? { 'X-Kamun-Integration-Key': supplied } : {}),
++    },
++    body: JSON.stringify(payload),
++  });
++  const handler = onRequestPost as unknown as (context: {
++    request: Request;
++    env: { DB: D1Database; LOGIN_PEPPER: string; KAMUN_INTEGRATION_KEY: string; ENVIRONMENT: string };
++  }) => Promise<Response>;
++  return handler({
++    request,
++    env: {
++      DB: testDb.db,
++      LOGIN_PEPPER: TEST_PEPPER,
++      KAMUN_INTEGRATION_KEY: secret,
++      ENVIRONMENT: 'production',
++    },
++  });
++};
++
++describe('private KAMUN verification API', () => {
++  it('requires the server secret and HTTPS', async () => {
++    expect((await invoke({ action: 'verify', code: 'INVALID' }, null)).status).toBe(404);
++    expect((await invoke({ action: 'verify', code: 'INVALID' }, 'wrong')).status).toBe(404);
++    expect((await invoke({ action: 'verify', code: 'INVALID' }, secret, 'http:')).status).toBe(404);
++  });
++
++  it('derives identity and checks a credential revision', async () => {
++    await testDb.reset();
++    const personId = await addPerson(testDb.db, { committee: 'ILO', seat: 'France' });
++    const code = await codeFor(testDb.db, personId);
++    const verify = await invoke({ action: 'verify', code });
++    expect(verify.status).toBe(200);
++    const identity = (await verify.json()) as { personId: number; seat: string; revision: string };
++    expect(identity).toMatchObject({ personId, seat: 'France' });
++    expect((await invoke({ action: 'status', personId, revision: identity.revision })).status).toBe(200);
++    expect((await invoke({ action: 'status', personId, revision: '0'.repeat(64) })).status).toBe(401);
++    const ticket = await invoke({
++      action: 'ticket',
++      scope: 'b'.repeat(64),
++      personId,
++      revision: identity.revision,
++    });
++    expect(ticket.status).toBe(200);
++    expect(((await ticket.json()) as { ticket: string }).ticket).toMatch(/^[A-Za-z0-9_-]{43}$/);
++    expect(
++      (await invoke({ action: 'ticket', scope: 'b'.repeat(64), personId, revision: '0'.repeat(64) })).status,
++    ).toBe(401);
++  });
++});
+diff --git a/packages/core/test/kamun-integration.test.ts b/packages/core/test/kamun-integration.test.ts
+new file mode 100644
+index 0000000..5696317
+--- /dev/null
++++ b/packages/core/test/kamun-integration.test.ts
+@@ -0,0 +1,51 @@
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++import { newCodeFor } from '../src/admin';
++import { checkKamunIdentity, currentKamunRevision, verifyKamunCode } from '../src/kamun-integration';
++import { addPerson, codeFor, createTestDb, TEST_PEPPER, type TestDb } from './helpers/db';
++
++let testDb: TestDb;
++let personId: number;
++let code: string;
++beforeAll(async () => {
++  testDb = await createTestDb('kamun-integration');
++}, 60_000);
++beforeEach(async () => {
++  await testDb.reset();
++  personId = await addPerson(testDb.db, { committee: 'ILO', seat: 'France' });
++  code = await codeFor(testDb.db, personId);
++});
++afterAll(() => testDb?.dispose());
++
++describe('KAMUN integration identity', () => {
++  it('derives the seat from ECG instead of accepting a claimed seat', async () => {
++    const identity = await verifyKamunCode(testDb.db, TEST_PEPPER, code);
++    expect(identity).toMatchObject({ personId, kind: 'delegate', committee: 'ILO', seat: 'France' });
++    expect(identity?.revision).toMatch(/^[a-f0-9]{64}$/);
++    expect(await checkKamunIdentity(testDb.db, personId, identity!.revision)).toEqual(identity);
++    expect(await currentKamunRevision(testDb.db, personId)).toBe(identity!.revision);
++  });
++
++  it('rejects invalid, rotated, and inactive credentials', async () => {
++    expect(await verifyKamunCode(testDb.db, TEST_PEPPER, 'ZZZZZZZZ')).toBeNull();
++    const original = await verifyKamunCode(testDb.db, TEST_PEPPER, code);
++    const replacement = await newCodeFor(
++      testDb.db,
++      TEST_PEPPER,
++      new Date('2026-11-14T08:00:00Z'),
++      'admin',
++      personId,
++    );
++    expect(replacement.ok).toBe(true);
++    expect(await verifyKamunCode(testDb.db, TEST_PEPPER, code)).toBeNull();
++    expect(await checkKamunIdentity(testDb.db, personId, original!.revision)).toBeNull();
++    expect(await currentKamunRevision(testDb.db, personId)).not.toBe(original!.revision);
++    if (replacement.ok) {
++      expect((await verifyKamunCode(testDb.db, TEST_PEPPER, replacement.value.code))?.revision).not.toBe(
++        original!.revision,
++      );
++    }
++    await testDb.db.prepare('UPDATE people SET active = 0 WHERE id = ?').bind(personId).run();
++    if (replacement.ok)
++      expect(await verifyKamunCode(testDb.db, TEST_PEPPER, replacement.value.code)).toBeNull();
++  });
++});
+diff --git a/packages/core/test/participant-api.test.ts b/packages/core/test/participant-api.test.ts
+index 8304016..e348903 100644
+--- a/packages/core/test/participant-api.test.ts
++++ b/packages/core/test/participant-api.test.ts
+@@ -1,6 +1,8 @@
+ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+ import type { Env } from '../src/env';
+ import { createParticipantApi } from '../src/participant-api';
++import { issueKamunHandoff } from '../src/kamun-handoff';
++import { verifyKamunCode } from '../src/kamun-integration';
+ import { addPerson, at, codeFor, createTestDb, key, type TestDb } from './helpers/db';
+ 
+ const pepper = 'obviously-fake-test-only-pepper';
+@@ -59,6 +61,22 @@ function browser(origin = 'http://localhost:5173', e = env()) {
+ const sat0945 = '?at=2026-11-14T09:45';
+ 
+ describe('participant API', () => {
++  it('exchanges a one-use KAMUN ticket and clears a previous cookie on a failed exchange', async () => {
++    const b = browser();
++    expect((await b.call('/api/login', annaLogin)).status).toBe(200);
++    const person = await verifyKamunCode(t.db, pepper, maxLogin.code);
++    const handoff = await issueKamunHandoff(t.db, new Date(), person!.personId, person!.revision);
++    expect((await b.call('/api/integration/handoff', { ticket: handoff!.ticket })).status).toBe(200);
++    expect((await b.call('/api/state')).json.me.person).toMatchObject({
++      committee: { short: 'ILO' },
++      role: 'France',
++    });
++    const replay = await b.call('/api/integration/handoff', { ticket: handoff!.ticket });
++    expect(replay.status).toBe(401);
++    expect(replay.setCookie).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/i);
++    expect((await b.call('/api/state')).json).toEqual({ authenticated: false });
++  });
++
+   it('shows the public overview without logging in, but not personal state', async () => {
+     const b = browser();
+     expect((await b.call('/api/overview')).json).toMatchObject({

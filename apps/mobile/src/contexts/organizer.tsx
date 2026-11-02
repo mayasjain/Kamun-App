@@ -3,6 +3,7 @@ import '../lib/install-local-storage';
 import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
+import { resumePendingSignOut } from '@/lib/ecg-handoff';
 import { supabase } from '@/lib/supabase';
 
 type OrganizerMode = 'attendee' | 'organizer';
@@ -52,6 +53,7 @@ export function OrganizerProvider({ children }: PropsWithChildren) {
     isLoading,
     conferenceId,
     async signIn(code) {
+      await resumePendingSignOut();
       if (!supabase) throw new Error('The KAMUN backend is not configured.');
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
