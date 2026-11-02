@@ -32,7 +32,7 @@ export function ResourceManager({ conferences, committees, initialResources }: {
     const file = values.get("pdf");
     setError(""); setMessage("");
     if (!title || title.length > 160 || !conferenceId) { setError("Choose a conference and enter a title up to 160 characters."); return; }
-    if (!(file instanceof File) || !file.size || file.size > 15 * 1024 * 1024 || !file.name.toLowerCase().endsWith(".pdf")) { setError("Choose a PDF no larger than 15 MB."); return; }
+    if (!(file instanceof File) || !file.size || file.size > 50 * 1024 * 1024 || !file.name.toLowerCase().endsWith(".pdf")) { setError("Choose a PDF no larger than 50 MB."); return; }
     lock.current = true; setBusy(true);
     const client = createClient();
     let uploadedPath: string | null = null;
@@ -87,7 +87,7 @@ export function ResourceManager({ conferences, committees, initialResources }: {
     {message && <p role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-950">{message}</p>}
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <form onSubmit={upload} className="space-y-5 rounded-2xl border bg-card p-6">
-        <div><Upload className="mb-3 text-emerald-700" size={24} /><h2 className="text-xl font-semibold">Add a document</h2><p className="mt-1 text-sm text-muted-foreground">PDF files · up to 15 MB</p></div>
+        <div><Upload className="mb-3 text-emerald-700" size={24} /><h2 className="text-xl font-semibold">Add a document</h2><p className="mt-1 text-sm text-muted-foreground">PDF files · up to 50 MB</p></div>
         <fieldset disabled={busy || !conferenceId} className="space-y-5">
           <div className="space-y-2"><Label htmlFor="title">Document title</Label><Input id="title" name="title" required maxLength={160} placeholder="Code of Conduct" /></div>
           <div className="space-y-2"><Label htmlFor="committee">Document section</Label><select key={conferenceId} id="committee" name="committee" className={selectClass}><option value="">General documents</option>{committees.filter((item) => item.conference_id === conferenceId).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><p className="text-xs text-muted-foreground">Committee selection organises the app listing; it does not make the document private.</p></div>

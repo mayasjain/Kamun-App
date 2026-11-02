@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, minHeight: 0, alignItems: 'center' },
   scroll: { flex: 1, minHeight: 0, width: '100%' },
   content: {
+    alignSelf: 'center',
     width: '100%',
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,

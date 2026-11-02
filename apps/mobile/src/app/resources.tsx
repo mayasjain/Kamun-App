@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
+import { documentCover } from '@/lib/document-covers';
 
 export default function ResourcesScreen() {
   const theme = useTheme();
@@ -39,11 +40,19 @@ export default function ResourcesScreen() {
   }
 
   function renderResource(resource: (typeof resources)[number]) {
+    const cover = documentCover(resource.url);
     return (
-      <ContentCard key={resource.id} label={resource.kind.replaceAll('_', ' ').toUpperCase()} title={resource.title}>
+      <ContentCard key={resource.id} label={resource.kind.replaceAll('_', ' ').toUpperCase()} title={resource.title}
+        preview={cover ? (
+          <Pressable accessibilityRole="link" accessibilityLabel={`Open ${resource.title} from its cover`}
+            disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }}
+            onPress={() => void openDocument(resource.id, resource.url)}
+            style={({ pressed }) => [styles.coverFrame, { borderColor: theme.border, opacity: pressed ? 0.7 : 1 }]}>
+            <Image source={cover} resizeMode="contain" style={styles.cover} accessible={false} />
+          </Pressable>
+        ) : undefined}>
         {resource.committeeId ? <ThemedText type="small" themeColor="textSecondary">{content?.committees.find((committee) => committee.id === resource.committeeId)?.abbreviation ?? 'Committee document'}</ThemedText> : null}
         <View style={styles.documentFooter}>
-          <ThemedText type="small" themeColor="textSecondary">Opens in your browser or document viewer</ThemedText>
           <Pressable
             accessibilityLabel={`Open ${resource.title}`}
             accessibilityRole="link"
@@ -54,7 +63,7 @@ export default function ResourcesScreen() {
             hitSlop={8}
             onPress={() => void openDocument(resource.id, resource.url)}>
             <ThemedText type="smallBold" style={[styles.open, { color: '#FFFFFF' }]}>
-              {openingId === resource.id ? 'Opening…' : 'Open document ↗'}
+              {openingId === resource.id ? 'Opening…' : 'Open document'}
             </ThemedText>
           </Pressable>
         </View>
@@ -98,6 +107,8 @@ export default function ResourcesScreen() {
 }
 
 const styles = StyleSheet.create({
+  coverFrame: { width: '38%', maxWidth: 200, flexShrink: 0, aspectRatio: 360 / 510, borderWidth: 1, borderRadius: 8, overflow: 'hidden', backgroundColor: '#FFFFFF' },
+  cover: { width: '100%', height: '100%' },
   section: { gap: 12 },
   documentFooter: { alignItems: 'flex-start', gap: 14, paddingTop: 14 },
   openButton: { minHeight: 48, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, justifyContent: 'center' },
