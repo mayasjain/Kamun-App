@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import Feather from '@expo/vector-icons/Feather';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useRouter, type Href } from 'expo-router';
 import { AppState, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,11 +16,11 @@ import { formatEventTime } from '@/lib/date-format';
 
 import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
-type QuickLink = { title: string; detail: string; href: Href; symbol: string; urgent?: boolean };
+type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean };
 
 const quickLinks: QuickLink[] = [
-  { title: 'Emergency', detail: 'Help and contacts', href: '/emergency', symbol: '!' , urgent: true },
-  { title: 'Gossip box', detail: 'Send a message', href: '/gossip', symbol: '✉' },
+  { title: 'Emergency', detail: 'Help and contacts', href: '/emergency', urgent: true },
+  { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
 ];
 
 export default function HomeScreen() {
@@ -56,6 +58,7 @@ export default function HomeScreen() {
 
   const { content, error, isLoading, source } = useConferenceContent();
   const nextEvent = content?.scheduleEvents.find((event) => Date.parse(event.endsAt) > now);
+  const eventIsLive = nextEvent ? Date.parse(nextEvent.startsAt) <= now : false;
   const announcement = content?.announcements[0];
   const urgentAnnouncement = announcement?.priority === 'urgent';
 
@@ -82,22 +85,13 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.introduction}>
-            <View style={[styles.rule, { backgroundColor: theme.accent }]} />
-            <View style={styles.introductionCopy}>
-              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>YOUR CONFERENCE</ThemedText>
-              <ThemedText style={[styles.pageTitle, { color: theme.text }]}>Today at KAMUN</ThemedText>
-              <ThemedText themeColor="textSecondary">Your programme, official updates and essential conference information.</ThemedText>
-            </View>
-          </View>
-
           <Link href="/schedule" asChild>
-            <Pressable accessibilityRole="link" accessibilityLabel={nextEvent ? `Next event: ${nextEvent.title}. Open schedule` : 'Open conference schedule'} style={({ pressed }) => [styles.scheduleCard, pressed && styles.pressed]}>
+            <Pressable accessibilityRole="link" accessibilityLabel={nextEvent ? `${eventIsLive ? "Happening now" : "Next event"}: ${nextEvent.title}. Open schedule` : 'Open conference schedule'} style={({ pressed }) => [styles.scheduleCard, pressed && styles.pressed]}>
               <View style={styles.scheduleTopline}>
                 <View style={styles.scheduleLabelRow}>
-                  <ThemedText type="smallBold" style={styles.scheduleEyebrow}>UP NEXT</ThemedText>
+                  <ThemedText type="smallBold" style={styles.scheduleEyebrow}>{eventIsLive ? 'HAPPENING NOW' : 'UP NEXT'}</ThemedText>
                 </View>
-                <ThemedText type="smallBold" style={styles.scheduleLink}>Next on your programme</ThemedText>
+                <ThemedText type="smallBold" style={styles.scheduleLink}>{eventIsLive ? 'On your programme now' : 'Next on your programme'}</ThemedText>
               </View>
               <ThemedText style={styles.eventTitle}>{nextEvent?.title ?? (isLoading ? 'Loading programme…' : 'No upcoming sessions')}</ThemedText>
               <ThemedText style={styles.eventDetail}>
@@ -134,33 +128,48 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.section}>
-            <View>
+            <View style={styles.quickHeading}>
               <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>QUICK ACCESS</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">Your essentials</ThemedText>
             </View>
-            <View style={[styles.quickList, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-              <Pressable onPress={() => void openEcg()} disabled={openingEcg}
-                accessibilityRole="link" accessibilityLabel="Open ECE coffee ordering"
+            <View style={styles.coffeeCard}>
+              <View style={styles.coffeeTopline}>
+                <View style={styles.coffeeIcon}>
+                  <Feather name="coffee" size={30} color={Brand.pine} accessible={false} />
+                </View>
+                {profile?.identitySource !== 'ecg' ? (
+                  <View style={styles.setupBadge}>
+                    <ThemedText type="smallBold" style={{ color: Brand.pine }}>Setup needed</ThemedText>
+                  </View>
+                ) : null}
+              </View>
+              <ThemedText type="subtitle" style={styles.coffeeTitle}>ECE Coffee Bar</ThemedText>
+              <ThemedText style={styles.coffeeDescription}>Your conference coffee, one tap away.</ThemedText>
+              <Pressable
+                accessibilityRole="button"
                 accessibilityState={{ busy: openingEcg, disabled: openingEcg }}
-                style={({ pressed }) => [styles.quickRow, pressed && styles.pressed]}>
-                <View style={[styles.quickIcon, { backgroundColor: theme.primarySoft }]}>
-                  <ThemedText style={[styles.quickSymbol, { color: theme.primary }]}>☕</ThemedText>
-                </View>
-                <View style={styles.quickCopy}>
-                  <ThemedText type="smallBold" style={styles.quickTitle}>ECE coffee bar</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{openingEcg ? 'Opening ECE…' : 'Order and track your coffee'}</ThemedText>
-                </View>
-                <ThemedText accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.quickArrow, { color: theme.primary }]}>→</ThemedText>
+                disabled={openingEcg}
+                onPress={() => profile?.identitySource === 'ecg' ? void openEcg() : router.push('/more')}
+                style={({ pressed }) => [styles.coffeeButton, (pressed || openingEcg) && styles.pressed]}>
+                <ThemedText type="smallBold" style={styles.coffeeButtonText}>
+                  {openingEcg ? 'Opening ECE…' : profile?.identitySource === 'ecg' ? 'Open coffee ordering' : 'Connect coffee ordering'}
+                </ThemedText>
               </Pressable>
+            </View>
+            <View style={[styles.quickGrid, compact && styles.quickGridCompact]}>
               {quickLinks.map((item) => (
-                <Pressable key={item.title} onPress={() => router.push(item.href)} accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`} style={({ pressed }) => [styles.quickRow, { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
-                  <View style={[styles.quickIcon, { backgroundColor: item.urgent ? theme.danger : theme.primarySoft }]}>
-                    <ThemedText style={[styles.quickSymbol, { color: item.urgent ? Brand.white : theme.primary }]}>{item.symbol}</ThemedText>
+                <Pressable key={item.title} onPress={() => router.push(item.href)}
+                  accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
+                  style={({ pressed }) => [styles.quickTile, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  <View style={[styles.quickIcon, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
+                    {item.urgent
+                      ? <Feather name="phone-call" size={27} color={theme.danger} accessible={false} />
+                      : <Ionicons name="chatbubble-ellipses-outline" size={27} color={theme.primary} accessible={false} />}
                   </View>
                   <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={styles.quickTitle}>{item.title}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
                   </View>
-                  <ThemedText accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.quickArrow, { color: theme.primary }]}>→</ThemedText>
                 </Pressable>
               ))}
             </View>
@@ -195,12 +204,8 @@ const styles = StyleSheet.create({
   heroEyebrow: { color: Brand.gold, fontSize: 12, letterSpacing: 1.8 },
   heroTitle: { color: Brand.white, fontFamily: Fonts?.serif, fontSize: 34, fontWeight: '700', lineHeight: 39 },
   heroTitleCompact: { fontSize: 28, lineHeight: 33 },
-  introduction: { alignItems: 'flex-start', flexDirection: 'row', gap: Spacing.three },
-  rule: { borderRadius: 2, height: 56, marginTop: 3, width: 4 },
-  introductionCopy: { flex: 1, gap: Spacing.one },
   eyebrow: { fontSize: 12, letterSpacing: 1.5 },
-  pageTitle: { fontFamily: Fonts?.serif, fontSize: 30, fontWeight: '700', lineHeight: 36 },
-  scheduleCard: { backgroundColor: Brand.parchment, borderColor: Brand.goldDark, borderRadius: Radius.feature, borderWidth: 2, gap: Spacing.three, minHeight: 240, padding: Spacing.four },
+  scheduleCard: { backgroundColor: Brand.parchment, borderColor: Brand.goldDark, borderRadius: Radius.feature, borderWidth: 2, gap: Spacing.four, minHeight: 280, paddingHorizontal: Spacing.four, paddingVertical: Spacing.five },
   scheduleTopline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, justifyContent: 'space-between' },
   scheduleLabelRow: { alignItems: 'center', backgroundColor: Brand.gold, borderRadius: Radius.pill, flexDirection: 'row', minHeight: 32, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
   scheduleEyebrow: { color: Brand.black, fontSize: 12, letterSpacing: 1.5 },
@@ -216,13 +221,21 @@ const styles = StyleSheet.create({
   updateCard: { borderLeftWidth: 4, borderRadius: Radius.card, borderWidth: 1, gap: Spacing.twoAndHalf, minHeight: 156, padding: 20 },
   statusBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
   updateTitle: { fontFamily: Fonts?.serif, fontSize: 21, lineHeight: 27 },
-  quickList: { borderRadius: 18, borderWidth: 1, maxWidth: 680, overflow: 'hidden', width: '100%' },
-  quickRow: { alignItems: 'center', flexDirection: 'row', gap: 13, minHeight: 76, paddingHorizontal: 16, paddingVertical: 12, width: '100%' },
-  quickIcon: { alignItems: 'center', borderRadius: 12, height: 44, justifyContent: 'center', width: 44 },
-  quickSymbol: { fontSize: 22, fontWeight: '700', lineHeight: 28 },
-  quickCopy: { flex: 1, gap: 2, minWidth: 0 },
-  quickTitle: { fontSize: 16 },
-  quickArrow: { fontSize: 22, lineHeight: 28, marginLeft: 4 },
+  quickHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  coffeeCard: { backgroundColor: Brand.pine, borderRadius: Radius.feature, padding: Spacing.four, gap: Spacing.three },
+  coffeeTopline: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.two },
+  coffeeIcon: { backgroundColor: '#F5E6A8', width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  setupBadge: { backgroundColor: '#F5E6A8', borderRadius: Radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
+  coffeeTitle: { color: Brand.white, fontSize: 24, lineHeight: 30, marginTop: Spacing.two },
+  coffeeDescription: { color: '#E3ECE5', fontSize: 16, lineHeight: 24 },
+  coffeeButton: { backgroundColor: '#F5E6A8', minHeight: 52, borderRadius: 16, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
+  coffeeButtonText: { color: Brand.pine, textAlign: 'center' },
+  quickGrid: { flexDirection: 'row', gap: Spacing.three, alignItems: 'stretch' },
+  quickGridCompact: { flexDirection: 'column' },
+  quickTile: { flex: 1, minWidth: 0, minHeight: 180, padding: Spacing.four, borderRadius: Radius.feature, borderWidth: 1, gap: Spacing.four },
+  quickIcon: { alignItems: 'center', borderRadius: 18, height: 56, justifyContent: 'center', width: 56 },
+  quickCopy: { gap: Spacing.two },
+  quickTitle: { fontSize: 18, lineHeight: 24 },
   connectionNotice: { borderRadius: Radius.card, borderWidth: 1, gap: Spacing.one, padding: Spacing.three },
   pressed: { opacity: 0.76 },
 });
