@@ -1,2 +1,15 @@
+# Each handler authenticates with getUser; revocation validates the private integration key.
+[functions.ecg-claim]
+verify_jwt = false
+
+[functions.ecg-refresh]
+verify_jwt = false
+
+[functions.ecg-handoff]
+verify_jwt = false
+
+[functions.ecg-logout]
+verify_jwt = false
+
 [functions.ecg-revocation]
 verify_jwt = false

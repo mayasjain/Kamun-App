@@ -27,7 +27,9 @@ Local setup
 3. From the repository root, start the attendee app with npm run dev:mobile.
 4. Start the organiser dashboard with npm run dev:admin in another terminal.
 
-The shared ECE login is implemented locally but is not deployed to the live site.
+The attendee web app is published at https://kamun-2026-app.pages.dev.
+The shared ECE login is deployed against https://ece-atelier-cafe.pages.dev;
+use codes from that separate ECE instance, not the original CSV.
 Current deployment requirements and verification: docs/ECG_SHARED_CODE_RELEASE.txt
 ECE source patch and installation instructions: integrations/ece/README.txt
 Legacy KAMUN test codes do not establish an ECE identity.
@@ -45,3 +47,11 @@ trusted organiser an admin_profiles row with that user's UUID and role 'admin'.
 The dashboard login is /auth/login; attendee codes do not grant admin access.
 The conference-resources bucket is public: hiding a listing does not make its
 file private. Upload only documents approved for public sharing.
+
+Cloudflare attendee web deployment
+- Project: kamun-2026-app. Config: apps/mobile/wrangler.json.
+- From apps/mobile: npm run deploy:web (requires Cloudflare login).
+- Build-time variables in .env.local: EXPO_PUBLIC_SUPABASE_URL,
+  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY, EXPO_PUBLIC_ECE_URL.
+- Only the attendee static web export is uploaded; the organiser dashboard stays separate.
+- The published origin has its own saved login, so enter your ECE code once there.

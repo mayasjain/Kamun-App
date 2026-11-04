@@ -1,3 +1,6 @@
+Current update — 4 November 2026
+The portable patch now targets base e3f6b50d09c2cbe2bcbaf300ee598a962eb7638f and includes shared login plus the requested participant back arrow. It has been deployed to ece-atelier-cafe and ece-atelier-staff in the owner’s Cloudflare account. The working branch is astra/atelier-shared-login in /private/tmp/kamun-ece-deploy. No GitHub push has been made. The earlier branch/commit details below are historical.
+
 ECE changes for KAMUN shared login
 
 Repository: https://github.com/karan-kc/covfefe

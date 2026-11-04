@@ -1,11 +1,19 @@
 diff --git a/CHANGES.md b/CHANGES.md
-index 70f92c7..342a2c1 100644
+index 70f92c7..f6f485f 100644
 --- a/CHANGES.md
 +++ b/CHANGES.md
-@@ -2,6 +2,13 @@
+@@ -2,6 +2,21 @@
  
  Newest entries first. Every agent session ends with an entry. The format is in [`AGENTS.md`](AGENTS.md).
  
++## 2026-11-04 — Astra
++**What:** Deployed shared login to the owner’s ECE atelier instance and added an accessible 44px back arrow above the participant header. The arrow uses browser history and preserves sessions; it is disabled when no previous entry exists.
++**Why:** The owner verified automatic login from Kamun and requested an easy return.
++**Files:** Participant App and styles, shared-login handlers, session helpers, additive D1 migrations, deployment notes.
++**Heads-up for Claude:** Atelier uses its own database and codes. Source lives on astra/atelier-shared-login; the portable patch is preserved in the Kamun workspace. No original ECE environment was changed. Browser automation unavailable for final visual inspection.
++**Validation:** Shared login: 481 ECE tests, typecheck, builds; Kamun SQL rehearsals and 24 tests. Owner confirmed automatic login. Back arrow: participant typecheck/build passed.
++**Next:** Owner checks back navigation from Kamun on their device.
++
 +## 2026-10-28 22:00 (Europe/Berlin) — Astra
 +**What:** Restored the previously reverted private KAMUN code verification and one-use ECE handoff on a new branch. Added installation-scoped linked-session logout, generation checks against logout/exchange races, and regression coverage.
 +**Why:** Approved workflow is one personal code in KAMUN, then automatic ECE access as the matching delegate or chair, with remembered sessions and linked logout.
@@ -91,7 +99,7 @@ index 0000000..ed23871
 +  return respond({ error: 'invalid_input' }, 400);
 +};
 diff --git a/apps/cafe/src/App.tsx b/apps/cafe/src/App.tsx
-index b13d6d9..e3d1392 100644
+index b13d6d9..a7d115c 100644
 --- a/apps/cafe/src/App.tsx
 +++ b/apps/cafe/src/App.tsx
 @@ -9,7 +9,7 @@ import {
@@ -171,6 +179,27 @@ index b13d6d9..e3d1392 100644
        const code = consumeCodeLink(location, history);
        if (code === null) return;
        void apiPost('/api/login', { code }); // dispatches AUTH_CHANGING synchronously
+@@ -301,6 +324,20 @@ export function App() {
+   return (
+     <div className="page">
+       <PullToRefresh onRefresh={reload} />
++      <nav className="back-navigation" aria-label="Back navigation">
++        <button
++          type="button"
++          className="icon-button back-button"
++          onClick={() => window.history.back()}
++          disabled={window.history.length <= 1}
++          aria-label="Go back"
++          title="Go back"
++        >
++          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
++            <path d="M19 12H5m7-7-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
++          </svg>
++        </button>
++      </nav>
+       <header className="topbar">
+         <img src="/brand/kamun26-logo.svg" alt="KAMUN 2026 · Black Forest Summit" className="topbar-logo" />
+         <div>
 diff --git a/apps/cafe/src/api.ts b/apps/cafe/src/api.ts
 index fe0fa94..7bd9251 100644
 --- a/apps/cafe/src/api.ts
@@ -234,6 +263,44 @@ index 3018b91..2d97687 100644
 +  history.replaceState(null, '', location.pathname + location.search);
 +  return ticket;
 +}
+diff --git a/apps/cafe/src/styles.css b/apps/cafe/src/styles.css
+index 55357bd..004af73 100644
+--- a/apps/cafe/src/styles.css
++++ b/apps/cafe/src/styles.css
+@@ -18,7 +18,7 @@ main {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+-  padding: calc(12px + env(safe-area-inset-top)) 0 12px;
++  padding: 8px 0 12px;
+ }
+ 
+ .topbar-logo {
+@@ -693,3 +693,24 @@ body.no-scroll {
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+ }
++
++.back-navigation {
++  padding-top: calc(8px + env(safe-area-inset-top));
++}
++
++.back-button {
++  display: grid;
++  place-items: center;
++  margin-left: 0;
++  color: var(--text);
++}
++
++.back-button:disabled {
++  opacity: 0.4;
++  cursor: default;
++}
++
++.back-button:focus-visible {
++  outline: 2px solid currentColor;
++  outline-offset: 3px;
++}
 diff --git a/apps/cafe/test/login-code.test.ts b/apps/cafe/test/login-code.test.ts
 index c6f2ffd..0eae617 100644
 --- a/apps/cafe/test/login-code.test.ts
@@ -296,10 +363,10 @@ index 0000000..491181e
 +CREATE INDEX sessions_kamun_scope ON sessions(kamun_scope);
 +CREATE INDEX kamun_tickets_scope ON kamun_handoff_tickets(scope);
 diff --git a/docs/PLAN.md b/docs/PLAN.md
-index 3fde4c7..94ad216 100644
+index 3fde4c7..7c4df9c 100644
 --- a/docs/PLAN.md
 +++ b/docs/PLAN.md
-@@ -1149,3 +1149,13 @@ Parts marked *done* already exist in M0.
+@@ -1149,3 +1149,16 @@ Parts marked *done* already exist in M0.
  **Smaller gaps:**
  - Overlapping schedule blocks are rejected by the editor, validated on the server.
  - Override expiry, "+ spots" and paid-tab semantics: see R4.
@@ -313,17 +380,24 @@ index 3fde4c7..94ad216 100644
 +Linked tickets and sessions carry an opaque installation scope derived server-side by KAMUN from its Supabase project, conference and user ID. KAMUN logout invalidates its binding, then asks the private ECE endpoint to increment that scope's generation and remove its tickets and sessions. Ticket consumption checks the generation atomically when creating a session, preventing a concurrent exchange from surviving logout. Independent device sessions are unaffected. This does not revoke unrelated ECE sessions created by entering a code directly. ECE logout still affects its own cookie; it does not sign out KAMUN.
 +
 +Deploy additive migrations 0011 and 0012 and the new participant/staff code together with KAMUN's claim, refresh, handoff, logout and revocation functions. Rehearse on fake staging accounts. Never run provision:demo as part of deployment or import the existing real code roster into another database. The connected account in this session cannot deploy the friend's live domains.
++
++### Participant back navigation — 2026-11-04
++A 44px back-arrow button above the participant header returns through browser history without signing out. It is disabled when the tab has no previous history entry. When ECE is opened from Kamun in the same tab, it returns to Kamun; no destination URL or credentials are added to the link.
 diff --git a/docs/TASKS.md b/docs/TASKS.md
-index 1c2ceee..c942d03 100644
+index 1c2ceee..e464a73 100644
 --- a/docs/TASKS.md
 +++ b/docs/TASKS.md
-@@ -103,3 +103,6 @@ Tick it `[x]` when it's merged. Owner-only tasks are marked 👤. Spec: [`PLAN.m
+@@ -103,3 +103,10 @@ Tick it `[x]` when it's merged. Owner-only tasks are marked 👤. Spec: [`PLAN.m
  - [ ] Code freeze Nov 9 (bug fixes only)
  - [ ] 👤 Live Nov 14–15
  - [ ] 👤 Nov 16–22: export stats, purge data, cancel Workers Paid
 +
 +## KAMUN single login
 +- [ ] Restore identity handoff; add linked-session logout, account switching and regression tests — claimed: Astra 2026-10-28. Implemented on astra/kamun-single-login; 481 tests, typecheck and builds pass. Pending review/merge and paired staging/live deployment.
++
++- [x] Deploy shared login to ece-atelier and verify with Kamun — claimed: Astra 2026-11-04.
++
++- [x] Add participant back arrow using browser history — claimed: Astra 2026-11-04.
 diff --git a/local/functions/api/integration/identity.ts b/local/functions/api/integration/identity.ts
 new file mode 100644
 index 0000000..63eff6d

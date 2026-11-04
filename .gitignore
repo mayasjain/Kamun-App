@@ -22,3 +22,6 @@ skills/
 
 # Supabase CLI scratch metadata
 supabase/.temp/
+
+# Cloudflare local deployment metadata
+.wrangler/

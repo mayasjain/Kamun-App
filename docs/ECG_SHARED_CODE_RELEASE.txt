@@ -1,3 +1,21 @@
+# Deployment update — 4 November 2026
+
+Deployed to the owner's separate ECE test instance:
+- Participant: https://ece-atelier-cafe.pages.dev
+- Staff: https://ece-atelier-staff.pages.dev
+- Shared D1: ece-atelier (ee533e9e-a03b-401a-b56a-67f0e34a6593), additive migrations 0011/0012 applied after backup.
+- Kamun project jkbtxjefzzmplmrvaubc: all three 20261027 migrations applied atomically after rollback-only rehearsals of both SQL authorization tests.
+- All five ecg-* Edge Functions deployed individually. They validate user tokens or the private revocation key inside the handlers.
+- Matching private integration keys configured on ECE participant/staff and Supabase. Staff revocation callback configured.
+- Mobile .env.local now points EXPO_PUBLIC_ECE_URL at the atelier participant URL; restart Expo to pick up the change.
+- ECE typecheck, 481 tests and builds passed. Kamun 24 tests and mobile typecheck passed.
+- Live private endpoint rejects missing keys and invalid codes correctly. User manually confirmed automatic login from Kamun into ECE. Linked logout remains unverified manually.
+- Participant back arrow deployed 4 November 2026; uses browser history and preserves login. Participant typecheck/build passed and published bundle verified. No browser automation was available for visual QA.
+- Original CSV codes belong to the original ECE deployment, not this separate instance. Existing TEST committee codes cannot map to Kamun's conference committees. Codes generated for existing ILO test-instance accounts 16 (Australia) and 17 (Brazil).
+- Prepared deployment checkout: /private/tmp/kamun-ece-deploy, branch astra/atelier-shared-login. Durable source patch remains integrations/ece/single-login.patch. No source pushed to GitHub.
+
+The older release notes below describe the previous undeployed state.
+
 # KAMUN + ECE shared-login release — 28 October 2026
 
 Status: IMPLEMENTED AND TESTED LOCALLY; NOT DEPLOYED OR VERIFIED ON THE LIVE HOST.
