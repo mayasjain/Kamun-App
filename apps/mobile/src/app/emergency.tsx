@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,7 +11,6 @@ import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { phoneCallUrl, whatsappChatUrl } from '@/lib/contact-links';
 
-const roles = ['Secretary General', 'Deputy Secretary General', 'USG Safety and Security'] as const;
 const services = [
   { name: 'Fire & ambulance', number: '112' },
   { name: 'Police', number: '110' },
@@ -20,13 +19,9 @@ const services = [
 export default function EmergencyScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { content, isLoading } = useConferenceContent();
+  const { content, isLoading, error, refresh } = useConferenceContent();
   const [linkError, setLinkError] = useState('');
   const contacts = content?.emergencyContacts ?? [];
-  const roleContacts = roles.map((role) => ({
-    role,
-    contact: contacts.find((item) => item.role === role || item.label === role),
-  }));
 
   async function openLink(url: string) {
     setLinkError('');
@@ -53,7 +48,8 @@ export default function EmergencyScreen() {
         </View>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />}>
         <View style={styles.section}>
           <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>EMERGENCY SERVICES</ThemedText>
           <View style={[styles.serviceCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -74,26 +70,28 @@ export default function EmergencyScreen() {
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>KAMUN STAFF</ThemedText>
+          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>SAFETY AND AWARENESS</ThemedText>
+          <ThemedText themeColor="textSecondary">Contact our team for support throughout the conference and at the socials, during the day and at night.</ThemedText>
           <View style={styles.staffList}>
-            {roleContacts.map(({ role, contact }) => {
-              const callUrl = phoneCallUrl(contact?.phone ?? null);
-              const whatsappUrl = whatsappChatUrl(contact?.phone ?? null);
+            {contacts.map((contact) => {
+              const name = contact.personName ?? contact.label;
+              const callUrl = phoneCallUrl(contact.phone);
+              const whatsappUrl = whatsappChatUrl(contact.phone);
               return (
-                <View key={role} style={[styles.staffCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <View key={contact.id} style={[styles.staffCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={styles.staffIdentity}>
-                    <ThemedText type="smallBold" style={styles.staffName}>{contact?.personName ?? role}</ThemedText>
-                    {contact?.personName ? <ThemedText type="small" themeColor="textSecondary">{role}</ThemedText> : null}
-                    {contact?.phone ? <ThemedText type="small" themeColor="textSecondary">{contact.phone}</ThemedText> : null}
+                    <ThemedText type="smallBold" style={styles.staffName}>{name}</ThemedText>
+                    {contact.role ? <ThemedText type="small" themeColor="textSecondary">{contact.role}</ThemedText> : null}
+                    {contact.phone ? <ThemedText type="small" themeColor="textSecondary">{contact.phone}</ThemedText> : null}
                   </View>
                   {callUrl ? (
                     <View style={styles.staffActions}>
-                      <Pressable accessibilityRole="link" accessibilityLabel={`Call ${role}`} onPress={() => void openLink(callUrl)}
+                      <Pressable accessibilityRole="link" accessibilityLabel={`Call ${name}`} onPress={() => void openLink(callUrl)}
                         style={({ pressed }) => [styles.actionButton, { backgroundColor: Brand.pine }, pressed && styles.pressed]}>
                         <ThemedText type="smallBold" style={styles.callButtonText}>Call</ThemedText>
                       </Pressable>
                       {whatsappUrl ? (
-                        <Pressable accessibilityRole="link" accessibilityLabel={`Chat with ${role} on WhatsApp`} onPress={() => void openLink(whatsappUrl)}
+                        <Pressable accessibilityRole="link" accessibilityLabel={`Chat with ${name} on WhatsApp`} onPress={() => void openLink(whatsappUrl)}
                           style={({ pressed }) => [styles.actionButton, { borderColor: theme.primary, borderWidth: 1 }, pressed && styles.pressed]}>
                           <ThemedText type="smallBold" style={{ color: theme.primary }}>WhatsApp</ThemedText>
                         </Pressable>
@@ -105,6 +103,12 @@ export default function EmergencyScreen() {
                 </View>
               );
             })}
+            {!contacts.length ? <ThemedText themeColor="textSecondary">{isLoading ? 'Loading safety contacts…' : 'Safety contacts are currently unavailable. Please contact an organiser in person.'}</ThemedText> : null}
+            {error ? (
+              <Pressable accessibilityRole="button" onPress={() => void refresh()} disabled={isLoading} style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}>
+                <ThemedText type="smallBold" themeColor="primary">{isLoading ? 'Refreshing…' : 'Could not update contacts. Tap to retry.'}</ThemedText>
+              </Pressable>
+            ) : null}
           </View>
         </View>
         {linkError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert">{linkError}</ThemedText> : null}

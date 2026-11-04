@@ -35,12 +35,22 @@ export default function MoreScreen() {
   }
 
   return (
-    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Safety and app preferences">
+    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Our partners, safety and app preferences">
+      <Link href="/partners" asChild>
+        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
+          <ContentCard label="OUR COMMUNITY" title="Sponsors & partners">
+            <View style={styles.linkRow}>
+              <ThemedText themeColor="textSecondary" style={{ flex: 1 }}>Meet the sponsors, institutions and partner conferences supporting KAMUN 2026.</ThemedText>
+              <ThemedText themeColor="primary">→</ThemedText>
+            </View>
+          </ContentCard>
+        </Pressable>
+      </Link>
       <Link href="/emergency" asChild>
         <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
           <ContentCard label="SAFETY" title="Emergency contacts">
             <View style={styles.linkRow}>
-              <ThemedText themeColor="textSecondary">Secretary General, Deputy Secretary General and USG Safety and Security</ThemedText>
+              <ThemedText themeColor="textSecondary" style={{ flex: 1 }}>Safety and Awareness team contacts and emergency services</ThemedText>
               <ThemedText themeColor="primary">→</ThemedText>
             </View>
           </ContentCard>

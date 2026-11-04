@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toInstant, localTime } from '../lib/berlin-time.ts';
+import { toInstant, localTime } from '../src/lib/berlin-time.ts';
 
 test('Karlsruhe winter and summer times map to the correct UTC instant', () => {
   assert.equal(toInstant('2026-11-13T09:00'), '2026-11-13T08:00:00.000Z');

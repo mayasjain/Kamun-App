@@ -7,11 +7,10 @@ import { useTheme } from '@/hooks/use-theme';
 type ContentCardProps = PropsWithChildren<{
   label: string;
   title: string;
-  accent?: boolean;
   preview?: ReactNode;
 }>;
 
-export function ContentCard({ label, title, accent = false, preview, children }: ContentCardProps) {
+export function ContentCard({ label, title, preview, children }: ContentCardProps) {
   const theme = useTheme();
 
   return (
@@ -19,16 +18,16 @@ export function ContentCard({ label, title, accent = false, preview, children }:
       style={[
         styles.card,
         {
-          backgroundColor: accent ? theme.primary : theme.backgroundElement,
-          borderColor: accent ? theme.primary : theme.border,
+          backgroundColor: theme.backgroundElement,
+          borderColor: theme.border,
         },
       ]}>
       <View style={styles.header}>
         <View style={styles.heading}>
-          <ThemedText type="smallBold" style={[styles.label, { color: accent ? '#FFFFFF' : theme.primary }]}>
+          <ThemedText type="smallBold" style={styles.label} themeColor="primary">
             {label}
           </ThemedText>
-          <ThemedText type="subtitle" style={[styles.title, accent && styles.onAccent]}>
+          <ThemedText type="subtitle" style={styles.title}>
             {title}
           </ThemedText>
           {preview ? <View>{children}</View> : null}
@@ -46,5 +45,4 @@ const styles = StyleSheet.create({
   heading: { flex: 1, minWidth: 0, gap: 8 },
   label: { fontSize: 12, letterSpacing: 1.1 },
   title: { fontSize: 22, lineHeight: 28 },
-  onAccent: { color: '#FFFFFF' },
 });

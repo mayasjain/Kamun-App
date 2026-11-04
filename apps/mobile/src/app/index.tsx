@@ -21,6 +21,7 @@ type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean }
 const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help and contacts', href: '/emergency', urgent: true },
   { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
+  { title: 'Sponsors & partners', detail: 'Meet all our supporters and partner conferences', href: '/partners' },
 ];
 
 export default function HomeScreen() {
@@ -160,11 +161,11 @@ export default function HomeScreen() {
               {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
-                  style={({ pressed }) => [styles.quickTile, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  style={({ pressed }) => [styles.quickTile, item.href === '/partners' && styles.sponsorsTile, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <Feather name="phone-call" size={27} color={theme.danger} accessible={false} />
-                      : <Ionicons name="chatbubble-ellipses-outline" size={27} color={theme.primary} accessible={false} />}
+                      : <Ionicons name={item.href === '/partners' ? 'people-outline' : 'chatbubble-ellipses-outline'} size={27} color={theme.primary} accessible={false} />}
                   </View>
                   <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={styles.quickTitle}>{item.title}</ThemedText>
@@ -230,9 +231,10 @@ const styles = StyleSheet.create({
   coffeeDescription: { color: '#E3ECE5', fontSize: 16, lineHeight: 24 },
   coffeeButton: { backgroundColor: '#F5E6A8', minHeight: 52, borderRadius: 16, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   coffeeButtonText: { color: Brand.pine, textAlign: 'center' },
-  quickGrid: { flexDirection: 'row', gap: Spacing.three, alignItems: 'stretch' },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three, alignItems: 'stretch' },
   quickGridCompact: { flexDirection: 'column' },
   quickTile: { flex: 1, minWidth: 0, minHeight: 180, padding: Spacing.four, borderRadius: Radius.feature, borderWidth: 1, gap: Spacing.four },
+  sponsorsTile: { flexBasis: '100%' },
   quickIcon: { alignItems: 'center', borderRadius: 18, height: 56, justifyContent: 'center', width: 56 },
   quickCopy: { gap: Spacing.two },
   quickTitle: { fontSize: 18, lineHeight: 24 },

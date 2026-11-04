@@ -28,13 +28,14 @@ export default function AppTabs() {
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
           <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
+          <TabTrigger name="partners" href="/partners" style={styles.hiddenTab} />
         </CustomTabList>
       </TabList>
     </Tabs>
   );
 }
 
-export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
     <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <ThemedView
@@ -48,7 +49,7 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+function CustomTabList(props: TabListProps) {
   const { width } = useWindowDimensions();
   return (
     <View {...props} style={styles.tabListContainer}>
