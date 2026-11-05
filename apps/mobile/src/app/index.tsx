@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const { profile, clearProfile, restoreError } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
+  const phone = width < 600;
   const compact = width < 375 || fontScale > 1.2;
   const [now, setNow] = useState(Date.now);
   const [openingEcg, setOpeningEcg] = useState(false);
@@ -66,9 +67,9 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}>
           <View style={styles.masthead}>
-            <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={styles.mastheadLogo} />
+            <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={[styles.mastheadLogo, phone && styles.mastheadLogoPhone]} />
             <View style={styles.mastheadCopy}>
               <ThemedText type="smallBold" style={[styles.mastheadTitle, { color: theme.text }]}>KAMUN 2026</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">Black Forest Summit · Karlsruhe</ThemedText>
@@ -78,22 +79,22 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View accessible accessibilityLabel="KAMUN 2026 banner showing Karlsruhe Palace and the Black Forest" style={[styles.hero, compact && styles.heroCompact]}>
+          <View accessible accessibilityLabel="KAMUN 2026 banner showing Karlsruhe Palace and the Black Forest" style={[styles.hero, (compact || phone) && styles.heroCompact]}>
             <Image source={require('../../assets/branding/kamun-banner.png')} resizeMode="cover" style={styles.heroArt} accessible={false} />
-            <View style={styles.heroCopy}>
+            <View style={[styles.heroCopy, phone && styles.heroCopyPhone]}>
               <ThemedText type="smallBold" style={styles.heroEyebrow}>KARLSRUHE · 2026</ThemedText>
               <ThemedText style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Diplomacy in the heart of the Black Forest.</ThemedText>
             </View>
           </View>
 
           <Link href="/schedule" asChild>
-            <Pressable accessibilityRole="link" accessibilityLabel={nextEvent ? `${eventIsLive ? "Happening now" : "Next event"}: ${nextEvent.title}. Open schedule` : 'Open conference schedule'} style={({ pressed }) => [styles.scheduleCard, pressed && styles.pressed]}>
+            <Pressable accessibilityRole="link" accessibilityLabel={nextEvent ? `${eventIsLive ? "Happening now" : "Next event"}: ${nextEvent.title}. Open schedule` : 'Open conference schedule'} style={({ pressed }) => [styles.scheduleCard, phone && styles.scheduleCardPhone, pressed && styles.pressed]}>
               <View style={styles.scheduleTopline}>
                 <View style={styles.scheduleLabelRow}>
                   <ThemedText type="smallBold" style={styles.scheduleEyebrow}>{eventIsLive ? 'HAPPENING NOW' : 'UP NEXT'}</ThemedText>
                 </View>
               </View>
-              <ThemedText style={styles.eventTitle}>{nextEvent?.title ?? (isLoading ? 'Loading programme…' : 'No upcoming sessions')}</ThemedText>
+              <ThemedText style={[styles.eventTitle, phone && styles.eventTitlePhone]}>{nextEvent?.title ?? (isLoading ? 'Loading programme…' : 'No upcoming sessions')}</ThemedText>
               <ThemedText style={styles.eventDetail} themeColor="textSecondary">
                 {nextEvent ? `${formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}${nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}` : 'Open the programme to review the conference schedule.'}
               </ThemedText>
@@ -128,13 +129,13 @@ export default function HomeScreen() {
             <View style={styles.quickHeading}>
               <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>YOUR ESSENTIALS</ThemedText>
             </View>
-            <View style={[styles.coffeeCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <View style={[styles.coffeeTopline, compact && styles.coffeeToplineCompact]}>
-                <View style={[styles.coffeeIcon, { backgroundColor: theme.primarySoft }]}>
+                <View style={[styles.coffeeIcon, phone && styles.coffeeIconPhone, { backgroundColor: theme.primarySoft }]}>
                   <HomeIcon name="coffee" size={30} color={Brand.pine} />
                 </View>
                 <View style={styles.coffeeCopy}>
-                  <ThemedText type="subtitle" style={[styles.coffeeTitle, { color: theme.text }]}>ECE Coffee Bar</ThemedText>
+                  <ThemedText type="subtitle" style={[styles.coffeeTitle, phone && styles.coffeeTitlePhone, { color: theme.text }]}>ECE Coffee Bar</ThemedText>
                   <ThemedText style={[styles.coffeeDescription, { color: theme.textSecondary }]}>Your next coffee, one tap away</ThemedText>
                 </View>
                 {profile?.identitySource !== 'ecg' ? (
@@ -158,14 +159,14 @@ export default function HomeScreen() {
               {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
-                  style={({ pressed }) => [styles.quickTile, (item.href === '/partners' || item.href === '/memes') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes') && compact && styles.sponsorsTileCompact, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
-                  <View style={[styles.quickIcon, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
+                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, (item.href === '/partners' || item.href === '/memes') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes') && compact && styles.sponsorsTileCompact, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
                       : <HomeIcon name={item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
                   <View style={[styles.quickCopy, (item.href === '/partners' || item.href === '/memes') && styles.sponsorsCopy]}>
-                    <ThemedText type="smallBold" style={styles.quickTitle}>{item.title}</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
                   </View>
                   {item.href === '/partners' ? (
@@ -190,6 +191,17 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  phoneContent: { paddingHorizontal: 16, gap: 24 },
+  mastheadLogoPhone: { width: 40, height: 40 },
+  heroCopyPhone: { padding: 18 },
+  scheduleCardPhone: { minHeight: 0, paddingHorizontal: 18, paddingVertical: 20 },
+  eventTitlePhone: { fontSize: 24, lineHeight: 30 },
+  coffeeCardPhone: { padding: 16, gap: 12 },
+  coffeeIconPhone: { width: 40, height: 40, borderRadius: 14 },
+  coffeeTitlePhone: { fontSize: 18, lineHeight: 24 },
+  quickTilePhone: { minHeight: 140, padding: 16, gap: 12 },
+  quickIconPhone: { width: 40, height: 40, borderRadius: 14 },
+  quickTitlePhone: { fontSize: 16, lineHeight: 22 },
   root: { flex: 1 },
   safeArea: { flex: 1 },
   content: { alignSelf: 'center', gap: Spacing.five, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + Spacing.five, paddingHorizontal: 20, paddingTop: Spacing.two, width: '100%' },

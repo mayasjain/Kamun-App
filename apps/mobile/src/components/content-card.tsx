@@ -1,5 +1,5 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -12,11 +12,13 @@ type ContentCardProps = PropsWithChildren<{
 
 export function ContentCard({ label, title, preview, children }: ContentCardProps) {
   const theme = useTheme();
+  const phone = useWindowDimensions().width < 600;
 
   return (
     <View
       style={[
         styles.card,
+        phone && { padding: 16 },
         {
           backgroundColor: theme.backgroundElement,
           borderColor: theme.border,
@@ -27,7 +29,7 @@ export function ContentCard({ label, title, preview, children }: ContentCardProp
           <ThemedText type="smallBold" style={styles.label} themeColor="primary">
             {label}
           </ThemedText>
-          <ThemedText type="subtitle" style={styles.title}>
+          <ThemedText type="subtitle" style={[styles.title, phone && { fontSize: 20, lineHeight: 26 }]}>
             {title}
           </ThemedText>
           {preview ? <View>{children}</View> : null}

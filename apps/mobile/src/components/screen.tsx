@@ -1,5 +1,5 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -17,18 +17,19 @@ type ScreenProps = PropsWithChildren<{
 
 export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false }: ScreenProps) {
   const theme = useTheme();
+  const phone = useWindowDimensions().width < 600;
 
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
             <View style={styles.eyebrowRow}>
               <View style={[styles.eyebrowRule, { backgroundColor: theme.accent }]} />
               <ThemedText type="smallBold" style={{ color: theme.primary }}>{eyebrow}</ThemedText>
             </View>
-            <ThemedText type="title" style={styles.title}>{title}</ThemedText>
+            <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle]}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
           </View>
           <View style={styles.body}>{children}</View>
@@ -51,6 +52,8 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.five,
     gap: Spacing.five,
   },
+  phoneContent: { paddingHorizontal: 16, paddingTop: 16, gap: 24 },
+  phoneTitle: { fontSize: 30, lineHeight: 36 },
   header: { gap: Spacing.two, paddingTop: Spacing.two },
   eyebrowRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
   eyebrowRule: { borderRadius: 2, height: 3, width: 28 },

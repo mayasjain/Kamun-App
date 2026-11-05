@@ -17,7 +17,7 @@ export default function PartnersScreen() {
   const columns = fontScale > 1.3 || availableWidth < 300 ? 1 : availableWidth >= 640 ? 3 : 2;
   const cardWidth = (availableWidth - Spacing.twoAndHalf * (columns - 1)) / columns;
 
-  const logoSize = Math.min(128, Math.max(0, cardWidth - Spacing.twoAndHalf * 2 - 2));
+  const logoSize = Math.min(width < 600 ? 88 : 128, Math.max(0, cardWidth - Spacing.twoAndHalf * 2 - 2));
 
   return (
     <Screen eyebrow="KAMUN 2026" title="Sponsors & partners" subtitle="The organisations and conferences helping make KAMUN possible.">
