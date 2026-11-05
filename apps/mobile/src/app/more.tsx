@@ -1,6 +1,5 @@
-import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 
 import { ContentCard } from '@/components/content-card';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
@@ -35,34 +34,7 @@ export default function MoreScreen() {
   }
 
   return (
-    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Our partners, safety and app preferences">
-      <Link href="/memes" asChild>
-        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
-          <ContentCard label="THE UNOFFICIAL RECORD" title="Committee memes">
-            <ThemedText themeColor="textSecondary">Browse the latest laughs from every committee, or post a meme of your own. →</ThemedText>
-          </ContentCard>
-        </Pressable>
-      </Link>
-      <Link href="/partners" asChild>
-        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
-          <ContentCard label="OUR COMMUNITY" title="Sponsors & partners">
-            <View style={styles.linkRow}>
-              <ThemedText themeColor="textSecondary" style={{ flex: 1 }}>Meet the sponsors, institutions and partner conferences supporting KAMUN 2026.</ThemedText>
-              <ThemedText themeColor="primary">→</ThemedText>
-            </View>
-          </ContentCard>
-        </Pressable>
-      </Link>
-      <Link href="/emergency" asChild>
-        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
-          <ContentCard label="SAFETY" title="Emergency contacts">
-            <View style={styles.linkRow}>
-              <ThemedText themeColor="textSecondary" style={{ flex: 1 }}>Safety and Awareness team contacts and emergency services</ThemedText>
-              <ThemedText themeColor="primary">→</ThemedText>
-            </View>
-          </ContentCard>
-        </Pressable>
-      </Link>
+    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Your access and app setup">
       {Platform.OS === 'web' ? (
         <ContentCard label="HOME SCREEN" title="Keep KAMUN on your phone">
           <ThemedText themeColor="textSecondary">
@@ -85,7 +57,5 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  linkRow: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
-  pressed: { opacity: 0.7 },
   signOutButton: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 12 },
 });

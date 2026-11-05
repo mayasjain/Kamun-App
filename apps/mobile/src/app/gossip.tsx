@@ -5,7 +5,6 @@ import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
@@ -15,10 +14,8 @@ type Gossip = { id: string; committee_id: string; message: string; status: Gossi
 export default function GossipScreen() {
   const theme = useTheme();
   const { profile } = useAttendeeProfile();
-  const { content } = useConferenceContent();
   const isChair = profile?.accessType === 'chair';
-  const committees = content?.committees ?? [];
-  const [selectedCommittee, setSelectedCommittee] = useState<string | null>(null);
+  const selectedCommittee = profile?.committeeId;
   const [message, setMessage] = useState('');
   const [inbox, setInbox] = useState<Gossip[]>([]);
   const [loading, setLoading] = useState(false);
@@ -123,19 +120,10 @@ export default function GossipScreen() {
     </Screen>;
   }
 
-  return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle="Send a message to the chairs of any committee.">
+  return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle={`Send a private message to your ${profile?.committeeName ?? 'committee'} chairs.`}>
     <View style={styles.form}>
-        <ThemedText type="small" themeColor="textSecondary">Private to the selected committee’s chairs.</ThemedText>
-        <ThemedText type="smallBold">CHOOSE A COMMITTEE</ThemedText>
-        <View style={styles.committeeOptions}>{committees.map((committee) => <Pressable key={committee.id}
-          accessibilityRole="radio" accessibilityState={{ checked: selectedCommittee === committee.id }}
-          accessibilityLabel={committee.name}
-          onPress={() => { setSelectedCommittee(committee.id); setNotice(''); }}
-          style={[styles.committeeOption, { borderColor: selectedCommittee === committee.id ? theme.primary : theme.border, backgroundColor: selectedCommittee === committee.id ? theme.primarySoft : theme.backgroundElement }]}>
-          <ThemedText type="smallBold">{committee.abbreviation}</ThemedText>
-        </Pressable>)}</View>
-        {selectedCommittee ? <ThemedText type="small" themeColor="textSecondary">To: {committees.find((committee) => committee.id === selectedCommittee)?.name}</ThemedText> : null}
-        {!committees.length ? <ThemedText themeColor="textSecondary">Committees are loading or unavailable.</ThemedText> : null}
+        <ThemedText type="small" themeColor="textSecondary">Only your committee’s chairs can read your message. Your name is not shown.</ThemedText>
+        {!selectedCommittee ? <ThemedText themeColor="danger">Your account has no committee assigned. Please contact the organisers.</ThemedText> : null}
         <ThemedText type="smallBold">YOUR MESSAGE</ThemedText>
         <TextInput accessibilityLabel="Gossip message" multiline maxLength={500} value={message}
           onChangeText={(value) => { setMessage(value); setNotice(''); }}
@@ -155,8 +143,6 @@ export default function GossipScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: Spacing.three },
-  committeeOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  committeeOption: { alignItems: 'center', borderRadius: 10, borderWidth: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.three },
   input: { borderRadius: 12, borderWidth: 1, fontSize: 16, minHeight: 130, padding: Spacing.three },
   submit: { alignItems: 'center', borderRadius: 12, justifyContent: 'center', minHeight: 52 },
   messageText: { fontSize: 16, lineHeight: 24 },

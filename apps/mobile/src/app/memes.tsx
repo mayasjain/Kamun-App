@@ -23,6 +23,7 @@ export default function MemesScreen() {
  const [composing, setComposing] = useState(false);
  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
  const destination = filter;
+ const canPost = !!profile && (filter === null || filter === profile.committeeId);
  const destinationName = committees.find(c => c.id === destination)?.abbreviation ?? 'General';
  const [caption, setCaption] = useState('');
  const [busy, setBusy] = useState(false);
@@ -60,7 +61,7 @@ export default function MemesScreen() {
   } catch { setError('Could not open your photos. Please try again.'); }
  }
  async function post() {
-  if (!profile || !photo || mutation.current) return;
+  if (!profile || !photo || !canPost || mutation.current) return;
   mutation.current = true;
   setBusy(true); setError('');
   try {
@@ -83,7 +84,8 @@ export default function MemesScreen() {
   finally { mutation.current = false; setBusy(false); }
  }
  return <Screen eyebrow="THE UNOFFICIAL RECORD" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
-  {!composing && <ActionButton label={'Post the meme'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
+  {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
+  {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
   {composing ? <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
    <ThemedText themeColor="textSecondary">Keep it kind and only share photos you have permission to post.</ThemedText>
@@ -94,14 +96,14 @@ export default function MemesScreen() {
    <TextInput accessibilityLabel="Caption (optional)" value={caption} onChangeText={setCaption} maxLength={180} multiline editable={!busy} placeholder="A little context…" placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.border }]} />
    <ThemedText type="small" themeColor="textSecondary">{caption.length}/180</ThemedText>
 
-   {<ActionButton label={busy ? 'Posting…' : 'Post the meme'} onPress={() => void post()} primary={true} disabled={busy || !photo} />}
+   {<ActionButton label={busy ? 'Posting…' : 'Post the meme'} onPress={() => void post()} primary={true} disabled={busy || !photo || !canPost} />}
    {<ActionButton label={'Cancel'} onPress={() => setComposing(false)} primary={false} disabled={busy} />}
   </View> : null}
   {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
   {!composing && <>
   <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: filter === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: filter === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: filter === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{choices(filter, setFilter)}</View>
   {loading && !memes.length ? <View style={styles.panel}><ActivityIndicator color={theme.primary} /><ThemedText>Loading the latest laughs…</ThemedText></View> : null}
-  {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
+  {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{!canPost ? 'Check back soon for memes from this committee.' : filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
   {memes.filter(m => m.committee_id === filter).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
    <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
    <MemePhoto key={m.imageUrl} meme={m} />

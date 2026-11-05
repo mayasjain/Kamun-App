@@ -20,8 +20,8 @@ type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean }
 const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help & contacts', href: '/emergency', urgent: true },
   { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
-  { title: 'Committee memes', detail: 'Browse and share committee laughs', href: '/memes' },
-  { title: 'Sponsors & Partners', detail: 'The people behind KAMUN', href: '/partners' },
+  { title: 'Your KAMUN Padlet', detail: 'Meme it till you make it.', href: '/memes' },
+  { title: 'Sponsors & Partners', detail: 'Our pillars of support', href: '/partners' },
 ];
 
 export default function HomeScreen() {

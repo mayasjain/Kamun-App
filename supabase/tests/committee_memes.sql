@@ -13,10 +13,17 @@ set local role authenticated;
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claim.sub','80000000-0000-4000-8000-000000000051',true);
 do $$
-declare c uuid; m uuid; g uuid;
+declare c uuid; other_c uuid; m uuid; g uuid;
 begin
- select id into c from public.committees where conference_id='10000000-0000-4000-8000-000000000001' and published limit 1;
+ select id into c from public.committees where conference_id='10000000-0000-4000-8000-000000000001' and abbreviation='ILO' and published limit 1;
  m:=public.post_committee_meme('10000000-0000-4000-8000-000000000001',c,'80000000-0000-4000-8000-000000000051/10000000-0000-4000-8000-000000000001/test.jpg',' Test caption ');
+ select id into other_c from public.committees where conference_id='10000000-0000-4000-8000-000000000001' and published and id<>c limit 1;
+ if other_c is null then raise exception 'Test needs another committee'; end if;
+ begin
+  perform public.post_committee_meme('10000000-0000-4000-8000-000000000001',other_c,'80000000-0000-4000-8000-000000000051/10000000-0000-4000-8000-000000000001/test.jpg','Wrong committee');
+  raise exception 'Cross-committee post accepted';
+ exception when insufficient_privilege then null;
+ end;
  perform set_config('test.meme_id',m::text,true);
  perform set_config('test.committee_id',c::text,true);
  if exists(select 1 from public.list_committee_memes('10000000-0000-4000-8000-000000000001') where id=m) then raise exception 'Committee meme leaked into General'; end if;
