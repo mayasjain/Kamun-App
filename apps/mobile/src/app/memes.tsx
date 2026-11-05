@@ -1,0 +1,135 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Screen } from '@/components/screen';
+import { ThemedText } from '@/components/themed-text';
+import { useAttendeeProfile } from '@/contexts/attendee-profile';
+import { useConferenceContent } from '@/contexts/conference-content';
+import { useTheme } from '@/hooks/use-theme';
+import { loadMemes, postMeme, removeMeme, type Meme } from '@/lib/committee-memes';
+
+export default function MemesScreen() {
+ const theme = useTheme();
+ const { height: windowHeight } = useWindowDimensions();
+ const { profile } = useAttendeeProfile();
+ const { content } = useConferenceContent();
+ const committees = content?.committees ?? [];
+ const [filter, setFilter] = useState<string | null>(null);
+ const [memes, setMemes] = useState<Meme[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [more, setMore] = useState(false);
+ const [error, setError] = useState('');
+ const [notice, setNotice] = useState('');
+ const [composing, setComposing] = useState(false);
+ const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+ const destination = filter;
+ const destinationName = committees.find(c => c.id === destination)?.abbreviation ?? 'General';
+ const [caption, setCaption] = useState('');
+ const [busy, setBusy] = useState(false);
+ const [action, setAction] = useState<Meme | null>(null);
+ const request = useRef(0);
+ const mutation = useRef(false);
+ const refresh = useCallback(async (before?: string) => {
+  if (!profile) return;
+  const version = ++request.current;
+  setLoading(true); setError('');
+  try {
+   const rows = await loadMemes(profile.conferenceId, filter, before);
+   if (version !== request.current) return;
+   setMemes(old => before ? [...old, ...rows.filter(row => !old.some(m => m.id === row.id))] : rows);
+   setMore(rows.length === 24);
+  } catch { if (version === request.current) setError('Could not load the gallery. Check your connection and try again.'); }
+  finally { if (version === request.current) setLoading(false); }
+ }, [profile, filter, request]);
+ useEffect(() => {
+  let active = true;
+  const invalidate = () => { request.current++; };
+  void Promise.resolve().then(() => { if (active) { setMemes([]); void refresh(); } });
+  return () => { active = false; invalidate(); };
+ }, [refresh, request]);
+ // Refresh short-lived image URLs while the gallery is open.
+ useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
+ function choices(value: string | null, change: (id: string) => void) {
+  return committees.map(c => <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={c.name} accessibilityState={{ selected: value === c.id, disabled: busy }} disabled={busy} onPress={() => change(c.id)} style={({ pressed }) => [styles.chip, { backgroundColor: value === c.id ? theme.primary : theme.backgroundElement, borderColor: theme.border }, pressed && { opacity: 0.65 }]}><ThemedText type="smallBold" style={{ color: value === c.id ? theme.onPrimary : theme.text }}>{c.abbreviation}</ThemedText></Pressable>);
+ }
+ async function pick() {
+  setError('');
+  try {
+   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+   if (!result.canceled) setPhoto(result.assets[0]);
+  } catch { setError('Could not open your photos. Please try again.'); }
+ }
+ async function post() {
+  if (!profile || !photo || mutation.current) return;
+  mutation.current = true;
+  setBusy(true); setError('');
+  try {
+   await postMeme(profile.conferenceId, destination, photo, caption);
+   setComposing(false); setPhoto(null); setCaption(''); setNotice(`Your meme is live in ${destinationName}.`);
+   await refresh();
+  } catch (e) { setError(e instanceof Error ? e.message : 'Could not post your meme. Please try again.'); }
+  finally { mutation.current = false; setBusy(false); }
+ }
+ async function confirmAction() {
+  if (!action || mutation.current) return;
+  mutation.current = true;
+  setBusy(true); setError('');
+  try {
+   await removeMeme(action);
+   setMemes(old => old.filter(m => m.id !== action.id));
+   setNotice('Meme removed.');
+   setAction(null);
+  } catch { setError('Could not complete that action. Check your connection and try again.'); }
+  finally { mutation.current = false; setBusy(false); }
+ }
+ return <Screen eyebrow="THE UNOFFICIAL RECORD" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
+  {!composing && <ActionButton label={'Post the meme'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
+  {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
+  {composing ? <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+   <ThemedText themeColor="textSecondary">Keep it kind and only share photos you have permission to post.</ThemedText>
+   {photo && <Image source={{ uri: photo.uri }} accessibilityLabel="Selected meme preview" style={[styles.image, { height: Math.min(220, windowHeight * 0.28), maxWidth: 360, alignSelf: 'center' }]} resizeMode="contain" />}
+   {<ActionButton label={photo ? 'Choose another photo' : 'Choose a photo'} onPress={() => void pick()} primary={false} disabled={busy} />}
+   <ThemedText type="small" themeColor="textSecondary">JPG, PNG or WebP · up to 8 MB</ThemedText>
+   <ThemedText type="smallBold">Caption (optional)</ThemedText>
+   <TextInput accessibilityLabel="Caption (optional)" value={caption} onChangeText={setCaption} maxLength={180} multiline editable={!busy} placeholder="A little context…" placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.border }]} />
+   <ThemedText type="small" themeColor="textSecondary">{caption.length}/180</ThemedText>
+
+   {<ActionButton label={busy ? 'Posting…' : 'Post the meme'} onPress={() => void post()} primary={true} disabled={busy || !photo} />}
+   {<ActionButton label={'Cancel'} onPress={() => setComposing(false)} primary={false} disabled={busy} />}
+  </View> : null}
+  {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
+  {!composing && <>
+  <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: filter === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: filter === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: filter === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{choices(filter, setFilter)}</View>
+  {loading && !memes.length ? <View style={styles.panel}><ActivityIndicator color={theme.primary} /><ThemedText>Loading the latest laughs…</ThemedText></View> : null}
+  {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
+  {memes.filter(m => m.committee_id === filter).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+   <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
+   <MemePhoto key={m.imageUrl} meme={m} />
+   <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
+    {m.can_remove && <ActionButton label="Remove" onPress={() => setAction(m)} disabled={busy} />}
+    {m.can_remove && action?.id === m.id ? <View style={{ gap: 12 }}><ThemedText type="smallBold">Remove this meme from the gallery?</ThemedText><ActionButton label={busy ? 'Removing…' : 'Yes, remove'} onPress={() => void confirmAction()} primary disabled={busy} /><ActionButton label="Cancel" onPress={() => setAction(null)} disabled={busy} /></View> : null}
+   </View>
+  </View>)}
+  {more && <ActionButton label={loading ? 'Loading…' : 'Load more memes'} onPress={() => void refresh(memes[memes.length - 1]?.created_at)} primary={false} disabled={loading} />}
+  </>}
+ </Screen>;
+}
+function ActionButton({ label, onPress, primary = false, disabled = false }: { label: string; onPress: () => void; primary?: boolean; disabled?: boolean }) {
+ const theme = useTheme();
+ return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.primary : theme.primarySoft }, (pressed || disabled) && { opacity: 0.55 }]}><ThemedText type="smallBold" style={{ color: primary ? theme.onPrimary : theme.primary }}>{label}</ThemedText></Pressable>;
+}
+function MemePhoto({ meme }: { meme: Meme }) {
+ const [failed, setFailed] = useState(false);
+ const { height } = useWindowDimensions();
+ return failed || !meme.imageUrl ? <View style={styles.panel}><ThemedText>Photo unavailable. Pull to refresh and try again.</ThemedText></View> : <Image source={{ uri: meme.imageUrl }} accessibilityLabel={meme.caption || 'Committee meme'} resizeMode="contain" style={[styles.image, { height: Math.min(420, height * 0.5) }]} onError={() => setFailed(true)} />;
+}
+const styles = StyleSheet.create({
+ button: { borderRadius: 16, minHeight: 48, paddingHorizontal: 20, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+ chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+ chip: { minHeight: 48, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, borderWidth: 1, justifyContent: 'center' },
+ panel: { borderRadius: 24, padding: 20, gap: 16, borderWidth: 0 },
+ input: { borderWidth: 1, borderRadius: 12, minHeight: 88, padding: 14, fontSize: 16, textAlignVertical: 'top' },
+ image: { width: '100%', borderRadius: 12 },
+ card: { borderWidth: 1, borderRadius: 28, overflow: 'hidden', marginBottom: 8 },
+ cardBody: { padding: 18, gap: 12 },
+});

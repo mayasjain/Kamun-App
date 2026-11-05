@@ -36,6 +36,13 @@ export default function MoreScreen() {
 
   return (
     <Screen eyebrow="KAMUN 2026" title="More" subtitle="Our partners, safety and app preferences">
+      <Link href="/memes" asChild>
+        <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
+          <ContentCard label="THE UNOFFICIAL RECORD" title="Committee memes">
+            <ThemedText themeColor="textSecondary">Browse the latest laughs from every committee, or post a meme of your own. →</ThemedText>
+          </ContentCard>
+        </Pressable>
+      </Link>
       <Link href="/partners" asChild>
         <Pressable accessibilityRole="link" style={({ pressed }) => pressed && styles.pressed}>
           <ContentCard label="OUR COMMUNITY" title="Sponsors & partners">

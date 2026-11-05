@@ -27,6 +27,7 @@ export default function AppTabs() {
           ))}
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
+          <TabTrigger name="memes" href="/memes" style={styles.hiddenTab} />
           <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
           <TabTrigger name="partners" href="/partners" style={styles.hiddenTab} />
         </CustomTabList>

@@ -6,6 +6,9 @@ export function HomeIcon({ name, size, color }: HomeIconProps) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
       strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"
       style={{ display: 'block', flexShrink: 0 }}>
+      {name === 'arrow' && <path d="M7 17 17 7M7 7h10v10" />}
+      {name === 'chevron' && <path d="m9 5 7 7-7 7" />}
+      {name === 'memes' && <><circle cx="12" cy="12" r="9" /><path d="M8 14s1.5 3 4 3 4-3 4-3" /><circle cx="9" cy="9" r=".7" fill={color} /><circle cx="15" cy="9" r=".7" fill={color} /></>}
       {name === 'coffee' && <>
         <path d="M18 8h1a3 3 0 0 1 0 6h-1M3 8h15v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8ZM2 23h18M6 1v3M10 1v3M14 1v3" />
       </>}

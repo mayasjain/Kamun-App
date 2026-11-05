@@ -1,15 +1,19 @@
 import { useRef, useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { documentCover } from '@/lib/document-covers';
 
 export default function ResourcesScreen() {
   const theme = useTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const columns = fontScale > 1.3 || width < 360 ? 1 : width >= 720 ? 3 : 2;
+  const tileWidth = (Math.min(width, MaxContentWidth) - Spacing.four * 2 - Spacing.three * (columns - 1)) / columns;
   const { content, error, isLoading, refresh } = useConferenceContent();
   const resources = content?.resources ?? [];
   const opening = useRef(false);
@@ -32,7 +36,7 @@ export default function ResourcesScreen() {
       // Open directly to preserve the tap gesture in browsers.
       await Linking.openURL(parsed.href);
     } catch {
-      setDocumentError({ id, message: 'We could not open this document. Check your connection and tap the document card to try again.' });
+      setDocumentError({ id, message: 'We could not open this document. Check your connection and tap the PDF cover to try again.' });
     } finally {
       opening.current = false;
       setOpeningId(null);
@@ -42,7 +46,7 @@ export default function ResourcesScreen() {
   function renderResource(resource: (typeof resources)[number]) {
     const cover = documentCover(resource.url);
     return (
-      <View key={resource.id}>
+      <View key={resource.id} style={{ width: tileWidth }}>
         <Pressable
           accessibilityLabel={`Open ${resource.title}`}
           accessibilityRole="link"
@@ -51,15 +55,17 @@ export default function ResourcesScreen() {
           disabled={openingId !== null}
           onPress={() => void openDocument(resource.id, resource.url)}
           style={({ pressed }) => ({ borderRadius: 18, opacity: pressed || openingId === resource.id ? 0.7 : 1 })}>
-          <ContentCard label={resource.kind.replaceAll('_', ' ').toUpperCase()} title={resource.title}
-            preview={cover ? (
-              <View style={[styles.coverFrame, { borderColor: theme.border }]}>
-                <Image source={cover} resizeMode="contain" style={styles.cover} accessible={false} />
+          <View style={[styles.coverFrame, { borderColor: theme.border }]}>
+            {cover ? <Image source={cover} resizeMode="contain" style={styles.cover} accessible={false} /> : (
+              <View style={styles.fallback}>
+                <ThemedText type="smallBold" themeColor="primary">PDF</ThemedText>
+                <ThemedText type="smallBold" style={styles.caption}>{resource.title}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">Tap to open</ThemedText>
               </View>
-            ) : undefined}>
-            {resource.committeeId ? <ThemedText type="small" themeColor="textSecondary">{content?.committees.find((committee) => committee.id === resource.committeeId)?.abbreviation ?? 'Committee document'}</ThemedText> : null}
-            {openingId === resource.id ? <ThemedText type="small" themeColor="textSecondary">Opening…</ThemedText> : null}
-          </ContentCard>
+            )}
+          </View>
+          <ThemedText type="smallBold" style={styles.caption}>{resource.title}</ThemedText>
+          {openingId === resource.id ? <ThemedText type="small" themeColor="primary" style={styles.meta}>Opening…</ThemedText> : null}
         </Pressable>
         {documentError?.id === resource.id ? <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" type="small" themeColor="danger" style={styles.feedback}>{documentError.message}</ThemedText> : null}
       </View>
@@ -71,13 +77,13 @@ export default function ResourcesScreen() {
       {generalResources.length ? (
         <View style={styles.section}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>CONFERENCE ESSENTIALS</ThemedText>
-          {generalResources.map(renderResource)}
+          <View style={styles.grid}>{generalResources.map(renderResource)}</View>
         </View>
       ) : null}
       {committeeResources.length ? (
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={{ color: theme.primary }}>COMMITTEE DOCUMENTS</ThemedText>
-          {committeeResources.map(renderResource)}
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>STUDY GUIDES</ThemedText>
+          <View style={styles.grid}>{committeeResources.map(renderResource)}</View>
         </View>
       ) : null}
       {!resources.length ? (
@@ -101,7 +107,11 @@ export default function ResourcesScreen() {
 }
 
 const styles = StyleSheet.create({
-  coverFrame: { width: '38%', maxWidth: 200, flexShrink: 0, aspectRatio: 360 / 510, borderWidth: 1, borderRadius: 8, overflow: 'hidden', backgroundColor: '#FFFFFF' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
+  caption: { textAlign: 'center', marginTop: Spacing.twoAndHalf },
+  meta: { textAlign: 'center', marginTop: Spacing.one },
+  fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.three, gap: Spacing.two },
+  coverFrame: { width: '100%', aspectRatio: 360 / 510, borderWidth: 1, borderRadius: 8, overflow: 'hidden', backgroundColor: '#FFFFFF' },
   cover: { width: '100%', height: '100%' },
   section: { gap: 12 },
   feedback: { paddingTop: 12 },

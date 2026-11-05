@@ -17,6 +17,8 @@ export default function PartnersScreen() {
   const columns = fontScale > 1.3 || availableWidth < 300 ? 1 : availableWidth >= 640 ? 3 : 2;
   const cardWidth = (availableWidth - Spacing.twoAndHalf * (columns - 1)) / columns;
 
+  const logoSize = Math.min(128, Math.max(0, cardWidth - Spacing.twoAndHalf * 2 - 2));
+
   return (
     <Screen eyebrow="KAMUN 2026" title="Sponsors & partners" subtitle="The organisations and conferences helping make KAMUN possible.">
       <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
@@ -38,16 +40,8 @@ export default function PartnersScreen() {
           <View style={styles.grid} onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}>
             {group.entries.map((partner) => (
               <View key={partner.name} style={[styles.card, { width: cardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                <View style={[styles.logoFrame, partner.insetCircle && styles.circularLogoFrame]}>
-                  {partner.insetCircle ? (
-                    <View style={styles.logoDisc}>
-                      <View style={styles.insetCircle}>
-                        <Image source={partner.logo} style={styles.insetCircleImage} resizeMode="contain" accessibilityLabel={`${partner.name} logo`} />
-                      </View>
-                    </View>
-                  ) : (
-                    <Image source={partner.logo} style={styles.logo} resizeMode="contain" accessibilityLabel={`${partner.name} logo`} />
-                  )}
+                <View style={[styles.logoFrame, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }]}>
+                  <Image source={partner.logo} style={[styles.logo, { borderRadius: logoSize / 2 }]} resizeMode={partner.logoFit ?? "cover"} accessibilityLabel={`${partner.name} logo`} />
                 </View>
                 <ThemedText style={styles.partnerName}>{partner.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.partnerDetail}>{partner.detail}</ThemedText>
@@ -71,14 +65,8 @@ const styles = StyleSheet.create({
   sectionHeader: { gap: Spacing.two },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.twoAndHalf },
   card: { alignItems: 'center', borderWidth: 1, borderRadius: Radius.card, padding: Spacing.twoAndHalf, gap: Spacing.two },
-  logoFrame: { width: '100%', height: 128, borderRadius: Radius.control, flexShrink: 0, backgroundColor: Brand.white, padding: Spacing.twoAndHalf, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
-  logo: { width: '100%', height: '100%', maxWidth: 176 },
-  // The 161×156 SGMUN source includes navy outside its white backing.
-  // Mask only that backing; the complete green crest fits inside this inset.
-  circularLogoFrame: { backgroundColor: 'transparent' },
-  logoDisc: { width: 104, height: 104, borderRadius: 52, backgroundColor: Brand.white, alignItems: 'center', justifyContent: 'center' },
-  insetCircle: { width: 92, height: 92, borderRadius: 46, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  insetCircleImage: { width: 92 * 161 / 148, height: 92 * 156 / 148, flexShrink: 0 },
+  logoFrame: { flexShrink: 0, overflow: 'hidden', backgroundColor: Brand.white, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
+  logo: { width: '100%', height: '100%' },
   partnerName: { fontWeight: '700', fontSize: 16, lineHeight: 22, textAlign: 'center' },
   partnerDetail: { textAlign: 'center', fontSize: 13, lineHeight: 19 },
 });

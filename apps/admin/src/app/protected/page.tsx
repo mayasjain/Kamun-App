@@ -35,6 +35,7 @@ export default async function ProtectedPage() {
         <Link href="/protected/resources" className="inline-flex rounded-xl bg-emerald-900 px-5 py-3 font-semibold text-white hover:bg-emerald-800">
           Manage resources →
         </Link>
+        <Link href="/protected/memes" className="inline-flex rounded-xl bg-emerald-900 px-5 py-3 font-semibold text-white hover:bg-emerald-800">Review committee memes →</Link>
       </nav>
     </div>
   );
