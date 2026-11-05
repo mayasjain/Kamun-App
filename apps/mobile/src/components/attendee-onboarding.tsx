@@ -28,7 +28,7 @@ export function AttendeeOnboarding() {
 
           <View style={styles.panel}>
             <View style={styles.copy}>
-              <ThemedText type="smallBold" style={styles.eyebrow}>13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
+              <ThemedText type="smallBold" style={styles.eyebrow} themeColor="primary">13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
               <ThemedText type="title">Enter your code</ThemedText>
               <ThemedText themeColor="textSecondary">Use your personal delegate or chair code. Your committee and country or chair role will be recognised automatically.</ThemedText>
             </View>
@@ -51,12 +51,12 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', flexDirection: 'row', gap: 10, marginBottom: Spacing.three, minHeight: 54 },
   headerLogo: { height: 52, width: 52 },
   headerCopy: { flex: 1, gap: 1 },
-  headerTitle: { color: Brand.black, fontSize: 22, fontWeight: '800', lineHeight: 27 },
+  headerTitle: { fontSize: 22, fontWeight: '800', lineHeight: 27 },
   banner: { backgroundColor: Brand.black, borderRadius: 20, height: 180, justifyContent: 'center', overflow: 'hidden' },
   bannerArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
   bannerLogo: { height: 132, marginLeft: 12, width: 132 },
   panel: { gap: Spacing.four, paddingTop: Spacing.four },
   copy: { gap: Spacing.two },
-  eyebrow: { color: Brand.goldDark, fontSize: 12, letterSpacing: 1.2 },
+  eyebrow: { fontSize: 12, letterSpacing: 1.2 },
   privacy: { textAlign: 'center' },
 });

@@ -4,8 +4,8 @@ import type { ImageSourcePropType } from 'react-native';
 // KAMUN 2026 delegate handbook (delegate-handbook-ee04582c2ba8.pdf).
 // Preserve its pairings: OpenIT → CyberLab, Ferrero → Ferrero Rocher, and
 // “Aurel Steinhart” → the logo reading “Aurel Steinert Stiftung”.
-// The portrait AIESEC image is centred inside the circular logo frame.
-type Partner = { name: string; detail: string; logo: ImageSourcePropType };
+// Logos retain their original proportions inside a centred, padded panel.
+type Partner = { name: string; detail: string; logo: ImageSourcePropType; insetCircle?: boolean };
 type PartnerGroup = { title: string; description: string; entries: readonly Partner[] };
 
 export const partnerGroups: readonly PartnerGroup[] = [
@@ -19,7 +19,7 @@ export const partnerGroups: readonly PartnerGroup[] = [
       { name: 'GoeMUN 2026', detail: 'Göttingen', logo: require('../../assets/partners/goemun.png') },
       { name: 'FreiMUN 2026', detail: 'Freiburg', logo: require('../../assets/partners/freimun.png') },
       { name: 'HamMUN 2026', detail: 'Hamburg', logo: require('../../assets/partners/hammun.png') },
-      { name: 'SGMUN 2026', detail: 'St Gallen', logo: require('../../assets/partners/sgmun.png') },
+      { name: 'SGMUN 2026', detail: 'St Gallen', logo: require('../../assets/partners/sgmun.png'), insetCircle: true },
       { name: 'EuroMUN 2027', detail: 'Maastricht', logo: require('../../assets/partners/euromun.png') },
       { name: 'LyonMUN 2027', detail: 'Lyon', logo: require('../../assets/partners/lyonmun.png') },
       { name: 'PIMUN 2027', detail: 'Paris', logo: require('../../assets/partners/pimun.png') },

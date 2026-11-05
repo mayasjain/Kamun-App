@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import Feather from '@expo/vector-icons/Feather';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { HomeIcon } from '@/components/home-icon';
 import { Link, useRouter, type Href } from 'expo-router';
 import { AppState, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -92,10 +91,9 @@ export default function HomeScreen() {
                 <View style={styles.scheduleLabelRow}>
                   <ThemedText type="smallBold" style={styles.scheduleEyebrow}>{eventIsLive ? 'HAPPENING NOW' : 'UP NEXT'}</ThemedText>
                 </View>
-                <ThemedText type="smallBold" style={styles.scheduleLink}>{eventIsLive ? 'On your programme now' : 'Next on your programme'}</ThemedText>
               </View>
               <ThemedText style={styles.eventTitle}>{nextEvent?.title ?? (isLoading ? 'Loading programme…' : 'No upcoming sessions')}</ThemedText>
-              <ThemedText style={styles.eventDetail}>
+              <ThemedText style={styles.eventDetail} themeColor="textSecondary">
                 {nextEvent ? `${formatEventTime(nextEvent.startsAt, nextEvent.endsAt)}${nextEvent.roomName ? ` · ${nextEvent.roomName}` : ''}` : 'Open the programme to review the conference schedule.'}
               </ThemedText>
               <View style={styles.scheduleAction}>
@@ -119,7 +117,7 @@ export default function HomeScreen() {
             <Link href="/updates" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel={`View updates. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: urgentAnnouncement ? theme.danger : theme.border }, pressed && styles.pressed]}>
                 {urgentAnnouncement ? <View style={[styles.statusBadge, { backgroundColor: theme.danger }]}>
-                  <ThemedText type="smallBold" style={{ color: Brand.white }}>URGENT</ThemedText>
+                  <ThemedText type="smallBold" themeColor="onDanger">URGENT</ThemedText>
                 </View> : null}
                 <ThemedText type="subtitle" style={styles.updateTitle}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
                 <ThemedText themeColor="textSecondary" numberOfLines={3}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
@@ -130,13 +128,12 @@ export default function HomeScreen() {
 
           <View style={styles.section}>
             <View style={styles.quickHeading}>
-              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>QUICK ACCESS</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">Your essentials</ThemedText>
+              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>YOUR ESSENTIALS</ThemedText>
             </View>
             <View style={styles.coffeeCard}>
               <View style={styles.coffeeTopline}>
                 <View style={styles.coffeeIcon}>
-                  <Feather name="coffee" size={30} color={Brand.pine} accessible={false} />
+                  <HomeIcon name="coffee" size={30} color={Brand.pine} />
                 </View>
                 {profile?.identitySource !== 'ecg' ? (
                   <View style={styles.setupBadge}>
@@ -164,8 +161,8 @@ export default function HomeScreen() {
                   style={({ pressed }) => [styles.quickTile, item.href === '/partners' && styles.sponsorsTile, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
-                      ? <Feather name="phone-call" size={27} color={theme.danger} accessible={false} />
-                      : <Ionicons name={item.href === '/partners' ? 'people-outline' : 'chatbubble-ellipses-outline'} size={27} color={theme.primary} accessible={false} />}
+                      ? <HomeIcon name="emergency" size={27} color={theme.danger} />
+                      : <HomeIcon name={item.href === '/partners' ? 'partners' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
                   <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={styles.quickTitle}>{item.title}</ThemedText>
@@ -210,9 +207,8 @@ const styles = StyleSheet.create({
   scheduleTopline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, justifyContent: 'space-between' },
   scheduleLabelRow: { alignItems: 'center', backgroundColor: Brand.gold, borderRadius: Radius.pill, flexDirection: 'row', minHeight: 32, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
   scheduleEyebrow: { color: Brand.black, fontSize: 12, letterSpacing: 1.5 },
-  scheduleLink: { color: Brand.pine },
-  eventTitle: { color: Brand.black, fontFamily: Fonts?.serif, fontSize: 28, fontWeight: '700', lineHeight: 36 },
-  eventDetail: { color: Brand.pine, fontSize: 16, fontWeight: '600', lineHeight: 24 },
+  eventTitle: { fontFamily: Fonts?.serif, fontSize: 28, fontWeight: '700', lineHeight: 36 },
+  eventDetail: { fontSize: 16, fontWeight: '600', lineHeight: 24 },
   scheduleAction: { alignItems: 'center', alignSelf: 'stretch', backgroundColor: Brand.gold, borderRadius: Radius.control, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.three },
   scheduleActionText: { color: Brand.black },
   section: { gap: Spacing.three },

@@ -111,7 +111,7 @@ export default function GossipScreen() {
         <ThemedText style={styles.messageText}>{item.message}</ThemedText>
         <View style={styles.actions}>
           {item.status === 'new' ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => void setStatus(item.id, 'read')} style={[styles.smallButton, { backgroundColor: theme.primary }]}>
-            <ThemedText type="smallBold" style={styles.lightText}>Mark read</ThemedText>
+            <ThemedText type="smallBold" themeColor="onPrimary">Mark read</ThemedText>
           </Pressable> : null}
           {item.status === 'dismissed' ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => void setStatus(item.id, 'new')} style={[styles.smallButton, { backgroundColor: theme.primarySoft }]}>
             <ThemedText type="smallBold" themeColor="primary">Restore</ThemedText>
@@ -146,8 +146,8 @@ export default function GossipScreen() {
         {error ? <ThemedText themeColor="danger">{error}</ThemedText> : null}
         {notice ? <ThemedText themeColor="primary">{notice}</ThemedText> : null}
         <Pressable accessibilityRole="button" disabled={busy || !selectedCommittee || message.trim().length < 3}
-          onPress={() => void submit()} style={[styles.submit, { backgroundColor: busy || !selectedCommittee || message.trim().length < 3 ? theme.border : theme.primary }]}>
-          <ThemedText type="smallBold" style={styles.lightText}>{busy ? 'Sending…' : 'Send to chairs'}</ThemedText>
+          onPress={() => void submit()} style={[styles.submit, { backgroundColor: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledBackground : theme.primary }]}>
+          <ThemedText type="smallBold" style={{ color: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledText : theme.onPrimary }}>{busy ? 'Sending…' : 'Send to chairs'}</ThemedText>
         </Pressable>
     </View>
   </Screen>;
@@ -159,7 +159,6 @@ const styles = StyleSheet.create({
   committeeOption: { alignItems: 'center', borderRadius: 10, borderWidth: 1, justifyContent: 'center', minHeight: 48, paddingHorizontal: Spacing.three },
   input: { borderRadius: 12, borderWidth: 1, fontSize: 16, minHeight: 130, padding: Spacing.three },
   submit: { alignItems: 'center', borderRadius: 12, justifyContent: 'center', minHeight: 52 },
-  lightText: { color: '#FFFFFF' },
   messageText: { fontSize: 16, lineHeight: 24 },
   inboxHeading: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
   viewToggle: { minHeight: 44, justifyContent: 'center' },

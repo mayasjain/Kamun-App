@@ -71,6 +71,13 @@ export default function EmergencyScreen() {
 
         <View style={styles.section}>
           <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>SAFETY AND AWARENESS</ThemedText>
+          <View style={styles.codeWordBanner}>
+            <ThemedText type="smallBold" style={styles.codeWordLabel}>SAFETY CODE WORD</ThemedText>
+            <ThemedText accessibilityRole="header" style={styles.codeWord}>Angel Shot</ThemedText>
+            <ThemedText style={styles.codeWordDescription}>
+              Use this code word to ask the Secretariat for support if you feel unsafe, uncomfortable or overwhelmed, or are concerned about someone else.
+            </ThemedText>
+          </View>
           <ThemedText themeColor="textSecondary">Contact our team for support throughout the conference and at the socials, during the day and at night.</ThemedText>
           <View style={styles.staffList}>
             {contacts.map((contact) => {
@@ -126,6 +133,10 @@ const styles = StyleSheet.create({
   headerTitle: { color: Brand.cream, flex: 1, fontSize: 24, lineHeight: 29, marginLeft: Spacing.two },
   scroll: { alignSelf: 'center', gap: Spacing.four, maxWidth: MaxContentWidth, paddingBottom: BottomTabInset + Spacing.five, paddingHorizontal: Spacing.three, paddingTop: Spacing.four, width: '100%' },
   section: { gap: 12 },
+  codeWordBanner: { backgroundColor: '#E3ECE5', borderRadius: 18, padding: Spacing.four, gap: Spacing.two },
+  codeWordLabel: { color: Brand.pine, fontSize: 12, letterSpacing: 1.4 },
+  codeWord: { color: Brand.pine, fontSize: 32, fontWeight: '800', lineHeight: 40 },
+  codeWordDescription: { color: Brand.pine, fontSize: 16, lineHeight: 24 },
   sectionLabel: { fontSize: 12, letterSpacing: 1.8 },
   serviceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden', paddingHorizontal: 18 },
   divider: { height: 1 },

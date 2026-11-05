@@ -24,8 +24,8 @@ function CommitteeCard({ committee }: { committee: Committee }) {
         pressed && styles.pressed,
       ]}>
       <View style={styles.cardHeader}>
-        <View style={[styles.abbreviation, { backgroundColor: committee.colour ?? theme.primary }]}>
-          <ThemedText type="smallBold" style={styles.abbreviationText}>{committee.abbreviation}</ThemedText>
+        <View style={[styles.abbreviation, { backgroundColor: theme.primarySoft, borderColor: committee.colour ?? theme.primary, borderWidth: 2 }]}>
+          <ThemedText type="smallBold" style={styles.abbreviationText} themeColor="primary">{committee.abbreviation}</ThemedText>
         </View>
         <View style={styles.cardHeading}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>{metadata || 'COMMITTEE'}</ThemedText>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.72 },
   cardHeader: { alignItems: 'flex-start', flexDirection: 'row', gap: 12 },
   abbreviation: { alignItems: 'center', borderRadius: 10, justifyContent: 'center', minHeight: 42, minWidth: 54, paddingHorizontal: 8 },
-  abbreviationText: { color: '#FFFFFF', fontSize: 12 },
+  abbreviationText: { fontSize: 12 },
   cardHeading: { flex: 1, gap: 3 },
   committeeName: { fontSize: 18, lineHeight: 23 },
   chevron: { fontSize: 26, fontWeight: '400', lineHeight: 30 },

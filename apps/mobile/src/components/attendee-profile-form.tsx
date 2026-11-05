@@ -74,16 +74,16 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN', disable
           style={[styles.input, { backgroundColor: theme.backgroundElement, borderColor: error ? theme.danger : theme.border, color: theme.text }]}
           value={code}
         />
-        {error ? <ThemedText type="small" style={styles.error}>{error}</ThemedText> : null}
+        {error ? <ThemedText type="small" themeColor="danger">{error}</ThemedText> : null}
       </View>
 
       <Pressable
         accessibilityRole="button"
         disabled={!code.trim() || isSubmitting || disabled}
         onPress={() => void submit()}
-        style={[styles.submit, { backgroundColor: code.trim() && !isSubmitting ? Brand.gold : theme.border }]}
+        style={[styles.submit, { backgroundColor: code.trim() && !isSubmitting && !disabled ? Brand.gold : theme.disabledBackground }]}
       >
-        <ThemedText type="smallBold" style={styles.submitText}>{isSubmitting ? 'Checking code…' : submitLabel}</ThemedText>
+        <ThemedText type="smallBold" style={{ color: code.trim() && !isSubmitting && !disabled ? Brand.black : theme.disabledText }}>{isSubmitting ? 'Checking code…' : submitLabel}</ThemedText>
       </Pressable>
     </View>
   );
@@ -93,7 +93,5 @@ const styles = StyleSheet.create({
   form: { gap: Spacing.four },
   field: { gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: 12, fontSize: 17, minHeight: 54, paddingHorizontal: 16, paddingVertical: 14 },
-  error: { color: '#B42318' },
   submit: { alignItems: 'center', borderRadius: 12, justifyContent: 'center', minHeight: 54, padding: 16 },
-  submitText: { color: Brand.black },
 });

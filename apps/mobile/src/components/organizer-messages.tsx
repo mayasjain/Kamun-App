@@ -94,21 +94,21 @@ export function OrganizerMessages() {
           <View style={styles.choiceRow}>{audiences.map((option) => (
             <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: audience === option.value }}
               onPress={() => setAudience(option.value)} style={[styles.choice, { backgroundColor: audience === option.value ? theme.primary : theme.primarySoft }]}>
-              <ThemedText type="smallBold" style={{ color: audience === option.value ? theme.backgroundElement : theme.primary }}>{option.label}</ThemedText>
+              <ThemedText type="smallBold" style={{ color: audience === option.value ? theme.onPrimary : theme.primary }}>{option.label}</ThemedText>
             </Pressable>
           ))}</View>
           <ThemedText type="smallBold">PRIORITY</ThemedText>
           <View style={styles.choiceRow}>{priorities.map((option) => (
             <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: priority === option.value }}
               onPress={() => setPriority(option.value)} style={[styles.choice, { backgroundColor: priority === option.value ? theme.primary : theme.primarySoft }]}>
-              <ThemedText type="smallBold" style={{ color: priority === option.value ? theme.backgroundElement : theme.primary }}>{option.label}</ThemedText>
+              <ThemedText type="smallBold" style={{ color: priority === option.value ? theme.onPrimary : theme.primary }}>{option.label}</ThemedText>
             </Pressable>
           ))}</View>
           {error ? <ThemedText type="small" themeColor="danger">{error}</ThemedText> : null}
           {notice ? <ThemedText type="small" themeColor="primary">{notice}</ThemedText> : null}
           <Pressable accessibilityRole="button" disabled={busy || !conferenceId || !title.trim() || !body.trim()}
-            onPress={() => void publish()} style={[styles.primaryButton, { backgroundColor: busy || !conferenceId || !title.trim() || !body.trim() ? theme.border : theme.primary }]}>
-            <ThemedText type="smallBold" style={{ color: theme.backgroundElement }}>{busy ? 'Publishing…' : 'Publish message'}</ThemedText>
+            onPress={() => void publish()} style={[styles.primaryButton, { backgroundColor: busy || !conferenceId || !title.trim() || !body.trim() ? theme.disabledBackground : theme.primary }]}>
+            <ThemedText type="smallBold" style={{ color: busy || !conferenceId || !title.trim() || !body.trim() ? theme.disabledText : theme.onPrimary }}>{busy ? 'Publishing…' : 'Publish message'}</ThemedText>
           </Pressable>
           <ThemedText type="small" themeColor="textSecondary">Messages appear in Updates. Phone push alerts are not active yet.</ThemedText>
         </View>
