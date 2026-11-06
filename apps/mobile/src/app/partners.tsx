@@ -40,8 +40,12 @@ export default function PartnersScreen() {
           <View style={styles.grid} onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}>
             {group.entries.map((partner) => (
               <View key={partner.name} style={[styles.card, { width: cardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                <View style={[styles.logoFrame, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }]}>
-                  <Image source={partner.logo} style={[styles.logo, { borderRadius: logoSize / 2 }]} resizeMode={partner.logoFit ?? "cover"} accessibilityLabel={`${partner.name} logo`} />
+                <View style={[styles.logoFrame, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }, partner.logoBackground ? { backgroundColor: partner.logoBackground } : null]}>
+                  {partner.logo ? (
+                    <Image source={partner.logo} style={[styles.logo, partner.logoFit === 'contain' ? styles.containedLogo : { borderRadius: logoSize / 2 }]} resizeMode={partner.logoFit ?? "cover"} accessibilityLabel={`${partner.name} logo`} />
+                  ) : (
+                    <ThemedText accessible={false} style={styles.partnerInitials}>{partner.initials}</ThemedText>
+                  )}
                 </View>
                 <ThemedText style={styles.partnerName}>{partner.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.partnerDetail}>{partner.detail}</ThemedText>
@@ -67,6 +71,8 @@ const styles = StyleSheet.create({
   card: { alignItems: 'center', borderWidth: 1, borderRadius: Radius.card, padding: Spacing.twoAndHalf, gap: Spacing.two },
   logoFrame: { flexShrink: 0, overflow: 'hidden', backgroundColor: Brand.white, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
   logo: { width: '100%', height: '100%' },
+  containedLogo: { width: '84%', height: '84%' },
+  partnerInitials: { color: Brand.pine, fontSize: 28, lineHeight: 36, fontWeight: '700' },
   partnerName: { fontWeight: '700', fontSize: 16, lineHeight: 22, textAlign: 'center' },
   partnerDetail: { textAlign: 'center', fontSize: 13, lineHeight: 19 },
 });
