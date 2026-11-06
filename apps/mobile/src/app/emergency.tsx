@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,8 @@ const services = [
 
 export default function EmergencyScreen() {
   const router = useRouter();
+  const { width, fontScale } = useWindowDimensions();
+  const stacked = width < 380 || fontScale > 1.3;
   const theme = useTheme();
   const { content, isLoading, error, refresh } = useConferenceContent();
   const [linkError, setLinkError] = useState('');
@@ -50,6 +52,15 @@ export default function EmergencyScreen() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />}>
+        <View style={styles.safetyBanner}>
+          <ThemedText style={styles.safetyTitle}>KAMUN is a safe and inclusive space</ThemedText>
+          <ThemedText style={styles.safetyCopy}>If you feel unsafe, uncomfortable or overwhelmed, reach out to the Secretariat or our Safety and Awareness team.</ThemedText>
+          <View style={styles.codeWordBanner}>
+            <ThemedText type="smallBold" style={styles.codeWordLabel}>SAFETY CODE WORD</ThemedText>
+            <ThemedText accessibilityRole="header" style={styles.codeWord}>Angel Shot</ThemedText>
+            <ThemedText style={styles.codeWordDescription}>Use this code word to ask for support for yourself or someone else, during the conference or at the socials.</ThemedText>
+          </View>
+        </View>
         <View style={styles.section}>
           <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>EMERGENCY SERVICES</ThemedText>
           <View style={[styles.serviceCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -70,42 +81,33 @@ export default function EmergencyScreen() {
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>SAFETY AND AWARENESS</ThemedText>
-          <View style={styles.codeWordBanner}>
-            <ThemedText type="smallBold" style={styles.codeWordLabel}>SAFETY CODE WORD</ThemedText>
-            <ThemedText accessibilityRole="header" style={styles.codeWord}>Angel Shot</ThemedText>
-            <ThemedText style={styles.codeWordDescription}>
-              Use this code word to ask the Secretariat for support if you feel unsafe, uncomfortable or overwhelmed, or are concerned about someone else.
-            </ThemedText>
-          </View>
-          <ThemedText themeColor="textSecondary">Contact our team for support throughout the conference and at the socials, during the day and at night.</ThemedText>
-          <View style={styles.staffList}>
-            {contacts.map((contact) => {
+          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>STAFF CONTACTS</ThemedText>
+          <View style={[styles.staffList, { backgroundColor: theme.backgroundElement }]}>
+            {contacts.map((contact, index) => {
               const name = contact.personName ?? contact.label;
               const callUrl = phoneCallUrl(contact.phone);
               const whatsappUrl = whatsappChatUrl(contact.phone);
               return (
-                <View key={contact.id} style={[styles.staffCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <View key={contact.id} style={[styles.staffCard, stacked && styles.staffCardStacked, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }]}>
                   <View style={styles.staffIdentity}>
                     <ThemedText type="smallBold" style={styles.staffName}>{name}</ThemedText>
-                    {contact.role ? <ThemedText type="small" themeColor="textSecondary">{contact.role}</ThemedText> : null}
-                    {contact.phone ? <ThemedText type="small" themeColor="textSecondary">{contact.phone}</ThemedText> : null}
+                    {contact.role ? <ThemedText style={styles.staffRole} themeColor="textSecondary">{contact.role}</ThemedText> : null}
                   </View>
                   {callUrl ? (
-                    <View style={styles.staffActions}>
+                    <View style={[styles.staffActions, stacked && styles.staffActionsStacked]}>
                       <Pressable accessibilityRole="link" accessibilityLabel={`Call ${name}`} onPress={() => void openLink(callUrl)}
-                        style={({ pressed }) => [styles.actionButton, { backgroundColor: Brand.pine }, pressed && styles.pressed]}>
-                        <ThemedText type="smallBold" style={styles.callButtonText}>Call</ThemedText>
+                        style={({ pressed }) => [styles.contactLink, pressed && styles.pressed]}>
+                        <ThemedText type="smallBold" style={[styles.phoneNumber, { color: theme.primary }]}>{contact.phone}</ThemedText>
                       </Pressable>
                       {whatsappUrl ? (
                         <Pressable accessibilityRole="link" accessibilityLabel={`Chat with ${name} on WhatsApp`} onPress={() => void openLink(whatsappUrl)}
-                          style={({ pressed }) => [styles.actionButton, { borderColor: theme.primary, borderWidth: 1 }, pressed && styles.pressed]}>
-                          <ThemedText type="smallBold" style={{ color: theme.primary }}>WhatsApp</ThemedText>
+                          style={({ pressed }) => [styles.contactLink, pressed && styles.pressed]}>
+                          <ThemedText type="smallBold" style={{ color: theme.primary }}>WhatsApp ↗</ThemedText>
                         </Pressable>
                       ) : null}
                     </View>
                   ) : (
-                    <ThemedText type="small" themeColor="textSecondary">{isLoading ? 'Loading…' : 'Contact coming soon'}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">{contact.phone || (isLoading ? 'Loading…' : 'Contact coming soon')}</ThemedText>
                   )}
                 </View>
               );
@@ -133,24 +135,31 @@ const styles = StyleSheet.create({
   headerTitle: { color: Brand.cream, flex: 1, fontSize: 24, lineHeight: 29, marginLeft: Spacing.two },
   scroll: { alignSelf: 'center', gap: Spacing.four, maxWidth: MaxContentWidth, paddingBottom: BottomTabInset + Spacing.five, paddingHorizontal: Spacing.three, paddingTop: Spacing.four, width: '100%' },
   section: { gap: 12 },
-  codeWordBanner: { backgroundColor: '#E3ECE5', borderRadius: 18, padding: Spacing.four, gap: Spacing.two },
+  safetyBanner: { backgroundColor: '#E3ECE5', borderRadius: 24, padding: 24, gap: 14 },
+  safetyTitle: { color: Brand.pine, fontWeight: '700', fontSize: 19, lineHeight: 26 },
+  safetyCopy: { color: Brand.pine, fontSize: 17, lineHeight: 26 },
+  codeWordBanner: { backgroundColor: 'rgba(23,61,44,0.06)', borderRadius: 16, padding: 16, gap: 6 },
   codeWordLabel: { color: Brand.pine, fontSize: 12, letterSpacing: 1.4 },
   codeWord: { color: Brand.pine, fontSize: 32, fontWeight: '800', lineHeight: 40 },
   codeWordDescription: { color: Brand.pine, fontSize: 16, lineHeight: 24 },
   sectionLabel: { fontSize: 12, letterSpacing: 1.8 },
-  serviceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden', paddingHorizontal: 18 },
+  serviceCard: { borderRadius: 24, borderWidth: 0, overflow: 'hidden', paddingHorizontal: 18 },
   divider: { height: 1 },
   serviceRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 76, paddingVertical: 12 },
   serviceName: { flex: 1, fontSize: 17, lineHeight: 22, paddingRight: Spacing.two },
   serviceAction: { alignItems: 'flex-end', gap: 1 },
   serviceNumber: { fontSize: 22, fontWeight: '800', lineHeight: 26 },
   callHint: { fontSize: 12 },
-  staffList: { gap: 12 },
-  staffCard: { borderRadius: 18, borderWidth: 1, gap: Spacing.three, padding: 18 },
-  staffIdentity: { gap: 3 },
+  staffList: { borderRadius: 24, paddingHorizontal: 18 },
+  staffCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingVertical: 18 },
+  staffCardStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
+  staffIdentity: { gap: 3, flex: 1, minWidth: 0 },
+  staffRole: { fontSize: 15, lineHeight: 22 },
   staffName: { fontSize: 18, lineHeight: 24 },
-  staffActions: { flexDirection: 'row', gap: 10 },
+  staffActions: { alignItems: 'flex-end', maxWidth: '52%' },
+  staffActionsStacked: { alignItems: 'flex-start', maxWidth: '100%' },
+  contactLink: { minHeight: 44, justifyContent: 'center' },
+  phoneNumber: { fontSize: 16, lineHeight: 22, textAlign: 'right' },
   actionButton: { alignItems: 'center', borderRadius: 11, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 0, paddingHorizontal: Spacing.two },
-  callButtonText: { color: Brand.white },
   pressed: { opacity: 0.72 },
 });

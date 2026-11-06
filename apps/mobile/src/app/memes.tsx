@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { MemeSlideshow } from '@/components/meme-slideshow';
 import { Screen } from '@/components/screen';
-import { InstagramLinks } from '@/components/instagram-links';
 import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
@@ -15,6 +15,8 @@ export default function MemesScreen() {
  const { profile } = useAttendeeProfile();
  const { content } = useConferenceContent();
  const committees = content?.committees ?? [];
+ const [slides, setSlides] = useState<Meme[] | null>(null);
+ const [preparingSlides, setPreparingSlides] = useState(false);
  const [filter, setFilter] = useState<string | null>(null);
  const [memes, setMemes] = useState<Meme[]>([]);
  const [loading, setLoading] = useState(true);
@@ -31,6 +33,14 @@ export default function MemesScreen() {
  const [action, setAction] = useState<Meme | null>(null);
  const request = useRef(0);
  const mutation = useRef(false);
+ const fullscreenOwned = useRef(false);
+ function closeSlideshow() {
+  setSlides(null);
+  if (Platform.OS === 'web' && fullscreenOwned.current) {
+   fullscreenOwned.current = false;
+   if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+  }
+ }
  const refresh = useCallback(async (before?: string) => {
   if (!profile) return;
   const version = ++request.current;
@@ -51,6 +61,30 @@ export default function MemesScreen() {
  }, [refresh, request]);
  // Refresh short-lived image URLs while the gallery is open.
  useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
+ async function startSlideshow() {
+  if (!profile || preparingSlides) return;
+  if (Platform.OS === 'web' && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+   void document.documentElement.requestFullscreen().then(() => { fullscreenOwned.current = true; }).catch(() => {});
+  }
+  setPreparingSlides(true); setError('');
+  let started = false;
+  const version = request.current;
+  try {
+   const all: Meme[] = [];
+   let before: string | undefined;
+   while (true) {
+    const page = await loadMemes(profile.conferenceId, filter, before);
+    if (version !== request.current) return;
+    all.push(...page.filter(row => !all.some(old => old.id === row.id)));
+    const cursor = page.at(-1)?.created_at;
+    if (page.length < 24 || !cursor || cursor === before) break;
+    before = cursor;
+   }
+   if (all.length) { setSlides(all.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.id.localeCompare(b.id))); started = true; }
+   else setNotice('No memes in this section yet.');
+  } catch { setError('Could not prepare the slideshow. Please try again.'); }
+  finally { setPreparingSlides(false); if (!started) closeSlideshow(); }
+ }
  function choices(value: string | null, change: (id: string) => void) {
   return committees.map(c => <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={c.name} accessibilityState={{ selected: value === c.id, disabled: busy }} disabled={busy} onPress={() => change(c.id)} style={({ pressed }) => [styles.chip, { backgroundColor: value === c.id ? theme.primary : theme.backgroundElement, borderColor: theme.border }, pressed && { opacity: 0.65 }]}><ThemedText type="smallBold" style={{ color: value === c.id ? theme.onPrimary : theme.text }}>{c.abbreviation}</ThemedText></Pressable>);
  }
@@ -67,7 +101,7 @@ export default function MemesScreen() {
   setBusy(true); setError('');
   try {
    await postMeme(profile.conferenceId, destination, photo, caption);
-   setComposing(false); setPhoto(null); setCaption(''); setNotice(`Your meme is live in ${destinationName}.`);
+   setComposing(false); setPhoto(null); setCaption(''); setNotice('');
    await refresh();
   } catch (e) { setError(e instanceof Error ? e.message : 'Could not post your meme. Please try again.'); }
   finally { mutation.current = false; setBusy(false); }
@@ -85,7 +119,7 @@ export default function MemesScreen() {
   finally { mutation.current = false; setBusy(false); }
  }
  return <Screen eyebrow="THE UNOFFICIAL RECORD" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
-  {!composing && <InstagramLinks only="memes" />}
+  {slides && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
   {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
@@ -104,6 +138,7 @@ export default function MemesScreen() {
   {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
   {!composing && <>
   <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: filter === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: filter === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: filter === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{choices(filter, setFilter)}</View>
+  <ActionButton label={preparingSlides ? 'Preparing slideshow…' : `Start slideshow · ${destinationName}`} onPress={() => void startSlideshow()} disabled={preparingSlides || loading || !memes.length} />
   {loading && !memes.length ? <View style={styles.panel}><ActivityIndicator color={theme.primary} /><ThemedText>Loading the latest laughs…</ThemedText></View> : null}
   {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{!canPost ? 'Check back soon for memes from this committee.' : filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
   {memes.filter(m => m.committee_id === filter).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
