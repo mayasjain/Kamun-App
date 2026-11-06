@@ -5,6 +5,7 @@ import { AppState } from 'react-native';
 
 import { restoreAttendeeAccess, type ClaimedAttendeeAccess } from '@/lib/attendee-access';
 import { AccessExpiredError } from '@/lib/function-errors';
+import { clearMemeCache } from '@/lib/meme-cache';
 import { supabase } from '@/lib/supabase';
 import { createRememberedAccess } from '@/lib/remembered-access';
 
@@ -47,6 +48,7 @@ export function AttendeeProfileProvider({ children }: PropsWithChildren) {
   const [session] = useState(() => createRememberedAccess<AttendeeProfile>({
     read: readStoredProfile,
     write: (profile) => {
+      clearMemeCache();
       const previous = readStoredProfile();
       if (!profile || (previous && (previous.committeeId !== profile.committeeId
         || previous.seatLabel !== profile.seatLabel || previous.accessType !== profile.accessType))) {

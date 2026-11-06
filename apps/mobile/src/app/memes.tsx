@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { cachedMemes } from '@/lib/meme-cache';
 import { MemeSlideshow } from '@/components/meme-slideshow';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -56,9 +57,15 @@ export default function MemesScreen() {
  useEffect(() => {
   let active = true;
   const invalidate = () => { request.current++; };
-  void Promise.resolve().then(() => { if (active) { setMemes([]); void refresh(); } });
+  void Promise.resolve().then(() => {
+   if (!active) return;
+   const cached = profile ? cachedMemes(profile.conferenceId, filter) : null;
+   setMemes(cached ?? []);
+   setMore(cached?.length === 24);
+   void refresh();
+  });
   return () => { active = false; invalidate(); };
- }, [refresh, request]);
+ }, [refresh, request, profile, filter]);
  // Refresh short-lived image URLs while the gallery is open.
  useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
  async function startSlideshow() {
@@ -138,7 +145,7 @@ export default function MemesScreen() {
   {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
   {!composing && <>
   <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: filter === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: filter === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: filter === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{choices(filter, setFilter)}</View>
-  <ActionButton label={preparingSlides ? 'Preparing slideshow…' : `Start slideshow · ${destinationName}`} onPress={() => void startSlideshow()} disabled={preparingSlides || loading || !memes.length} />
+  <ActionButton label={preparingSlides ? 'Preparing slideshow…' : 'Slideshow'} onPress={() => void startSlideshow()} disabled={preparingSlides || loading || !memes.length} />
   {loading && !memes.length ? <View style={styles.panel}><ActivityIndicator color={theme.primary} /><ThemedText>Loading the latest laughs…</ThemedText></View> : null}
   {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{!canPost ? 'Check back soon for memes from this committee.' : filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
   {memes.filter(m => m.committee_id === filter).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
