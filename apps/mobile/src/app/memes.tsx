@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Screen } from '@/components/screen';
+import { InstagramLinks } from '@/components/instagram-links';
 import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
@@ -84,6 +85,7 @@ export default function MemesScreen() {
   finally { mutation.current = false; setBusy(false); }
  }
  return <Screen eyebrow="THE UNOFFICIAL RECORD" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
+  {!composing && <InstagramLinks only="memes" />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
   {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}

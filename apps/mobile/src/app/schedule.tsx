@@ -64,15 +64,15 @@ export default function ScheduleScreen() {
                 <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
                   <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
                   <ThemedText style={styles.eventDetail}>
-                    {formatEventTime(event.startsAt, event.endsAt)} · {event.roomName || 'Venue to be announced'}
+                    {formatEventTime(event.startsAt, event.endsAt)}
                   </ThemedText>
-                  {event.description ? <ThemedText style={styles.eventDescription}>{event.description}</ThemedText> : null}
                   {mapUrl ? (
                     <Pressable accessibilityRole="link" accessibilityLabel={`View ${event.roomName} on Google Maps`}
-                      onPress={() => void openMap(mapUrl)} style={styles.mapLink}>
-                      <ThemedText type="smallBold" style={styles.mapLinkText}>View on map ↗</ThemedText>
+                      onPress={() => void openMap(mapUrl)} style={({ pressed }) => [styles.mapLink, pressed && styles.pressed]}>
+                      <ThemedText style={styles.mapLinkText}>{event.roomName} ↗</ThemedText>
                     </Pressable>
-                  ) : null}
+                  ) : <ThemedText style={styles.eventDetail}>{event.roomName || 'Venue to be announced'}</ThemedText>}
+                  {event.description ? <ThemedText style={styles.eventDescription}>{event.description}</ThemedText> : null}
                 </View>
               );
             })}
@@ -107,7 +107,8 @@ const styles = StyleSheet.create({
   eventTitle: { color: palette.white, fontSize: 18, lineHeight: 24, fontWeight: '700' },
   eventDetail: { color: palette.muted, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
   eventDescription: { color: palette.white, fontSize: 14, lineHeight: 20, marginTop: 4 },
-  mapLink: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44, paddingRight: Spacing.three },
-  mapLinkText: { color: palette.white, textDecorationLine: 'underline' },
+  mapLink: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.one, maxWidth: '100%', minHeight: 44, paddingRight: Spacing.three },
+  mapLinkText: { color: palette.white, fontSize: 15, lineHeight: 21, textDecorationLine: 'underline', flexShrink: 1 },
+  pressed: { opacity: 0.7 },
   status: { color: palette.black, fontSize: 14, lineHeight: 20 },
 });

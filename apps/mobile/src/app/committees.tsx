@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/screen';
+import { InstagramLinks } from '@/components/instagram-links';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
@@ -81,7 +82,12 @@ export default function CommitteesScreen() {
         </View>
       </View>
 
-      {committees.map((committee) => <CommitteeCard committee={committee} key={committee.id} />)}
+      {committees.map((committee) => (
+        <View key={committee.id} style={styles.committeeGroup}>
+          <CommitteeCard committee={committee} />
+          {committee.abbreviation.toUpperCase() === 'IPC' ? <InstagramLinks only="ipc" /> : null}
+        </View>
+      ))}
 
       {!committees.length ? (
         <View style={styles.emptyState}>
@@ -101,6 +107,7 @@ export default function CommitteesScreen() {
 }
 
 const styles = StyleSheet.create({
+  committeeGroup: { gap: 12 },
   summaryRow: { flexDirection: 'row', gap: 12 },
   summaryItem: { flex: 1, gap: 2 },
   card: { borderRadius: 18, borderWidth: 1, gap: 12, padding: 18 },

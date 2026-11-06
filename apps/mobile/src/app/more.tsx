@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet } from 'react-native';
 
+import { InstagramLinks } from '@/components/instagram-links';
 import { ContentCard } from '@/components/content-card';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
@@ -52,6 +53,7 @@ export default function MoreScreen() {
         <ThemedText type="small" themeColor="textSecondary">{profile?.identitySource === 'ecg' ? 'This ends KAMUN and the ECE sessions opened from this login. Internet is required to sign out of both.' : 'You will need an access code to sign in again.'}</ThemedText>
         {signOutError ? <ThemedText type="small" themeColor="danger">{signOutError}</ThemedText> : null}
       </ContentCard>
+      <InstagramLinks />
     </Screen>
   );
 }
