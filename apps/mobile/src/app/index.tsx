@@ -40,13 +40,13 @@ export default function HomeScreen() {
     setOpeningEcg(true);
     try {
       if (profile?.identitySource !== 'ecg') {
-        throw new Error('Use your personal ECE code in More → Change access code to connect coffee ordering.');
+        throw new Error('Use your personal KAMUN code in More → Change access code to connect coffee ordering.');
       }
       await openEcgWithKamunIdentity();
     }
     catch (error) {
       if (error instanceof AccessExpiredError) clearProfile();
-      setEcgError(error instanceof Error ? error.message : 'ECE is unavailable right now.');
+      setEcgError(error instanceof Error ? error.message : 'KAMUN coffee ordering is unavailable right now.');
     } finally { setOpeningEcg(false); }
   }
 
@@ -151,7 +151,7 @@ export default function HomeScreen() {
                 onPress={() => profile?.identitySource === 'ecg' ? void openEcg() : router.push('/more')}
                 style={({ pressed }) => [styles.coffeeButton, (pressed || openingEcg) && styles.pressed]}>
                 <ThemedText type="smallBold" style={styles.coffeeButtonText}>
-                  {openingEcg ? 'Opening ECE…' : profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
+                  {openingEcg ? 'Opening ECE Coffee Bar…' : profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
                 </ThemedText>
               </Pressable>
             </View>

@@ -14,14 +14,14 @@ export async function openEcgWithKamunIdentity(): Promise<void> {
   if (error || typeof data?.url !== 'string') {
     if (accessHasExpired(await functionErrorReason(data, error)))
       throw new AccessExpiredError('Your access has changed. Sign in with your current personal code.');
-    throw new Error('ECE is unavailable right now. Check your connection and try again.');
+    throw new Error('KAMUN coffee ordering is unavailable right now. Check your connection and try again.');
   }
   const target = new URL(data.url);
   const expected = new URL(process.env.EXPO_PUBLIC_ECE_URL ?? 'https://cafe.kamun.org/');
   if (target.protocol !== 'https:' || target.username || target.password || target.search
     || target.origin !== expected.origin || target.pathname !== '/'
     || !/^#handoff=[A-Za-z0-9_-]{43}$/.test(target.hash))
-    throw new Error('ECE returned an invalid link. Please try again later.');
+    throw new Error('KAMUN coffee ordering returned an invalid link. Please try again later.');
   if (Platform.OS === 'web') {
     window.location.assign(target.toString());
   } else {
@@ -35,7 +35,7 @@ export async function closeEcgSession(): Promise<void> {
     body: { conferenceId: KAMUN_CONFERENCE_ID }, timeout: 12_000,
   });
   if (error || data?.ok !== true)
-    throw new Error('Could not sign out of ECE. Reconnect and try again to finish signing out of both apps.');
+    throw new Error('Could not finish signing out of KAMUN. Reconnect and try again.');
 }
 
 const PENDING_SIGN_OUT = 'kamun.pending-sign-out.v1';

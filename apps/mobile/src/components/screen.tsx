@@ -17,6 +17,7 @@ type ScreenProps = PropsWithChildren<{
 
 export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false }: ScreenProps) {
   const theme = useTheme();
+  const headingLabel = (eyebrow.charAt(0) + eyebrow.slice(1).toLowerCase()).replace(/kamun/gi, 'KAMUN');
   const phone = useWindowDimensions().width < 600;
 
   return (
@@ -26,8 +27,7 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
             <View style={styles.eyebrowRow}>
-              <View style={[styles.eyebrowRule, { backgroundColor: theme.accent }]} />
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>{eyebrow}</ThemedText>
+              <ThemedText type="small" style={{ color: theme.primary, fontWeight: '500' }}>{headingLabel}</ThemedText>
             </View>
             <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle]}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
   phoneTitle: { fontSize: 30, lineHeight: 36 },
   header: { gap: Spacing.two, paddingTop: Spacing.two },
   eyebrowRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
-  eyebrowRule: { borderRadius: 2, height: 3, width: 28 },
   title: { fontSize: 38, lineHeight: 43 },
   body: { gap: Spacing.three },
 });

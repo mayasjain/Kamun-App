@@ -39,7 +39,10 @@ export default function MoreScreen() {
       {Platform.OS === 'web' ? (
         <ContentCard label="HOME SCREEN" title="Keep KAMUN on your phone">
           <ThemedText themeColor="textSecondary">
-            On iPhone, open this site in Safari, tap Share, then Add to Home Screen. On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.
+            On iPhone, open this site in Safari, tap Share, then Add to Home Screen.
+          </ThemedText>
+          <ThemedText themeColor="textSecondary">
+            On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.
           </ThemedText>
         </ContentCard>
       ) : null}
@@ -48,9 +51,9 @@ export default function MoreScreen() {
         <ThemedText themeColor="textSecondary">Enter a different code to change access on this device.</ThemedText>
         <AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} />
         <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} onPress={() => void signOut()} style={styles.signOutButton}>
-          <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : profile?.identitySource === 'ecg' ? 'Sign out of KAMUN and ECE' : 'Sign out on this device'}</ThemedText>
+          <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : profile?.identitySource === 'ecg' ? 'Sign out of KAMUN' : 'Sign out on this device'}</ThemedText>
         </Pressable>
-        <ThemedText type="small" themeColor="textSecondary">{profile?.identitySource === 'ecg' ? 'This ends KAMUN and the ECE sessions opened from this login. Internet is required to sign out of both.' : 'You will need an access code to sign in again.'}</ThemedText>
+        {profile?.identitySource !== 'ecg' ? <ThemedText type="small" themeColor="textSecondary">You will need an access code to sign in again.</ThemedText> : null}
         {signOutError ? <ThemedText type="small" themeColor="danger">{signOutError}</ThemedText> : null}
       </ContentCard>
       <InstagramLinks />

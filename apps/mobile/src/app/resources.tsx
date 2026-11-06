@@ -82,7 +82,7 @@ export default function ResourcesScreen() {
       ) : null}
       {committeeResources.length ? (
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={{ color: theme.primary }}>STUDY GUIDES</ThemedText>
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>STUDY GUIDE</ThemedText>
           <View style={styles.grid}>{committeeResources.map(renderResource)}</View>
         </View>
       ) : null}

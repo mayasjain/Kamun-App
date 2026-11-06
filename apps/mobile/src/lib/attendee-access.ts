@@ -125,7 +125,7 @@ export async function restoreAttendeeAccess(): Promise<ClaimedAttendeeAccess | n
     if (error || data?.error) {
       const reason = await functionErrorReason(data, error);
       if (accessHasExpired(reason)) throw new AccessExpiredError(reason!);
-      throw new Error('ECE identity could not be refreshed.');
+      throw new Error('Your KAMUN session could not be refreshed.');
     }
   }
   const { data, error } = await supabase.rpc('my_current_attendee_profile', {

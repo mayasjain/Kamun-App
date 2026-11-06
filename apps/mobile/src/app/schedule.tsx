@@ -43,7 +43,7 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <View style={styles.headerInner}>
           <ThemedText style={styles.headerTitle}>Schedule</ThemedText>
@@ -93,11 +93,11 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: palette.black },
-  header: { backgroundColor: palette.black, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: Spacing.four },
+  root: { flex: 1, backgroundColor: palette.cream },
+  header: { backgroundColor: palette.cream, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: Spacing.four },
   headerInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: 4 },
-  headerTitle: { color: palette.white, fontSize: 34, lineHeight: 40, fontWeight: '700' },
-  headerSubtitle: { color: palette.muted, fontSize: 16, lineHeight: 22, fontStyle: 'italic' },
+  headerTitle: { color: palette.green, fontSize: 34, lineHeight: 40, fontWeight: '700' },
+  headerSubtitle: { color: '#5E625A', fontSize: 16, lineHeight: 22 },
   scroll: { flex: 1, backgroundColor: palette.cream },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: BottomTabInset + Spacing.five, gap: Spacing.three },
   dayPanel: { backgroundColor: palette.green, borderRadius: 24, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three },

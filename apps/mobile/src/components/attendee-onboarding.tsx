@@ -35,7 +35,7 @@ export function AttendeeOnboarding() {
             {restoreError ? <ThemedText themeColor="danger">{restoreError}</ThemedText> : null}
             <AttendeeProfileForm />
             <ThemedText type="small" themeColor="textSecondary" style={styles.privacy}>
-              One code for KAMUN and ECE. You stay signed in on this device until you sign out or your access expires.
+              One code for KAMUN. You stay signed in on this device until you sign out or your access expires.
             </ThemedText>
           </View>
         </ScrollView>
