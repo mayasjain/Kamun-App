@@ -18,8 +18,8 @@ export const partnerGroups: readonly PartnerGroup[] = [
       { name: 'KIT', detail: 'Karlsruher Institut für Technologie', logo: require('../../assets/partners/kit.png') },
       { name: 'Karlshochschule', detail: 'International University', logo: require('../../assets/partners/karlshochschule.png') },
       { name: 'DGVN', detail: 'Landesverband Berlin-Brandenburg e. V.', logo: require('../../assets/partners/dgvn.png') },
-      { name: 'AIESEC', detail: 'Institutional partner of KAMUN 2026.', logo: require('../../assets/partners/aiesec.png'), logoFit: 'contain' },
-      { name: 'mymun', detail: 'Institutional partner of KAMUN 2026.', logo: require('../../assets/partners/mymun.png'), logoFit: 'contain' },
+      { name: 'AIESEC', detail: "world's largest youth-run and youth-led non-governmental, non-profit organization", logo: require('../../assets/partners/aiesec.png'), logoFit: 'contain' },
+      { name: 'mymun', detail: "leading global conference database, registration system, and community platform for MUN", logo: require('../../assets/partners/mymun.png'), logoFit: 'contain' },
     ],
   },
   {
@@ -35,9 +35,9 @@ export const partnerGroups: readonly PartnerGroup[] = [
     title: 'In-kind sponsors',
     description: 'Contributing resources and support to the KAMUN experience.',
     entries: [
-      { name: 'MUN Command', detail: 'In-kind sponsor of KAMUN 2026.', logo: require('../../assets/partners/mun-command.jpg'), logoFit: 'contain' },
-      { name: 'Partyfly', detail: 'In-kind sponsor of KAMUN 2026.', logo: require('../../assets/partners/partyfly.png'), logoFit: 'contain', logoBackground: '#073D80' },
-      { name: 'BOCK auf Karlsruhe', detail: 'In-kind sponsor of KAMUN 2026.', logo: require('../../assets/partners/bock-auf-karlsruhe.png'), logoFit: 'contain', logoBackground: '#000000' },
+      { name: 'MUN Command', detail: "all-in-one digital platform and app designed to run, manage, and participate in MUNs", logo: require('../../assets/partners/mun-command.jpg'), logoFit: 'contain' },
+      { name: 'Partyfly', detail: "German effervescent supplement that replenishes fluids and electrolytes after partying or festivals.", logo: require('../../assets/partners/partyfly.png'), logoFit: 'contain', logoBackground: '#073D80' },
+      { name: 'BOCK auf Karlsruhe', detail: "youth- and student-focused local media and recommendation platform in Karlsruhe, Germany", logo: require('../../assets/partners/bock-auf-karlsruhe.png'), logoFit: 'contain', logoBackground: '#000000' },
       { name: 'ZeSIA Karlsruhe', detail: 'Centre for sexual health, identity and education in Karlsruhe.', logo: require('../../assets/partners/zesia.png'), logoFit: 'contain' },
       { name: 'Münchner Aids-Hilfe e.V.', detail: 'Providing condoms and information booklets on sexually transmitted diseases (STDs).', logo: require('../../assets/partners/muenchner-aidshilfe.png'), logoFit: 'contain' },
       { name: 'OpenIT Karlsruhe', detail: 'Karlsruhe-based accelerator supporting technology startups through mentoring, programmes and networking.', logo: require('../../assets/partners/openit.png') },

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, type TextProps } from 'react-native';
 
 import { ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,6 +10,7 @@ type ThemedTextProps = TextProps & {
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const phone = useWindowDimensions().width < 600;
 
   return (
     <Text
@@ -20,6 +21,8 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'small' && styles.small,
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
+        phone && type === 'default' && { fontSize: 15, lineHeight: 22 },
+        phone && type === 'subtitle' && { fontSize: 19, lineHeight: 25 },
         style,
       ]}
       {...rest}

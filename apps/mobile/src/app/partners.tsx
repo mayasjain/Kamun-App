@@ -17,7 +17,7 @@ export default function PartnersScreen() {
   const columns = fontScale > 1.3 || availableWidth < 300 ? 1 : availableWidth >= 640 ? 3 : 2;
   const cardWidth = (availableWidth - Spacing.twoAndHalf * (columns - 1)) / columns;
 
-  const logoSize = Math.min(width < 600 ? 88 : 128, Math.max(0, cardWidth - Spacing.twoAndHalf * 2 - 2));
+  const logoSize = Math.min(width < 600 ? 64 : 80, Math.max(0, cardWidth - Spacing.twoAndHalf * 2 - 2));
 
   return (
     <Screen eyebrow="KAMUN 2026" title="Sponsors & partners" subtitle="The organisations and conferences helping make KAMUN possible.">
@@ -34,8 +34,8 @@ export default function PartnersScreen() {
       {partnerGroups.map((group) => (
         <View key={group.title} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle" accessibilityRole="header">{group.title}</ThemedText>
-            <ThemedText themeColor="textSecondary">{group.description}</ThemedText>
+            <ThemedText type="subtitle" style={styles.groupTitle} accessibilityRole="header">{group.title}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{group.description}</ThemedText>
           </View>
           <View style={styles.grid} onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}>
             {group.entries.map((partner) => (
@@ -61,18 +61,19 @@ export default function PartnersScreen() {
 const styles = StyleSheet.create({
   back: { minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: Spacing.three },
   pressed: { opacity: 0.7 },
-  thanks: { backgroundColor: Brand.pine, borderRadius: Radius.feature, padding: Spacing.four, gap: Spacing.three },
-  eyebrow: { color: Brand.gold, letterSpacing: 1.1 },
-  thanksTitle: { color: Brand.white },
-  thanksCopy: { color: Brand.cream },
-  section: { gap: Spacing.three, marginTop: Spacing.four },
-  sectionHeader: { gap: Spacing.two },
+  thanks: { backgroundColor: Brand.pine, borderRadius: Radius.feature, padding: 16, gap: 10 },
+  eyebrow: { color: Brand.gold, fontSize: 12, lineHeight: 18, letterSpacing: 0.6 },
+  thanksTitle: { color: Brand.white, fontSize: 18, lineHeight: 24 },
+  thanksCopy: { color: Brand.cream, fontSize: 14, lineHeight: 21 },
+  groupTitle: { fontSize: 19, lineHeight: 25 },
+  section: { gap: 12, marginTop: 12 },
+  sectionHeader: { gap: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: Spacing.twoAndHalf },
   card: { alignItems: 'center', borderWidth: 1, borderRadius: Radius.card, padding: Spacing.twoAndHalf, gap: Spacing.two },
   logoFrame: { flexShrink: 0, overflow: 'hidden', backgroundColor: Brand.white, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
   logo: { width: '100%', height: '100%' },
   containedLogo: { width: '84%', height: '84%' },
   partnerInitials: { color: Brand.pine, fontSize: 28, lineHeight: 36, fontWeight: '700' },
-  partnerName: { fontWeight: '700', fontSize: 16, lineHeight: 22, textAlign: 'center' },
+  partnerName: { fontWeight: '700', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   partnerDetail: { textAlign: 'center', fontSize: 13, lineHeight: 19 },
 });

@@ -18,7 +18,7 @@ export function ContentCard({ label, title, preview, children }: ContentCardProp
     <View
       style={[
         styles.card,
-        phone && { padding: 16 },
+        phone && { padding: 14 },
         {
           backgroundColor: theme.backgroundElement,
           borderColor: theme.border,
@@ -29,7 +29,7 @@ export function ContentCard({ label, title, preview, children }: ContentCardProp
           <ThemedText type="smallBold" style={styles.label} themeColor="primary">
             {label}
           </ThemedText>
-          <ThemedText type="subtitle" style={[styles.title, phone && { fontSize: 20, lineHeight: 26 }]}>
+          <ThemedText type="subtitle" style={[styles.title, phone && { fontSize: 18, lineHeight: 24 }]}>
             {title}
           </ThemedText>
           {preview ? <View>{children}</View> : null}

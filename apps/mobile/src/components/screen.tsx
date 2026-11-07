@@ -52,10 +52,10 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.five,
     gap: Spacing.five,
   },
-  phoneContent: { paddingHorizontal: 16, paddingTop: 16, gap: 24 },
-  phoneTitle: { fontSize: 30, lineHeight: 36 },
+  phoneContent: { paddingHorizontal: 16, paddingTop: 12, gap: 18 },
+  phoneTitle: { fontSize: 26, lineHeight: 32 },
   header: { gap: Spacing.two, paddingTop: Spacing.two },
   eyebrowRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
-  title: { fontSize: 38, lineHeight: 43 },
+  title: { fontSize: 34, lineHeight: 40 },
   body: { gap: Spacing.three },
 });
