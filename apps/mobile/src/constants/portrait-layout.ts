@@ -95,5 +95,23 @@ export const portraitLayout = {
     "height": 117.94,
     "left": 11.65,
     "top": -11.44
+  },
+  "rohil": {
+    "width": 174.86,
+    "height": 98.36,
+    "left": -27.61,
+    "top": 2.86
+  },
+  "franziska": {
+    "width": 236.54,
+    "height": 133.08,
+    "left": -63.23,
+    "top": -27.08
+  },
+  "karan": {
+    "width": 126.71,
+    "height": 163.98,
+    "left": -11.08,
+    "top": -57.66
   }
 } as const;

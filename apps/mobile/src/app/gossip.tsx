@@ -120,9 +120,9 @@ export default function GossipScreen() {
     </Screen>;
   }
 
-  return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle={`Send a private message to your ${profile?.committeeName ?? 'committee'} chairs.`}>
+  return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle={profile?.committeeName ? `Send some tea to the chairs of the ${profile.committeeName}.` : 'Send some tea to your committee chairs.'}>
     <View style={styles.form}>
-        <ThemedText type="small" themeColor="textSecondary">Only your committee’s chairs can read your message. Your name is not shown.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">Only your Committee Chairs can view all gossip and you remain anonymous.</ThemedText>
         {!selectedCommittee ? <ThemedText themeColor="danger">Your account has no committee assigned. Please contact the organisers.</ThemedText> : null}
         <ThemedText type="smallBold">YOUR MESSAGE</ThemedText>
         <TextInput accessibilityLabel="Gossip message" multiline maxLength={500} value={message}
