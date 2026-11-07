@@ -164,15 +164,12 @@ export default function HomeScreen() {
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
-                      : <HomeIcon name={(item.href === '/partners' || item.href === '/secretariat') ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
+                      : <HomeIcon name={item.href === '/secretariat' ? 'secretariat' : item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
                   <View style={[styles.quickCopy, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsCopy]}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
                   </View>
-                  {item.href === '/partners' || item.href === '/secretariat' ? (
-                    <HomeIcon name="chevron" size={18} color={theme.textSecondary} />
-                  ) : null}
                 </Pressable>
               ))}
             </View>

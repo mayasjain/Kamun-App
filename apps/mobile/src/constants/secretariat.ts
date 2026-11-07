@@ -9,6 +9,7 @@ export const secretariat = [
  { name: 'Hridey Batra', role: 'USG of Academics · Safety and Awareness', photo: require('../../assets/secretariat/hridey.png'), photoLayout: portraitLayout.hridey, linkedin: 'https://www.linkedin.com/in/hridey-batra-912203141/' },
  { name: 'Ansh Mehta', role: 'USG of Academics', photo: require('../../assets/secretariat/ansh.png'), photoLayout: portraitLayout.ansh, linkedin: 'https://www.linkedin.com/in/-ansh-mehta/' },
  { name: 'Jacqueline Zweers', role: 'Academic Director · Safety and Awareness', photo: require('../../assets/secretariat/jacqueline.png'), photoLayout: portraitLayout.jacqueline, linkedin: 'https://www.linkedin.com/in/jacquelinezweers27/' },
+ { name: 'Damian Vassilev', role: 'Academic Director', photo: require('../../assets/secretariat/damian.png'), photoLayout: portraitLayout.damian, linkedin: null },
  { name: 'Katharina Haack', role: 'Academic Director', photo: require('../../assets/secretariat/katharina.png'), photoLayout: portraitLayout.katharina, linkedin: 'https://www.linkedin.com/in/katharina-haack/' },
  { name: 'Mats Hagedorn', role: 'Academic Director', photo: require('../../assets/secretariat/mats.png'), photoLayout: portraitLayout.mats, linkedin: 'https://www.linkedin.com/in/mats-hagedorn-8415a229b/' },
  { name: 'Valeria Loera', role: 'Academic Director · Social Media, Marketing and PR', photo: require('../../assets/secretariat/valeria.png'), photoLayout: portraitLayout.valeria, linkedin: 'https://www.linkedin.com/in/valeria-loera-gomez/' },

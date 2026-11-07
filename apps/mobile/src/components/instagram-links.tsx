@@ -34,8 +34,8 @@ export function InstagramLinks({ only }: { only?: keyof typeof accounts }) {
 }
 
 const styles = StyleSheet.create({
-  section: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 24, rowGap: 4 },
-  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 24, rowGap: 4 },
+  section: { justifyContent: 'center', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 24, rowGap: 4 },
+  links: { justifyContent: 'center', flexDirection: 'row', flexWrap: 'wrap', columnGap: 24, rowGap: 4 },
   link: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48 },
   pressed: { opacity: 0.65 },
   instagramLogo: { width: 24, height: 24 },

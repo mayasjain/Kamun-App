@@ -31,7 +31,10 @@ export default function PartnersScreen() {
         <ThemedText style={styles.thanksCopy}>To our sponsors, institutional partners and fellow conferences: thank you for supporting our community and the conversations that bring us together.</ThemedText>
       </View>
 
-      {partnerGroups.map((group) => (
+      {partnerGroups.map((group) => {
+        const groupColumns = group.title === 'In-kind sponsors' ? Math.min(columns, 2) : columns;
+        const groupCardWidth = (availableWidth - Spacing.twoAndHalf * (groupColumns - 1)) / groupColumns;
+        return (
         <View key={group.title} style={styles.section}>
           <View style={styles.sectionHeader}>
             <ThemedText type="subtitle" style={styles.groupTitle} accessibilityRole="header">{group.title}</ThemedText>
@@ -39,7 +42,7 @@ export default function PartnersScreen() {
           </View>
           <View style={styles.grid} onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}>
             {group.entries.map((partner) => (
-              <View key={partner.name} style={[styles.card, { width: cardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <View key={partner.name} style={[styles.card, { width: groupCardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                 <View style={[styles.logoFrame, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }, partner.logoBackground ? { backgroundColor: partner.logoBackground } : null]}>
                   {partner.logo ? (
                     <Image source={partner.logo} style={[styles.logo, partner.logoFit === 'contain' ? styles.containedLogo : { borderRadius: logoSize / 2 }]} resizeMode={partner.logoFit ?? "cover"} accessibilityLabel={`${partner.name} logo`} />
@@ -53,7 +56,7 @@ export default function PartnersScreen() {
             ))}
           </View>
         </View>
-      ))}
+      ); })}
     </Screen>
   );
 }

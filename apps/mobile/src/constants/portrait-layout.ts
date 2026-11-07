@@ -113,5 +113,11 @@ export const portraitLayout = {
     "height": 163.98,
     "left": -11.08,
     "top": -57.66
+  },
+  "damian": {
+    "width": 116.79,
+    "height": 175.18,
+    "left": -22.28,
+    "top": -68.82
   }
 } as const;

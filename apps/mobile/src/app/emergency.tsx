@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -101,8 +101,9 @@ export default function EmergencyScreen() {
                       </Pressable>
                       {whatsappUrl ? (
                         <Pressable accessibilityRole="link" accessibilityLabel={`Chat with ${name} on WhatsApp`} onPress={() => void openLink(whatsappUrl)}
-                          style={({ pressed }) => [styles.contactLink, pressed && styles.pressed]}>
-                          <ThemedText type="smallBold" style={{ color: theme.primary }}>WhatsApp ↗</ThemedText>
+                          style={({ pressed }) => [styles.contactLink, styles.whatsappLink, pressed && styles.pressed]}>
+                          <Image source={require('../../assets/branding/whatsapp.png')} style={styles.whatsappLogo} resizeMode="contain" accessible={false} />
+                          <ThemedText type="smallBold" style={{ color: theme.primary }}>WhatsApp</ThemedText>
                         </Pressable>
                       ) : null}
                     </View>
@@ -158,6 +159,8 @@ const styles = StyleSheet.create({
   staffName: { fontSize: 18, lineHeight: 24 },
   staffActions: { alignItems: 'flex-end', maxWidth: '52%' },
   staffActionsStacked: { alignItems: 'flex-start', maxWidth: '100%' },
+  whatsappLink: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  whatsappLogo: { width: 22, height: 22 },
   contactLink: { minHeight: 44, justifyContent: 'center' },
   phoneNumber: { fontSize: 16, lineHeight: 22, textAlign: 'right' },
   actionButton: { alignItems: 'center', borderRadius: 11, flex: 1, justifyContent: 'center', minHeight: 48, minWidth: 0, paddingHorizontal: Spacing.two },

@@ -120,6 +120,8 @@ export async function fetchConferenceContent(
   const conference = conferenceResult.data;
   if (!conference) throw new Error('Conference content was not found.');
 
+  const isIpc = committeesResult.data?.some(c => c.id === committeeId && c.abbreviation?.toUpperCase() === 'IPC') ?? false;
+
   const matchesAudience = <T extends { committee_id: string | null }>(item: T) =>
     item.committee_id === null || committeeId === null || item.committee_id === committeeId;
 
@@ -154,7 +156,7 @@ export async function fetchConferenceContent(
       id: item.id, committeeId: item.committee_id, audience: 'audience' in item ? item.audience as Announcement['audience'] : 'all', title: item.title, body: item.body,
       priority: item.priority as Announcement['priority'], publishedAt: item.published_at,
     })),
-    resources: (resourcesResult.data ?? []).filter(matchesAudience).map((item) => ({
+    resources: (resourcesResult.data ?? []).filter(item => isIpc || matchesAudience(item)).map((item) => ({
       id: item.id, committeeId: item.committee_id, title: item.title, kind: item.kind,
       url: item.url, sortOrder: item.sort_order,
     })),

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { readableDocumentUrl } from '@/lib/document-link';
 import { documentCover } from '@/lib/document-covers';
 
 export default function ResourcesScreen() {
@@ -34,7 +35,8 @@ export default function ResourcesScreen() {
         return;
       }
       // Open directly to preserve the tap gesture in browsers.
-      await Linking.openURL(parsed.href);
+      const origin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined;
+      await Linking.openURL(readableDocumentUrl(parsed.href, origin));
     } catch {
       setDocumentError({ id, message: 'We could not open this document. Check your connection and tap the PDF cover to try again.' });
     } finally {

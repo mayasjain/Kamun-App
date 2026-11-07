@@ -70,7 +70,7 @@ export default function CommitteesScreen() {
     <Screen
       eyebrow="ACADEMIC PROGRAMME"
       title="Committees"
-      subtitle="Explore the nine KAMUN 2026 committees, their topics and experience levels.">
+      subtitle="Explore the KAMUN 2026 committees, their topics and experience levels.">
       <View style={styles.summaryRow}>
         <View style={styles.summaryItem}>
           <ThemedText type="subtitle">{committees.length || '—'}</ThemedText>

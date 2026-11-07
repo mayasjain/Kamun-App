@@ -23,7 +23,7 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [source, setSource] = useState<ContentSource>(null);
-  const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.accessType ?? 'none'}.${profile?.committeeId ?? 'all'}.v3`;
+  const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.accessType ?? 'none'}.${profile?.committeeId ?? 'all'}.v4`;
   const requestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
