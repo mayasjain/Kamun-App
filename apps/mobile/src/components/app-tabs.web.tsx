@@ -6,7 +6,9 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -52,14 +54,10 @@ function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
 }
 
 function CustomTabList(props: TabListProps) {
-  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   return (
-    <View {...props} style={styles.tabListContainer}>
+    <View {...props} style={[styles.tabListContainer, { paddingBottom: Math.max(8, insets.bottom) }]}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        {width >= 650 ? <ThemedText type="smallBold" style={styles.brandText}>
-          KAMUN 2026
-        </ThemedText> : null}
-
         {props.children}
 
       </ThemedView>
@@ -93,11 +91,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
-  },
-  brandText: {
-    marginRight: 'auto',
-    paddingHorizontal: Spacing.two,
-    letterSpacing: 0.8,
   },
   pressed: {
     opacity: 0.7,

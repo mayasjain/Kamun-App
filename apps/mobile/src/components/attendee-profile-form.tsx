@@ -64,6 +64,7 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN', disable
           editable={!disabled && !isSubmitting}
           autoCapitalize="characters"
           autoCorrect={false}
+          returnKeyType="go"
           onChangeText={(value) => {
             setCode(value);
             if (error) setError('');
@@ -74,7 +75,7 @@ export function AttendeeProfileForm({ submitLabel = 'Continue to KAMUN', disable
           style={[styles.input, { backgroundColor: theme.backgroundElement, borderColor: error ? theme.danger : theme.border, color: theme.text }]}
           value={code}
         />
-        {error ? <ThemedText type="small" themeColor="danger">{error}</ThemedText> : null}
+        {error ? <ThemedText accessibilityRole="alert" accessibilityLiveRegion="polite" type="small" themeColor="danger">{error}</ThemedText> : null}
       </View>
 
       <Pressable

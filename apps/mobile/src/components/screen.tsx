@@ -1,6 +1,6 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -18,13 +18,14 @@ type ScreenProps = PropsWithChildren<{
 
 export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false, compactHeader = false }: ScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const headingLabel = (eyebrow.charAt(0) + eyebrow.slice(1).toLowerCase()).replace(/kamun/gi, 'KAMUN');
   const phone = useWindowDimensions().width < 600;
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, phone && styles.phoneContent, { paddingBottom: BottomTabInset + Spacing.five + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
             {eyebrow ? <View style={styles.eyebrowRow}>

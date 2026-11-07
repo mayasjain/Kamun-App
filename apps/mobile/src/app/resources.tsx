@@ -13,8 +13,10 @@ import { documentCover } from '@/lib/document-covers';
 export default function ResourcesScreen() {
   const theme = useTheme();
   const { width, fontScale } = useWindowDimensions();
-  const columns = fontScale > 1.3 || width < 360 ? 1 : width >= 720 ? 3 : 2;
-  const tileWidth = (Math.min(width, MaxContentWidth) - Spacing.four * 2 - Spacing.three * (columns - 1)) / columns;
+  const [containerWidth, setContainerWidth] = useState(0);
+  const availableWidth = containerWidth || Math.min(width - (width < 600 ? 32 : 48), MaxContentWidth - 48);
+  const columns = fontScale > 1.3 || availableWidth < 300 ? 1 : availableWidth >= 672 ? 3 : 2;
+  const tileWidth = (availableWidth - Spacing.three * (columns - 1)) / columns;
   const { content, error, isLoading, refresh } = useConferenceContent();
   const resources = content?.resources ?? [];
   const opening = useRef(false);
@@ -75,17 +77,17 @@ export default function ResourcesScreen() {
   }
 
   return (
-    <Screen eyebrow="PREPARE" title="Resources" subtitle="Your conference reading, all in one place.">
+    <Screen eyebrow="PREPARE" title="Resources" subtitle="Your conference reading, all in one place." onRefresh={() => void refresh()} refreshing={isLoading}>
       {generalResources.length ? (
         <View style={styles.section}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>CONFERENCE ESSENTIALS</ThemedText>
-          <View style={styles.grid}>{generalResources.map(renderResource)}</View>
+          <View style={styles.grid} onLayout={event => setContainerWidth(event.nativeEvent.layout.width)}>{generalResources.map(renderResource)}</View>
         </View>
       ) : null}
       {committeeResources.length ? (
         <View style={styles.section}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>STUDY GUIDE</ThemedText>
-          <View style={styles.grid}>{committeeResources.map(renderResource)}</View>
+          <View style={styles.grid} onLayout={event => setContainerWidth(event.nativeEvent.layout.width)}>{committeeResources.map(renderResource)}</View>
         </View>
       ) : null}
       {!resources.length ? (
@@ -104,11 +106,18 @@ export default function ResourcesScreen() {
           {resources.length > 0 ? <Pressable accessibilityRole="button" disabled={isLoading} onPress={() => void refresh()}><ThemedText type="smallBold" style={[styles.retry, { color: theme.primary }]}>{isLoading ? 'Refreshing…' : 'Try again →'}</ThemedText></Pressable> : null}
         </View>
       ) : null}
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.footerText}>
+          © 2026 KAMUN. All rights reserved.{'\n'}Conference materials are for participant use only.
+        </ThemedText>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  footer: { marginTop: 16, paddingTop: 20, borderTopWidth: StyleSheet.hairlineWidth },
+  footerText: { textAlign: 'center', fontSize: 12, lineHeight: 18, fontWeight: '400' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
   caption: { textAlign: 'center', marginTop: Spacing.twoAndHalf },
   meta: { textAlign: 'center', marginTop: Spacing.one },

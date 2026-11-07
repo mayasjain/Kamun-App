@@ -21,7 +21,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'small' && styles.small,
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
-        phone && type === 'default' && { fontSize: 15, lineHeight: 22 },
+        phone && type === 'default' && { fontSize: 16, lineHeight: 24 },
         phone && type === 'subtitle' && { fontSize: 19, lineHeight: 25 },
         style,
       ]}

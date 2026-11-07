@@ -54,7 +54,7 @@ test('reads revoked access from an HTTP error without opening a remembered ECE a
 
 test('failed remote logout is reported, so the caller retains the ability to retry', async () => {
   globalThis.__invoke = async () => ({ data: null, error: new Error('offline') });
-  await assert.rejects(closeEcgSession(), /Could not sign out of ECE/);
+  await assert.rejects(closeEcgSession(), /Could not finish signing out of KAMUN/);
   globalThis.__invoke = async (name) => { assert.equal(name, 'ecg-logout'); return { data: { ok: true }, error: null }; };
   await closeEcgSession();
 });
@@ -63,7 +63,7 @@ test('an interrupted shared logout is retried on return before restoring access'
   const stored = new Map();
   globalThis.localStorage = { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) };
   globalThis.__invoke = async () => ({ data: null, error: new Error('offline') });
-  await assert.rejects(signOutOfBothApps(), /Could not sign out/);
+  await assert.rejects(signOutOfBothApps(), /Could not finish signing out of KAMUN/);
   assert.equal(stored.get('kamun.pending-sign-out.v1'), '1');
   globalThis.__invoke = async () => ({ data: { ok: true }, error: null });
   assert.equal(await resumePendingSignOut(), true);
