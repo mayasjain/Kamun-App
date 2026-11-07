@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { InstagramLinks } from '@/components/instagram-links';
-import { ContentCard } from '@/components/content-card';
+import { MoreIcon } from '@/components/more-icon';
+import { useTheme } from '@/hooks/use-theme';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +12,11 @@ import { signOutOfBothApps } from '@/lib/ecg-handoff';
 import { supabase } from '@/lib/supabase';
 
 export default function MoreScreen() {
+  const theme = useTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const compact = width < 400 || fontScale > 1.3;
+  const [showInstall, setShowInstall] = useState(false);
+  const [showAccess, setShowAccess] = useState(false);
   const { clearProfile, profile } = useAttendeeProfile();
   const [signingOut, setSigningOut] = useState(false);
   const [changingAccess, setChangingAccess] = useState(false);
@@ -34,32 +40,72 @@ export default function MoreScreen() {
     }
   }
 
+  const card = { backgroundColor: theme.backgroundElement };
+  const divider = { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border };
   return (
-    <Screen eyebrow="KAMUN 2026" title="More" subtitle="Your access and app setup">
-      {Platform.OS === 'web' ? (
-        <ContentCard label="HOME SCREEN" title="Keep KAMUN on your phone">
-          <ThemedText themeColor="textSecondary">
-            On iPhone, open this site in Safari, tap Share, then Add to Home Screen.
-          </ThemedText>
-          <ThemedText themeColor="textSecondary">
-            On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.
-          </ThemedText>
-        </ContentCard>
-      ) : null}
-      <ContentCard label="SETTINGS" title="Change access code">
-        <ThemedText themeColor="textSecondary">Signed in as {profile?.committeeName ?? 'KAMUN'}{profile?.seatLabel ? ` · ${profile.seatLabel}` : profile?.accessType === 'chair' ? ' · Chair' : ''}.</ThemedText>
-        <ThemedText themeColor="textSecondary">Enter a different code to change access on this device.</ThemedText>
-        <AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} />
-        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} onPress={() => void signOut()} style={styles.signOutButton}>
-          <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : profile?.identitySource === 'ecg' ? 'Sign out of KAMUN' : 'Sign out on this device'}</ThemedText>
+    <Screen compactHeader eyebrow="" title="More" subtitle="Manage your KAMUN experience">
+      {Platform.OS === 'web' ? <View style={[styles.card, card]}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showInstall }} onPress={() => setShowInstall(v => !v)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+          <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="install" color={theme.primary} /></View>
+          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Install KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">Keep the conference one tap away</ThemedText></View>
+          <View style={[styles.howTo, { borderColor: theme.border }]}>{!compact && <ThemedText type="small" themeColor="textSecondary">How to</ThemedText>}<MoreIcon name="chevron" color={theme.textSecondary} size={18} /></View>
         </Pressable>
-        {signOutError ? <ThemedText type="small" themeColor="danger">{signOutError}</ThemedText> : null}
-      </ContentCard>
-      <InstagramLinks />
+        {showInstall ? <View style={[styles.expanded, divider]}>
+          <ThemedText type="small" themeColor="textSecondary">On iPhone, open this site in Safari, tap Share, then Add to Home Screen.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.</ThemedText>
+        </View> : null}
+      </View> : null}
+      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
+      <View style={[styles.card, card]}>
+        <View style={styles.row}>
+          <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="identity" color={theme.primary} /></View>
+          <View style={styles.copy}>
+            <ThemedText style={styles.rowTitle}>Your conference identity</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{profile?.committeeName ?? 'KAMUN 2026'}</ThemedText>
+            <View style={[styles.badge, { backgroundColor: theme.primarySoft }]}><ThemedText type="small">{profile?.seatLabel || (profile?.accessType === 'chair' ? 'Chair' : 'Delegate')}</ThemedText></View>
+          </View>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAccess, disabled: signingOut || changingAccess }} disabled={signingOut || changingAccess} onPress={() => setShowAccess(v => !v)} style={({ pressed }) => [styles.row, divider, pressed && styles.pressed]}>
+          <MoreIcon name="key" color={theme.primary} />
+          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Change access code</ThemedText><ThemedText type="small" themeColor="textSecondary">Switch your assigned access on this device</ThemedText></View>
+          <MoreIcon name="chevron" color={theme.textSecondary} size={18} />
+        </Pressable>
+        {showAccess ? <View style={styles.expanded}><AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} /></View> : null}
+        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} accessibilityState={{ disabled: signingOut || changingAccess, busy: signingOut }} onPress={() => void signOut()} style={({ pressed }) => [styles.row, divider, (pressed || signingOut || changingAccess) && styles.pressed]}>
+          <MoreIcon name="logout" color={theme.danger} />
+          <ThemedText style={[styles.rowTitle, styles.copy, { color: theme.danger }]}>{signingOut ? 'Signing out…' : 'Sign out'}</ThemedText>
+          <MoreIcon name="chevron" color={theme.textSecondary} size={18} />
+        </Pressable>
+        {signOutError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.error}>{signOutError}</ThemedText> : null}
+      </View>
+      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>STAY CONNECTED</ThemedText>
+      <View style={[styles.card, styles.socialCard, card]}>
+        <View style={styles.socialHeading}>
+          <View style={styles.socialLogo}><Image source={require('../../assets/branding/instagram.png')} style={styles.instagram} resizeMode="contain" accessible={false} /></View>
+          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Follow KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">News, memes & conference moments</ThemedText></View>
+        </View>
+        <InstagramLinks tiles />
+      </View>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>KAMUN 2026 · Made for delegates</ThemedText>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  signOutButton: { alignItems: 'center', justifyContent: 'center', minHeight: 48, marginTop: 12 },
+  card: { borderRadius: 20, paddingHorizontal: 16, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 18, minHeight: 64 },
+  iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  copy: { flex: 1, minWidth: 0, gap: 5 },
+  rowTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  howTo: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, minHeight: 44 },
+  expanded: { gap: 12, paddingVertical: 16 },
+  badge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 3, alignSelf: 'flex-start' },
+  sectionLabel: { marginTop: 4, fontSize: 12, lineHeight: 18, letterSpacing: 0.4 },
+  pressed: { opacity: 0.6 },
+  error: { paddingBottom: 16 },
+  socialCard: { paddingVertical: 16, gap: 14 },
+  socialHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  socialLogo: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  instagram: { width: 38, height: 38 },
+  footer: { textAlign: 'center', fontSize: 12, paddingVertical: 4 },
 });

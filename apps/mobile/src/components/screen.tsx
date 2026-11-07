@@ -8,6 +8,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type ScreenProps = PropsWithChildren<{
+  compactHeader?: boolean;
   eyebrow: string;
   title: string;
   subtitle?: ReactNode;
@@ -15,7 +16,7 @@ type ScreenProps = PropsWithChildren<{
   refreshing?: boolean;
 }>;
 
-export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false }: ScreenProps) {
+export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false, compactHeader = false }: ScreenProps) {
   const theme = useTheme();
   const headingLabel = (eyebrow.charAt(0) + eyebrow.slice(1).toLowerCase()).replace(/kamun/gi, 'KAMUN');
   const phone = useWindowDimensions().width < 600;
@@ -29,8 +30,8 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
             {eyebrow ? <View style={styles.eyebrowRow}>
               <ThemedText type="small" style={{ color: theme.primary, fontWeight: '500' }}>{headingLabel}</ThemedText>
             </View> : null}
-            <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle]}>{title}</ThemedText>
-            {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
+            <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle, compactHeader && styles.compactTitle, compactHeader && { color: theme.primary }]}>{title}</ThemedText>
+            {subtitle ? <ThemedText themeColor="textSecondary" style={compactHeader ? styles.compactSubtitle : undefined}>{subtitle}</ThemedText> : null}
           </View>
           <View style={styles.body}>{children}</View>
         </ScrollView>
@@ -53,6 +54,8 @@ const styles = StyleSheet.create({
     gap: Spacing.five,
   },
   phoneContent: { paddingHorizontal: 16, paddingTop: 12, gap: 18 },
+  compactTitle: { fontWeight: '400', letterSpacing: -0.3 },
+  compactSubtitle: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
   phoneTitle: { fontSize: 26, lineHeight: 32 },
   header: { gap: Spacing.two, paddingTop: Spacing.two },
   eyebrowRow: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
