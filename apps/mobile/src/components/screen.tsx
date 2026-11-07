@@ -26,9 +26,9 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
         <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
-            <View style={styles.eyebrowRow}>
+            {eyebrow ? <View style={styles.eyebrowRow}>
               <ThemedText type="small" style={{ color: theme.primary, fontWeight: '500' }}>{headingLabel}</ThemedText>
-            </View>
+            </View> : null}
             <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle]}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary">{subtitle}</ThemedText> : null}
           </View>

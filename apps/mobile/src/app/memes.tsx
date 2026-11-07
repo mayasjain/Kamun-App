@@ -125,7 +125,7 @@ export default function MemesScreen() {
   } catch { setError('Could not complete that action. Check your connection and try again.'); }
   finally { mutation.current = false; setBusy(false); }
  }
- return <Screen eyebrow="THE UNOFFICIAL RECORD" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
+ return <Screen eyebrow="" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
   {slides && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
   {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}

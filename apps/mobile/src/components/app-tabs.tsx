@@ -26,6 +26,7 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="gossip" hidden />
       <NativeTabs.Trigger name="memes" hidden />
       <NativeTabs.Trigger name="partners" hidden />
+      <NativeTabs.Trigger name="secretariat" hidden />
     </NativeTabs>
   );
 }

@@ -21,6 +21,7 @@ const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help & contacts', href: '/emergency', urgent: true },
   { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
   { title: 'Your KAMUN Padlet', detail: 'Meme it till you make it.', href: '/memes' },
+  { title: 'Secretariat', detail: 'Meet the team', href: '/secretariat' },
   { title: 'Sponsors & Partners', detail: 'Our pillars of support', href: '/partners' },
 ];
 
@@ -159,17 +160,17 @@ export default function HomeScreen() {
               {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
-                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, (item.href === '/partners' || item.href === '/memes') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes') && compact && styles.sponsorsTileCompact, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && compact && styles.sponsorsTileCompact, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
-                      : <HomeIcon name={item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
+                      : <HomeIcon name={(item.href === '/partners' || item.href === '/secretariat') ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
-                  <View style={[styles.quickCopy, (item.href === '/partners' || item.href === '/memes') && styles.sponsorsCopy]}>
+                  <View style={[styles.quickCopy, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsCopy]}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
                   </View>
-                  {item.href === '/partners' ? (
+                  {item.href === '/partners' || item.href === '/secretariat' ? (
                     <HomeIcon name="chevron" size={18} color={theme.textSecondary} />
                   ) : null}
                 </Pressable>

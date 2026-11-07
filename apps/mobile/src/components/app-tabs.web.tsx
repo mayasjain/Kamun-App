@@ -30,6 +30,7 @@ export default function AppTabs() {
           <TabTrigger name="memes" href="/memes" style={styles.hiddenTab} />
           <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
           <TabTrigger name="partners" href="/partners" style={styles.hiddenTab} />
+          <TabTrigger name="secretariat" href="/secretariat" style={styles.hiddenTab} />
         </CustomTabList>
       </TabList>
     </Tabs>

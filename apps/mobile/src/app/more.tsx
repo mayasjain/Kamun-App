@@ -53,7 +53,6 @@ export default function MoreScreen() {
         <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} onPress={() => void signOut()} style={styles.signOutButton}>
           <ThemedText type="smallBold" themeColor="primary">{signingOut ? 'Signing out…' : profile?.identitySource === 'ecg' ? 'Sign out of KAMUN' : 'Sign out on this device'}</ThemedText>
         </Pressable>
-        {profile?.identitySource !== 'ecg' ? <ThemedText type="small" themeColor="textSecondary">You will need an access code to sign in again.</ThemedText> : null}
         {signOutError ? <ThemedText type="small" themeColor="danger">{signOutError}</ThemedText> : null}
       </ContentCard>
       <InstagramLinks />

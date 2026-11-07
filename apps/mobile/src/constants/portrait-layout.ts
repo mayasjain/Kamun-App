@@ -1,0 +1,75 @@
+// Visible photo bounds from the handbook alpha masks, fitted to 112px frames.
+export const portraitLayout = {
+  "lena": {
+    "width": 152.04,
+    "height": 202.71,
+    "left": -19.76,
+    "top": -90.21
+  },
+  "mani": {
+    "width": 185.52,
+    "height": 123.68,
+    "left": -56.69,
+    "top": -13.23
+  },
+  "mahima": {
+    "width": 93.77,
+    "height": 140.55,
+    "left": 6.15,
+    "top": -27.67
+  },
+  "ansh": {
+    "width": 195.94,
+    "height": 130.71,
+    "left": -48.67,
+    "top": -18.71
+  },
+  "mats": {
+    "width": 103.38,
+    "height": 155.08,
+    "left": 4.58,
+    "top": -42.54
+  },
+  "valeria": {
+    "width": 121.49,
+    "height": 182.24,
+    "left": -4.37,
+    "top": -69.48
+  },
+  "akshat": {
+    "width": 83.54,
+    "height": 125.31,
+    "left": 11.75,
+    "top": -12.79
+  },
+  "enrico": {
+    "width": 266.47,
+    "height": 149.89,
+    "left": -78.9,
+    "top": -37.89
+  },
+  "lara": {
+    "width": 82.61,
+    "height": 146.61,
+    "left": 10.61,
+    "top": -33.22
+  },
+  "filippa": {
+    "width": 99.39,
+    "height": 149.09,
+    "left": 7.27,
+    "top": -36.36
+  },
+  "varshitha": {
+    "width": 342.04,
+    "height": 192.4,
+    "left": -109.44,
+    "top": -80.4
+  },
+  "hridey": {
+    "width": 97.74,
+    "height": 111.32,
+    "left": 9.84,
+    "top": -10.34
+  }
+} as const;
