@@ -13,7 +13,7 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundSelected}
       tintColor={colors.primary}
-      labelStyle={{ selected: { color: colors.primary, fontWeight: '700' }, default: { color: colors.textSecondary } }}>
+      labelStyle={{ selected: { color: colors.primary, fontWeight: '500' }, default: { color: colors.textSecondary } }}>
       {primaryNavigation.map((item) => (
         <NativeTabs.Trigger key={item.name} name={item.name}>
           <NativeTabs.Trigger.Label>{item.label}</NativeTabs.Trigger.Label>

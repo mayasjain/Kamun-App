@@ -83,7 +83,7 @@ function Control({ label, onPress, disabled = false }: { label: string; onPress:
 const styles = StyleSheet.create({
  root: { flex: 1, backgroundColor: '#0A0B09', padding: 16 },
  bar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 },
- title: { color: '#F5F1E8', flexGrow: 1, fontWeight: '700' },
+ title: { color: '#F5F1E8', flexGrow: 1, fontWeight: '500' },
  text: { color: '#F5F1E8', fontSize: 14 },
  stage: { flex: 1, minHeight: 80, justifyContent: 'center', alignItems: 'center', marginVertical: 12 },
  image: { width: '100%', height: '100%' },

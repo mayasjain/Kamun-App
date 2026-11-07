@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', flexDirection: 'row', gap: 10, marginBottom: Spacing.three, minHeight: 54 },
   headerLogo: { height: 52, width: 52 },
   headerCopy: { flex: 1, gap: 1 },
-  headerTitle: { fontSize: 22, fontWeight: '800', lineHeight: 27 },
+  headerTitle: { fontSize: 22, fontWeight: '500', lineHeight: 27 },
   banner: { backgroundColor: Brand.black, borderRadius: 20, height: 180, justifyContent: 'center', overflow: 'hidden' },
   bannerArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
   bannerLogo: { height: 132, marginLeft: 12, width: 132 },

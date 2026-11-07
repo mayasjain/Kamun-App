@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Brand, Fonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { AccessExpiredError } from '@/lib/function-errors';
 import { useConferenceContent } from '@/contexts/conference-content';
@@ -213,24 +213,24 @@ const styles = StyleSheet.create({
   heroArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
   heroCopy: { gap: Spacing.two, maxWidth: 520, padding: Spacing.four },
   heroEyebrow: { color: Brand.gold, fontSize: 12, letterSpacing: 1.8 },
-  heroTitle: { color: Brand.white, fontFamily: Fonts?.serif, fontSize: 34, fontWeight: '700', lineHeight: 39 },
+  heroTitle: { color: Brand.white, fontSize: 34, fontWeight: '500', lineHeight: 39 },
   heroTitleCompact: { fontSize: 24, lineHeight: 30 },
   eyebrow: { fontSize: 12, letterSpacing: 1.5 },
   scheduleCard: { backgroundColor: Brand.parchment, borderColor: Brand.goldDark, borderRadius: Radius.feature, borderWidth: 2, minHeight: 280, paddingHorizontal: Spacing.four, paddingVertical: Spacing.five },
   scheduleTopline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, justifyContent: 'space-between' },
   scheduleLabelRow: { alignItems: 'center', backgroundColor: Brand.gold, borderRadius: Radius.pill, flexDirection: 'row', minHeight: 32, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
   scheduleEyebrow: { color: Brand.black, fontSize: 12, letterSpacing: 1.5 },
-  eventTitle: { fontFamily: Fonts?.serif, fontSize: 28, fontWeight: '700', lineHeight: 36, marginTop: Spacing.three },
-  eventDetail: { fontSize: 16, fontWeight: '600', lineHeight: 24, marginTop: Spacing.two },
+  eventTitle: { fontSize: 28, fontWeight: '500', lineHeight: 36, marginTop: Spacing.three },
+  eventDetail: { fontSize: 16, fontWeight: '400', lineHeight: 24, marginTop: Spacing.two },
   scheduleAction: { alignItems: 'center', alignSelf: 'stretch', marginTop: Spacing.four, backgroundColor: Brand.gold, borderRadius: Radius.control, justifyContent: 'center', minHeight: 52, paddingHorizontal: Spacing.three },
   scheduleActionText: { color: Brand.black },
   section: { gap: Spacing.three },
   sectionHeading: { marginBottom: Spacing.two, alignItems: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, justifyContent: 'space-between' },
-  sectionTitle: { fontFamily: Fonts?.serif, fontSize: 24, lineHeight: 30, marginTop: 2 },
+  sectionTitle: { fontSize: 24, lineHeight: 30, marginTop: 2 },
   updateCard: { borderLeftWidth: 5, borderRadius: Radius.card, borderWidth: 1, minHeight: 156, padding: 20 },
   updateAction: { borderTopWidth: 1, marginTop: Spacing.four, paddingTop: Spacing.three },
   statusBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
-  updateTitle: { fontFamily: Fonts?.serif, fontSize: 21, lineHeight: 27, marginBottom: Spacing.two },
+  updateTitle: { fontSize: 21, lineHeight: 27, marginBottom: Spacing.two },
   quickHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   coffeeCard: { borderWidth: 1, borderRadius: Radius.feature, padding: Spacing.four, gap: Spacing.three },
   coffeeTopline: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three },

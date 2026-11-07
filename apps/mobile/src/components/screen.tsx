@@ -28,9 +28,9 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} /> : undefined}>
           <View style={styles.header}>
             {eyebrow ? <View style={styles.eyebrowRow}>
-              <ThemedText type="small" style={{ color: theme.primary, fontWeight: '500' }}>{headingLabel}</ThemedText>
+              <ThemedText type="small" style={{ color: theme.primary, fontWeight: '400' }}>{headingLabel}</ThemedText>
             </View> : null}
-            <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle, compactHeader && styles.compactTitle, compactHeader && { color: theme.primary }]}>{title}</ThemedText>
+            <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle, compactHeader && styles.compactTitle, { color: theme.primary, fontWeight: '400' }]}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary" style={compactHeader ? styles.compactSubtitle : undefined}>{subtitle}</ThemedText> : null}
           </View>
           <View style={styles.body}>{children}</View>

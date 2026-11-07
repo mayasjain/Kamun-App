@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { InstagramLinks } from '@/components/instagram-links';
 import { MoreIcon } from '@/components/more-icon';
@@ -21,6 +21,18 @@ export default function MoreScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [changingAccess, setChangingAccess] = useState(false);
   const [signOutError, setSignOutError] = useState('');
+
+  function confirmSignOut() {
+    if (signingOut || changingAccess) return;
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to sign out?')) void signOut();
+      return;
+    }
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
+    ]);
+  }
 
   async function signOut() {
     if (signingOut || changingAccess) return;
@@ -48,13 +60,21 @@ export default function MoreScreen() {
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: showInstall }} onPress={() => setShowInstall(v => !v)} style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
           <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="install" color={theme.primary} /></View>
           <View style={styles.copy}><ThemedText style={styles.rowTitle}>Install KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">Keep the conference one tap away</ThemedText></View>
-          <View style={[styles.howTo, { borderColor: theme.border }]}>{!compact && <ThemedText type="small" themeColor="textSecondary">How to</ThemedText>}<MoreIcon name="chevron" color={theme.textSecondary} size={18} /></View>
+          <View style={[styles.howTo, { borderColor: theme.border }]}>{!compact && <ThemedText type="small" themeColor="textSecondary">How to</ThemedText>}<MoreIcon name={showInstall ? 'chevronDown' : 'chevron'} color={theme.textSecondary} size={18} /></View>
         </Pressable>
         {showInstall ? <View style={[styles.expanded, divider]}>
           <ThemedText type="small" themeColor="textSecondary">On iPhone, open this site in Safari, tap Share, then Add to Home Screen.</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.</ThemedText>
         </View> : null}
       </View> : null}
+      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>STAY CONNECTED</ThemedText>
+      <View style={[styles.card, styles.socialCard, card]}>
+        <View style={styles.socialHeading}>
+          <View style={styles.socialLogo}><Image source={require('../../assets/branding/instagram.png')} style={styles.instagram} resizeMode="contain" accessible={false} /></View>
+          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Follow KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">News, memes & conference moments</ThemedText></View>
+        </View>
+        <InstagramLinks tiles />
+      </View>
       <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
       <View style={[styles.card, card]}>
         <View style={styles.row}>
@@ -68,23 +88,14 @@ export default function MoreScreen() {
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAccess, disabled: signingOut || changingAccess }} disabled={signingOut || changingAccess} onPress={() => setShowAccess(v => !v)} style={({ pressed }) => [styles.row, divider, pressed && styles.pressed]}>
           <MoreIcon name="key" color={theme.primary} />
           <View style={styles.copy}><ThemedText style={styles.rowTitle}>Change access code</ThemedText><ThemedText type="small" themeColor="textSecondary">Switch your assigned access on this device</ThemedText></View>
-          <MoreIcon name="chevron" color={theme.textSecondary} size={18} />
+          <MoreIcon name={showAccess ? 'chevronDown' : 'chevron'} color={theme.textSecondary} size={18} />
         </Pressable>
         {showAccess ? <View style={styles.expanded}><AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} /></View> : null}
-        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} accessibilityState={{ disabled: signingOut || changingAccess, busy: signingOut }} onPress={() => void signOut()} style={({ pressed }) => [styles.row, divider, (pressed || signingOut || changingAccess) && styles.pressed]}>
+        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} accessibilityState={{ disabled: signingOut || changingAccess, busy: signingOut }} onPress={confirmSignOut} style={({ pressed }) => [styles.row, divider, (pressed || signingOut || changingAccess) && styles.pressed]}>
           <MoreIcon name="logout" color={theme.danger} />
           <ThemedText style={[styles.rowTitle, styles.copy, { color: theme.danger }]}>{signingOut ? 'Signing out…' : 'Sign out'}</ThemedText>
-          <MoreIcon name="chevron" color={theme.textSecondary} size={18} />
         </Pressable>
         {signOutError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.error}>{signOutError}</ThemedText> : null}
-      </View>
-      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>STAY CONNECTED</ThemedText>
-      <View style={[styles.card, styles.socialCard, card]}>
-        <View style={styles.socialHeading}>
-          <View style={styles.socialLogo}><Image source={require('../../assets/branding/instagram.png')} style={styles.instagram} resizeMode="contain" accessible={false} /></View>
-          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Follow KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">News, memes & conference moments</ThemedText></View>
-        </View>
-        <InstagramLinks tiles />
       </View>
       <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>KAMUN 2026 · Made for delegates</ThemedText>
     </Screen>
@@ -96,7 +107,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 18, minHeight: 64 },
   iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0, gap: 5 },
-  rowTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  rowTitle: { fontSize: 17, lineHeight: 23, fontWeight: '400' },
   howTo: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, minHeight: 44 },
   expanded: { gap: 12, paddingVertical: 16 },
   badge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 3, alignSelf: 'flex-start' },

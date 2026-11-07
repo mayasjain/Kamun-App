@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   tabButton: { flex: 1, minWidth: 0 },
   hiddenTab: { display: 'none' },
   tabLabel: { fontSize: 12, textAlign: 'center' },
-  tabLabelActive: { fontWeight: '700' },
+  tabLabelActive: { fontWeight: '500' },
   tabButtonView: {
     minHeight: 48,
     justifyContent: 'center',

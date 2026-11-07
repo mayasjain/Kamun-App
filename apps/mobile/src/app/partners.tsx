@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   logoFrame: { flexShrink: 0, overflow: 'hidden', backgroundColor: Brand.white, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
   logo: { width: '100%', height: '100%' },
   containedLogo: { width: '84%', height: '84%' },
-  partnerInitials: { color: Brand.pine, fontSize: 28, lineHeight: 36, fontWeight: '700' },
-  partnerName: { fontWeight: '700', fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  partnerInitials: { color: Brand.pine, fontSize: 28, lineHeight: 36, fontWeight: '500' },
+  partnerName: { fontWeight: '500', fontSize: 14, lineHeight: 20, textAlign: 'center' },
   partnerDetail: { textAlign: 'center', fontSize: 13, lineHeight: 19 },
 });
