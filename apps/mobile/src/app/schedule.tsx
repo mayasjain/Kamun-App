@@ -20,6 +20,18 @@ const palette = {
   divider: 'rgba(255, 255, 255, 0.24)',
 };
 
+// Cuisine assignments for the published KAMUN 2026 meal slots.
+const mealCuisines: Record<string, string> = {
+  'fc55765a-4b11-516c-b11d-cb0cbf872aa0': 'Turkish', // Friday takeaway
+  '056075a5-d98c-5d12-8ec8-d276d38ae0a7': 'German', // Saturday breakfast
+  'eef16e3a-1b4b-513a-ab22-a48cd3f24a67': 'Arabic', // Saturday lunch
+  '7930e643-081c-5700-bd2c-f07383460419': 'Chinese', // Saturday takeaway
+  'a254ae7b-be9a-5f20-bb89-53183e9029ce': 'German', // Sunday breakfast
+  '35ef9bd9-f8ca-57c0-a3a7-9be49520b240': 'Indian', // Sunday lunch
+};
+
+const cuisineFlags: Record<string, string> = { German: '🇩🇪', Turkish: '🇹🇷', Chinese: '🇨🇳', Indian: '🇮🇳', Arabic: '🇸🇦' };
+
 export default function ScheduleScreen() {
   const [mapError, setMapError] = useState('');
   const { profile } = useAttendeeProfile();
@@ -60,9 +72,13 @@ export default function ScheduleScreen() {
             <ThemedText style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
             {dayEvents.map((event, index) => {
               const mapUrl = scheduleVenueMapUrl(event.roomName);
+              const cuisine = mealCuisines[event.id];
               return (
                 <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
-                  <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
+                  <View style={styles.eventHeading}>
+                    <ThemedText style={[styles.eventTitle, styles.headingTitle]}>{event.title}</ThemedText>
+                    {cuisine ? <View style={styles.cuisineBadge}><ThemedText accessibilityLabel={`${cuisine} cuisine`} style={styles.cuisineText}>{cuisineFlags[cuisine] ? `${cuisineFlags[cuisine]} ` : ''}{cuisine} cuisine</ThemedText></View> : null}
+                  </View>
                   <ThemedText style={styles.eventDetail}>
                     {formatEventTime(event.startsAt, event.endsAt)}
                   </ThemedText>
@@ -104,6 +120,10 @@ const styles = StyleSheet.create({
   dayTitle: { color: palette.muted, fontSize: 13, lineHeight: 20, fontWeight: '500', letterSpacing: 1.6, marginBottom: 4 },
   event: { paddingVertical: Spacing.three, gap: 2 },
   eventDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: palette.divider },
+  eventHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 10, rowGap: 6, marginBottom: 4 },
+  headingTitle: { flexShrink: 1 },
+  cuisineBadge: { alignSelf: 'center', maxWidth: '100%', backgroundColor: palette.cream, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  cuisineText: { color: palette.green, fontSize: 12, lineHeight: 18, fontWeight: '500' },
   eventTitle: { color: palette.white, fontSize: 18, lineHeight: 24, fontWeight: '500' },
   eventDetail: { color: palette.muted, fontSize: 15, lineHeight: 21, fontStyle: 'italic' },
   eventDescription: { color: palette.white, fontSize: 14, lineHeight: 20, marginTop: 4 },

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'expo-router';
 import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { InstagramLinks } from '@/components/instagram-links';
@@ -75,6 +76,17 @@ export default function MoreScreen() {
         </View>
         <InstagramLinks tiles />
       </View>
+      <View style={[styles.card, card]}>
+        <Link href="https://tally.so/r/Vpjy0M" target="_blank" rel="noopener noreferrer" asChild>
+          <Pressable accessibilityRole="link" accessibilityLabel="We’d love to hear from you! Feedback survey, opens in your browser" style={styles.feedbackLink}>
+            {({ pressed }) => <View style={[styles.row, styles.feedbackRow, pressed && styles.pressed]}>
+              <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="feedback" color={theme.primary} /></View>
+              <View style={styles.copy}><ThemedText style={styles.rowTitle}>We’d love to hear from you!</ThemedText><ThemedText type="small" themeColor="textSecondary">Found a bug? Have an idea? Share your feedback.</ThemedText></View>
+              <MoreIcon name="chevron" color={theme.textSecondary} size={18} />
+            </View>}
+          </Pressable>
+        </Link>
+      </View>
       <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
       <View style={[styles.card, card]}>
         <View style={styles.row}>
@@ -104,6 +116,8 @@ export default function MoreScreen() {
 
 const styles = StyleSheet.create({
   card: { borderRadius: 20, paddingHorizontal: 16, overflow: 'hidden' },
+  feedbackLink: { width: '100%' },
+  feedbackRow: { width: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 18, minHeight: 64 },
   iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0, gap: 5 },
