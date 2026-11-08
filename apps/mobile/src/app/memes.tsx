@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, u
 import * as ImagePicker from 'expo-image-picker';
 import { cachedMemes } from '@/lib/meme-cache';
 import { MemeSlideshow } from '@/components/meme-slideshow';
+import { MemeDiscussion } from '@/components/meme-discussion';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
@@ -152,6 +153,7 @@ export default function MemesScreen() {
    <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
    <MemePhoto key={m.imageUrl} meme={m} />
    <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
+    <MemeDiscussion meme={m} onActivity={activity => setMemes(old => old.map(row => row.id === m.id ? { ...row, activity } : row))} />
     {m.can_remove && <ActionButton label="Remove" onPress={() => setAction(m)} disabled={busy} />}
     {m.can_remove && action?.id === m.id ? <View style={{ gap: 12 }}><ThemedText type="smallBold">Remove this meme from the gallery?</ThemedText><ActionButton label={busy ? 'Removing…' : 'Yes, remove'} onPress={() => void confirmAction()} primary disabled={busy} /><ActionButton label="Cancel" onPress={() => setAction(null)} disabled={busy} /></View> : null}
    </View>

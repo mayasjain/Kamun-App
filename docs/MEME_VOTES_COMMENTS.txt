@@ -1,0 +1,59 @@
+Meme votes and comments
+
+Apply supabase/migrations/202611080002_meme_votes_comments.sql after the existing
+migrations. Run supabase/tests/meme_votes_comments.sql on a disposable seeded
+Supabase project; it uses a transaction and rolls back its fixtures. Do not run
+individual sections on production. Then release the attendee web/native client
+and organizer dashboard together. The web client preserves gallery photos when
+the activity RPC is unavailable, displaying an unavailable/retry state instead
+of inventing zero counts. No change to chronological gallery ordering.
+
+Attendee behavior:
+- Separate visible upvote and downvote counts, one selected vote per meme.
+- Tap the selected direction to remove it, or the other direction to switch.
+- Votes use verified ECE person identity across installations, not auth.uid().
+  Transitional legacy chair codes share one voter identity per credential.
+- Individual voter identities are never returned to clients.
+- Expand comments on a card; newest first, 20 per page with timestamp/UUID cursor.
+- Comments are plain text, 1-500 characters, attributed to the attendee label
+  derived on the server (e.g. France / ILO or Chair / ILO), not a supplied name.
+- Authors can remove their comments from another device. Chairs can remove any
+  comment in their own committee. Dashboard admins can moderate General and all
+  committee comments through Review comments. Dashboard defaults to all memes.
+- Removed memes expose no activity or discussion. Expired/revoked attendee access
+  cannot read, vote, comment or delete as the author. Admin moderation is separate.
+
+Backend abuse limits, shared across devices for the verified conference identity:
+- At most 60 vote changes per minute.
+- At most 3 comments per minute and 30 per rolling day.
+- At most 200 retained comments per meme, including soft-removed comments.
+Deleting comments does not reset the rate or capacity budget. Mutation RPCs
+serialize updates; clients cannot directly write vote/comment/rate tables or call
+private identity/rate helpers. Text is rendered as escaped React text. No raw HTML.
+
+Local validation:
+- npm test; npm run typecheck
+- Targeted mobile ESLint and admin ESLint
+- npm --prefix apps/mobile run build:web
+- PGLITE_MODULE=<temporary installation>/@electric-sql/pglite/dist/index.js
+  node supabase/tests/run-meme-votes-comments.mjs
+The PostgreSQL substitute executes actual identity, RLS and interaction migrations
+with minimal Auth/Storage platform schemas. It covers cross-device vote uniqueness,
+switch/removal, comment validation, shared/daily limits, paging, moderation and
+revocation. It is not a hosted HTTP or independent-session load test.
+
+Manual release checks:
+1. On a phone and desktop, upvote, switch to downvote, then remove the vote. Counts
+   must remain separate; the meme must stay in the same gallery position.
+2. Use the same test attendee on two devices; refresh and confirm one shared vote.
+3. Post a comment, refresh, then remove it from the other device. Confirm the
+   attendee label is correct and long text wraps without horizontal scrolling.
+4. As a committee chair, remove a test comment in that committee. As a dashboard
+   admin, review and remove a General comment. Ordinary attendees cannot remove
+   another person's comment.
+5. Try an offline mutation and verify an error appears without losing the draft.
+   Check selected votes, keyboard operation and touch targets in light/dark mode.
+
+The local synthetic preview was prepared, but computer-use access to the browser
+was not approved, so interactive visual verification was not completed here.
+No migration, synthetic posts or feature deployment was sent to the live project.

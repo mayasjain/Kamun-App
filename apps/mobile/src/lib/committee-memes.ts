@@ -3,8 +3,9 @@ import { Platform } from 'react-native';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { supabase } from './supabase';
 import { cacheMemes, clearMemeCache, memeCacheGeneration } from './meme-cache';
+import { loadMemeActivity, type MemeActivity } from './meme-interactions';
 
-export type Meme = { id: string; committee_id: string | null; image_path: string; caption: string; created_at: string; is_own: boolean; can_remove: boolean; imageUrl: string };
+export type Meme = { id: string; committee_id: string | null; image_path: string; caption: string; created_at: string; is_own: boolean; can_remove: boolean; imageUrl: string; activity?: MemeActivity | null };
 const bucket = 'committee-memes';
 function client() { if (!supabase) throw new Error('The gallery is not configured.'); return supabase; }
 export async function loadMemes(conferenceId: string, committeeId: string | null, before?: string): Promise<Meme[]> {
@@ -15,14 +16,16 @@ export async function loadMemes(conferenceId: string, committeeId: string | null
  if (!data?.length) { if (!before) cacheMemes(conferenceId, committeeId, [], Date.now(), generation); return []; }
  const rows = data.filter((m: Meme) => m.committee_id === committeeId);
  if (!rows.length) return [];
- const [permission, images] = await Promise.all([
+ const [permission, images, activity] = await Promise.all([
   db.rpc('can_moderate_meme_gallery', { p_conference_id: conferenceId, p_committee_id: committeeId }),
   db.storage.from(bucket).createSignedUrls(rows.map((m: Meme) => m.image_path), 300),
+  // Keep photos available during backend rollout or an interaction-service error.
+  loadMemeActivity(rows.map((m: Meme) => m.id)).catch(() => []),
  ]);
  if (permission.error) throw permission.error;
  if (images.error) throw images.error;
  const urls = new Map(images.data?.map(u => [u.path, u.signedUrl]));
- const result = rows.map((m: Meme) => ({ ...m, can_remove: permission.data === true, imageUrl: urls.get(m.image_path) ?? '' }));
+ const result = rows.map((m: Meme) => ({ ...m, can_remove: permission.data === true, imageUrl: urls.get(m.image_path) ?? '', activity: activity.find(a => a.meme_id === m.id) ?? null }));
  if (!before) cacheMemes(conferenceId, committeeId, result, Date.now(), generation);
  return result;
 }

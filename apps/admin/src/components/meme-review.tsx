@@ -4,14 +4,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-type Row = { id: string; caption: string; image_path: string; created_at: string; removed_at: string | null; committee_id: string; committee_meme_reports: { reason: string; created_at: string }[]; imageUrl: string };
+import { MemeCommentReview } from '@/components/meme-comment-review';
+type Row = { id: string; caption: string; image_path: string; created_at: string; removed_at: string | null; committee_id: string | null; committee_meme_reports: { reason: string; created_at: string }[]; imageUrl: string };
 export function MemeReview() {
  const [rows, setRows] = useState<Row[]>([]);
  const [names, setNames] = useState<Record<string,string>>({});
  const [error, setError] = useState('');
  const [loading, setLoading] = useState(true);
  const [busy, setBusy] = useState(false);
- const [reportedOnly, setReportedOnly] = useState(true);
+ const [reportedOnly, setReportedOnly] = useState(false);
  const [page, setPage] = useState(0);
  const [hasMore, setHasMore] = useState(false);
  const lock = useRef(false);
@@ -53,11 +54,12 @@ export function MemeReview() {
   <div className="flex flex-wrap gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={reportedOnly} onChange={e => { setReportedOnly(e.target.checked); setPage(0); }} />Reported memes only</label><Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button></div>
   {error && <p role="alert">{error}</p>}
   {loading ? <p role="status">Loading memes…</p> : !rows.length ? <p>No memes to review.</p> : <div className="grid gap-6 sm:grid-cols-2">{rows.map(row => <article key={row.id} className="overflow-hidden rounded-2xl border p-5 space-y-4">
-   <p className="font-semibold">{names[row.committee_id] ?? 'Committee'} · {new Date(row.created_at).toLocaleDateString()}</p>
+   <p className="font-semibold">{row.committee_id ? names[row.committee_id] ?? 'Committee' : 'General'} · {new Date(row.created_at).toLocaleDateString()}</p>
    {row.imageUrl ? <a href={row.imageUrl} target="_blank" rel="noreferrer"><Image unoptimized width={800} height={800} src={row.imageUrl} alt={row.caption || 'Committee meme for review'} className="max-h-96 w-full rounded-xl object-contain" /></a> : <p>Photo no longer available.</p>}
    <p>{row.caption}</p>
    <div className="space-y-2"><h2 className="font-semibold">Reports ({row.committee_meme_reports.length})</h2>{row.committee_meme_reports.map((report, i) => <p key={i} className="rounded-lg bg-muted p-3 whitespace-pre-wrap break-words">{report.reason}</p>)}</div>
    {row.removed_at ? <p className="font-semibold">Removed from gallery</p> : <Button variant="destructive" disabled={busy} onClick={() => void hide(row)}>Remove from gallery</Button>}
+   {!row.removed_at && <MemeCommentReview memeId={row.id} />}
   </article>)}</div>}
   <div className="flex gap-4"><Button variant="outline" disabled={loading || page === 0} onClick={() => setPage(p => p - 1)}>Previous</Button><Button variant="outline" disabled={loading || !hasMore} onClick={() => setPage(p => p + 1)}>Next</Button></div>
  </section>;
