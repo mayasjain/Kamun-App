@@ -1,3 +1,12 @@
+Current target — 8 November 2026
+Participant/API: https://kamun-ece-cafe.pages.dev
+Staff/admin: https://kamun-ece-covfefe.pages.dev
+Use the production KAMUN_INTEGRATION_KEY, paired with Supabase ECG_INTEGRATION_KEY.
+See docs/ECG_SHARED_CODE_RELEASE.txt for callback and deployment requirements.
+The Atelier projects were deleted. Do not deploy to or recreate them.
+The patch is a historical source artifact, not production deployment configuration.
+
+Historical deployment record (superseded)
 Current update — 4 November 2026
 The portable patch now targets base e3f6b50d09c2cbe2bcbaf300ee598a962eb7638f and includes shared login plus the requested participant back arrow. It has been deployed to ece-atelier-cafe and ece-atelier-staff in the owner’s Cloudflare account. The working branch is astra/atelier-shared-login in /private/tmp/kamun-ece-deploy. No GitHub push has been made. The earlier branch/commit details below are historical.
 

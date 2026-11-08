@@ -32,12 +32,14 @@ globalThis.window = { location: { assign: (url) => globalThis.__opened.push(url)
 test('opens only the configured ECE origin with an opaque one-use ticket', async () => {
   globalThis.__invoke = async (name) => {
     assert.equal(name, 'ecg-handoff');
-    return { data: { url: `https://cafe.kamun.org/#handoff=${ticket}` }, error: null };
+    return { data: { url: `https://kamun-ece-cafe.pages.dev/#handoff=${ticket}` }, error: null };
   };
   await openEcgWithKamunIdentity();
-  assert.equal(globalThis.__opened.at(-1), `https://cafe.kamun.org/#handoff=${ticket}`);
+  assert.equal(globalThis.__opened.at(-1), `https://kamun-ece-cafe.pages.dev/#handoff=${ticket}`);
   for (const url of [`https://evil.example/#handoff=${ticket}`,
-    `https://cafe.kamun.org/?code=secret#handoff=${ticket}`, 'https://cafe.kamun.org/#code=secret']) {
+    `https://ece-atelier-cafe.pages.dev/#handoff=${ticket}`,
+    `https://kamun-ece-covfefe.pages.dev/#handoff=${ticket}`,
+    `https://kamun-ece-cafe.pages.dev/?code=secret#handoff=${ticket}`, 'https://kamun-ece-cafe.pages.dev/#code=secret']) {
     globalThis.__invoke = async () => ({ data: { url }, error: null });
     await assert.rejects(openEcgWithKamunIdentity(), /invalid link/);
   }

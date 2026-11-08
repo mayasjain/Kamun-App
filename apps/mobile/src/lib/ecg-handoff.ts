@@ -17,7 +17,7 @@ export async function openEcgWithKamunIdentity(): Promise<void> {
     throw new Error('KAMUN coffee ordering is unavailable right now. Check your connection and try again.');
   }
   const target = new URL(data.url);
-  const expected = new URL(process.env.EXPO_PUBLIC_ECE_URL ?? 'https://cafe.kamun.org/');
+  const expected = new URL(process.env.EXPO_PUBLIC_ECE_URL ?? 'https://kamun-ece-cafe.pages.dev/');
   if (target.protocol !== 'https:' || target.username || target.password || target.search
     || target.origin !== expected.origin || target.pathname !== '/'
     || !/^#handoff=[A-Za-z0-9_-]{43}$/.test(target.hash))

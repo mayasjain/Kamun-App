@@ -28,8 +28,9 @@ Local setup
 4. Start the organiser dashboard with npm run dev:admin in another terminal.
 
 The attendee web app is published at https://kamun-2026-app.pages.dev.
-The shared ECE login is deployed against https://ece-atelier-cafe.pages.dev;
-use codes from that separate ECE instance, not the original CSV.
+The shared ECE login targets production https://kamun-ece-cafe.pages.dev.
+Staff/admin: https://kamun-ece-covfefe.pages.dev. Use production ECE-issued codes.
+Production secret pairing and live verification are required; see the release checklist.
 Current deployment requirements and verification: docs/ECG_SHARED_CODE_RELEASE.txt
 ECE source patch and installation instructions: integrations/ece/README.txt
 Legacy KAMUN test codes do not establish an ECE identity.
