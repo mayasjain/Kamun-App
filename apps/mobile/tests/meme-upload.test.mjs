@@ -39,3 +39,9 @@ test('quota denial sends no image bytes and creates no post', async () => {
  await assert.rejects(module.postMeme('conference', null, { uri: 'fixture', mimeType: 'image/png' }, ''), /quota reached/);
  assert.deepEqual(calls.map(c => c[0]), ['reserve_meme_upload']);
 });
+test('Chairs uploads use the private posting endpoint and shared upload limits', async () => {
+ const { calls, module, path } = await fixture();
+ await module.postMeme('conference', module.CHAIRS_GALLERY, { uri: 'fixture', mimeType: 'image/png' }, 'chair caption');
+ assert.deepEqual(calls.map(c => c[0]), ['reserve_meme_upload', 'upload', 'post_chair_meme']);
+ assert.deepEqual(calls[2][1], { p_conference_id: 'conference', p_image_path: path, p_caption: 'chair caption' });
+});

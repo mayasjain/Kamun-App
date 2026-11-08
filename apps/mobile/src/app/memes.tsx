@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
-import { loadMemes, postMeme, removeMeme, type Meme } from '@/lib/committee-memes';
+import { CHAIRS_GALLERY, loadMemes, postMeme, removeMeme, type Meme } from '@/lib/committee-memes';
 
 export default function MemesScreen() {
  const theme = useTheme();
@@ -27,9 +27,10 @@ export default function MemesScreen() {
  const [notice, setNotice] = useState('');
  const [composing, setComposing] = useState(false);
  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
- const destination = filter;
- const canPost = !!profile && (filter === null || filter === profile.committeeId);
- const destinationName = committees.find(c => c.id === destination)?.abbreviation ?? 'General';
+ const isChair = profile?.accessType === 'chair';
+ const destination = filter === CHAIRS_GALLERY && !isChair ? null : filter;
+ const canPost = !!profile && (destination === null || destination === profile.committeeId || (destination === CHAIRS_GALLERY && isChair));
+ const destinationName = destination === CHAIRS_GALLERY ? 'Chairs' : committees.find(c => c.id === destination)?.abbreviation ?? 'General';
  const [caption, setCaption] = useState('');
  const [busy, setBusy] = useState(false);
  const [action, setAction] = useState<Meme | null>(null);
@@ -48,25 +49,25 @@ export default function MemesScreen() {
   const version = ++request.current;
   setLoading(true); setError('');
   try {
-   const rows = await loadMemes(profile.conferenceId, filter, before);
+   const rows = await loadMemes(profile.conferenceId, destination, before);
    if (version !== request.current) return;
    setMemes(old => before ? [...old, ...rows.filter(row => !old.some(m => m.id === row.id))] : rows);
    setMore(rows.length === 24);
   } catch { if (version === request.current) setError('Could not load the gallery. Check your connection and try again.'); }
   finally { if (version === request.current) setLoading(false); }
- }, [profile, filter, request]);
+ }, [profile, destination, request]);
  useEffect(() => {
   let active = true;
   const invalidate = () => { request.current++; };
   void Promise.resolve().then(() => {
    if (!active) return;
-   const cached = profile ? cachedMemes(profile.conferenceId, filter) : null;
+   const cached = profile ? cachedMemes(profile.conferenceId, destination) : null;
    setMemes(cached ?? []);
    setMore(cached?.length === 24);
    void refresh();
   });
   return () => { active = false; invalidate(); };
- }, [refresh, request, profile, filter]);
+ }, [refresh, request, profile, destination]);
  // Refresh short-lived image URLs while the gallery is open.
  useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
  async function startSlideshow() {
@@ -81,7 +82,7 @@ export default function MemesScreen() {
    const all: Meme[] = [];
    let before: string | undefined;
    while (true) {
-    const page = await loadMemes(profile.conferenceId, filter, before);
+    const page = await loadMemes(profile.conferenceId, destination, before);
     if (version !== request.current) return;
     all.push(...page.filter(row => !all.some(old => old.id === row.id)));
     const cursor = page.at(-1)?.created_at;
@@ -127,7 +128,7 @@ export default function MemesScreen() {
   finally { mutation.current = false; setBusy(false); }
  }
  return <Screen eyebrow="" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
-  {slides && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
+  {slides && (!slides.some(m => m.chairs_only) || isChair) && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
   {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
@@ -145,12 +146,12 @@ export default function MemesScreen() {
   </View> : null}
   {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
   {!composing && <>
-  <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: filter === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: filter === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: filter === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{choices(filter, setFilter)}</View>
+  <View style={styles.chips}><Pressable accessibilityRole="button" accessibilityState={{ selected: destination === null }} onPress={() => setFilter(null)} style={[styles.chip, { backgroundColor: destination === null ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: destination === null ? theme.onPrimary : theme.text }}>General</ThemedText></Pressable>{isChair && <Pressable accessibilityRole="button" accessibilityLabel="Chairs gallery" accessibilityState={{ selected: destination === CHAIRS_GALLERY }} onPress={() => setFilter(CHAIRS_GALLERY)} style={[styles.chip, { backgroundColor: destination === CHAIRS_GALLERY ? theme.primary : theme.backgroundElement, borderColor: theme.border }]}><ThemedText type="smallBold" style={{ color: destination === CHAIRS_GALLERY ? theme.onPrimary : theme.text }}>Chairs</ThemedText></Pressable>}{choices(destination, setFilter)}</View>
   <ActionButton label={preparingSlides ? 'Preparing slideshow…' : 'Slideshow'} onPress={() => void startSlideshow()} disabled={preparingSlides || loading || !memes.length} />
   {loading && !memes.length ? <View style={styles.panel}><ActivityIndicator color={theme.primary} /><ThemedText>Loading the latest laughs…</ThemedText></View> : null}
-  {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{!canPost ? 'Check back soon for memes from this committee.' : filter ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
-  {memes.filter(m => m.committee_id === filter).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-   <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
+  {!loading && !error && !memes.length ? <View style={[styles.panel, { backgroundColor: theme.primarySoft }]}><ThemedText type="subtitle">No memes yet</ThemedText><ThemedText themeColor="textSecondary">{!canPost ? 'Check back soon for memes from this committee.' : destination === CHAIRS_GALLERY ? 'Share a laugh with the chairs.' : destination ? 'Share a laugh with this committee.' : 'Share a laugh to get things started.'}</ThemedText></View> : null}
+  {memes.filter(m => destination === CHAIRS_GALLERY ? isChair && m.chairs_only : !m.chairs_only && m.committee_id === destination).map(m => <View key={m.id} style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+   <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{m.chairs_only ? 'Chairs' : committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
    <MemePhoto key={m.imageUrl} meme={m} />
    <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
     <MemeDiscussion meme={m} onActivity={activity => setMemes(old => old.map(row => row.id === m.id ? { ...row, activity } : row))} />

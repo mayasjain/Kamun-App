@@ -13,7 +13,7 @@ export async function loadMemeActivity(ids: string[]): Promise<MemeActivity[]> {
  return data ?? [];
 }
 export async function voteOnMeme(id: string, value: MemeVote) {
- const { error } = await client().rpc('set_meme_vote', { p_meme_id: id, p_value: value });
+ const { error } = await client().rpc('set_meme_vote', { p_meme_id: id, p_value: value }).abortSignal(AbortSignal.timeout(8000));
  fail(error); clearMemeCache();
 }
 export async function loadMemeComments(id: string, before?: Pick<MemeComment, 'created_at' | 'id'>): Promise<MemeComment[]> {

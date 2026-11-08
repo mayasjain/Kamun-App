@@ -25,7 +25,8 @@ try {
  '202610210006_committee_gossip.sql','202610270001_ecg_identity.sql','202610270002_ecg_access_rules.sql',
  '202611050001_committee_memes.sql','202611050002_meme_general_gallery.sql',
  '202611050003_meme_moderation.sql','202611050004_meme_posting_scope.sql',
- '202611080002_meme_votes_comments.sql'];
+ '202611080001_meme_upload_budget.sql','202611080002_meme_votes_comments.sql',
+ '202611080003_chairs_meme_gallery.sql'];
  for (const file of migrations) {
   try {
    await db.exec((await readFile(new URL('../migrations/'+file,import.meta.url),'utf8')).replace('create extension if not exists pgcrypto;',''));
@@ -36,6 +37,8 @@ try {
   `);
  }
  await db.exec(await readFile(new URL('./meme_votes_comments.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./chairs_meme_gallery.sql',import.meta.url),'utf8'));
+ console.log('PASS: chairs-only gallery read/post/image/interaction restrictions and admin access.');
  console.log('PASS: cross-device vote uniqueness/switch/removal, comment identity/validation/rate/day limits, own deletion, chair scope, private tables/helpers, revoked access and removed memes.');
 } catch(e) { console.error(e.message, e.where ?? ''); process.exitCode=1; }
 finally { await db.close(); }

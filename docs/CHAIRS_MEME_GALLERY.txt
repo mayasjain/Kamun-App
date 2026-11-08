@@ -1,0 +1,37 @@
+Chairs meme gallery — 8 November 2026
+
+A separate Chairs destination appears beside General for attendee chairs.
+Chairs may still post to General and their own committee. Only current chairs
+can post in Chairs. Conference chairs can view, vote and comment there.
+Admins can read and moderate via the organiser dashboard; admin status alone
+never grants permission to post. Delegates have no access to Chairs.
+
+Migration: supabase/migrations/202611080003_chairs_meme_gallery.sql.
+Existing posts default to chairs_only=false. New private posts have no committee
+and chairs_only=true. General/committee RPCs exclude them, including old clients.
+Private photos, comments, totals and vote/comment mutations check current access.
+An image's former ownership cannot bypass access after switching to delegate.
+Upload reservation capacity, hourly post limits and moderation rules are retained.
+As with existing galleries, an already-issued image URL expires within 5 minutes.
+
+The admin review component now includes a Chairs filter and labels private posts.
+The admin Next.js app has a separate deployment from the mobile web export.
+
+Validation:
+- Embedded PostgreSQL/PGlite runs the actual migration functions and RLS policies.
+  Tests cover chair posting, cross-committee chair access, delegate endpoint/image
+  denial, General isolation, former-chair ownership, admin read/moderation and
+  denial of non-chair admin posting, alongside existing vote/comment regressions.
+- Run with PGLITE_MODULE pointing to a temporary PGlite dist/index.js:
+  node supabase/tests/run-meme-votes-comments.mjs
+- npm test includes a client regression verifying Chairs uploads call the private
+  post_chair_meme RPC while keeping the shared reservation/upload sequence.
+
+Deployment:
+- Migration rehearsed on production with ROLLBACK, then applied atomically via
+  Supabase db query. This project has no supabase_migrations.schema_migrations
+  table, so db push was not used. Column and both private RPCs verified installed.
+- Attendee web deployment: 66c5e4d6.kamun-2026-app.pages.dev (main).
+- Admin dashboard source is updated; its separate hosted deployment is pending.
+- 34 Node tests, both app typechecks, changed-file lint, PostgreSQL permission
+  regressions and the attendee web production build passed.
