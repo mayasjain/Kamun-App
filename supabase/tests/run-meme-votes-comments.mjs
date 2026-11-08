@@ -21,12 +21,12 @@ try {
  create function storage.foldername(text) returns text[] language sql immutable as $$ select string_to_array($1,'/') $$;
  `);
  const migrations=['202609300001_initial_kamun.sql','202609300002_attendee_access.sql',
- '202610210003_announcement_audiences.sql','202610210005_emergency_whatsapp_contacts.sql',
+ '202610210003_announcement_audiences.sql','202610210004_organizer_message_codes.sql','202610210005_emergency_whatsapp_contacts.sql',
  '202610210006_committee_gossip.sql','202610270001_ecg_identity.sql','202610270002_ecg_access_rules.sql',
  '202611050001_committee_memes.sql','202611050002_meme_general_gallery.sql',
  '202611050003_meme_moderation.sql','202611050004_meme_posting_scope.sql',
  '202611080001_meme_upload_budget.sql','202611080002_meme_votes_comments.sql',
- '202611080003_chairs_meme_gallery.sql'];
+ '202611080003_chairs_meme_gallery.sql','202611080004_ecg_admin_login.sql','202611080005_shared_admin_app.sql'];
  for (const file of migrations) {
   try {
    await db.exec((await readFile(new URL('../migrations/'+file,import.meta.url),'utf8')).replace('create extension if not exists pgcrypto;',''));
@@ -38,6 +38,13 @@ try {
  }
  await db.exec(await readFile(new URL('./meme_votes_comments.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('./chairs_meme_gallery.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./ecg_admin_login.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./shared_admin_app.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../migrations/202611080006_admin_content_permissions.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./admin_content_permissions.sql',import.meta.url),'utf8'));
+ console.log('PASS: update publishing and protected schedule/resources.');
+ console.log('PASS: shared admin app permissions and interactions.');
+ console.log('PASS: temporary admin grants, no self-escalation, scope/revision matching, logout, switching, expiry, callback and recovery admin.');
  console.log('PASS: chairs-only gallery read/post/image/interaction restrictions and admin access.');
  console.log('PASS: cross-device vote uniqueness/switch/removal, comment identity/validation/rate/day limits, own deletion, chair scope, private tables/helpers, revoked access and removed memes.');
 } catch(e) { console.error(e.message, e.where ?? ''); process.exitCode=1; }

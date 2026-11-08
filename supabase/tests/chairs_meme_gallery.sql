@@ -55,14 +55,14 @@ do $$ begin
  if public.remove_meme_comment(current_setting('test.chairs_comment')::uuid) then raise exception 'Former chair removed private own comment'; end if;
  if public.can_cleanup_meme_upload('81000000-0000-4000-8000-000000000002/10000000-0000-4000-8000-000000000001/chairs.png') then raise exception 'Former chair deleted private image'; end if;
 end $$;
--- An administrator with no attendee binding can read and moderate, but cannot post.
+-- An administrator with no attendee binding can read and moderate.
+-- Posting, votes, and comments are covered in shared_admin_app.sql.
 select set_config('request.jwt.claim.sub','81000000-0000-4000-8000-000000000004',true);
 do $$ declare v uuid:=current_setting('test.chairs_meme')::uuid; begin
  if not exists(select 1 from public.list_chair_memes('10000000-0000-4000-8000-000000000001') where id=v) then raise exception 'Admin cannot list Chairs'; end if;
  if not exists(select 1 from public.committee_memes where id=v and chairs_only) then raise exception 'Admin cannot review Chairs'; end if;
  if not exists(select 1 from public.list_meme_comments(v)) then raise exception 'Admin cannot read private comments'; end if;
  if not exists(select 1 from storage.objects where name like '%/chairs.png') then raise exception 'Admin cannot read private image'; end if;
- begin perform public.post_chair_meme('10000000-0000-4000-8000-000000000001','no.png','No'); raise exception 'Non-chair admin posted'; exception when insufficient_privilege then null; end;
  if not public.remove_meme_comment(current_setting('test.chairs_comment')::uuid) then raise exception 'Admin cannot moderate private comments'; end if;
  if not public.remove_committee_meme(v) then raise exception 'Admin cannot moderate private meme'; end if;
 end $$;

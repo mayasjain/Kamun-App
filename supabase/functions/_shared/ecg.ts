@@ -40,7 +40,7 @@ export async function authenticatedClients(request: Request) {
   return { userId: data.user.id, admin };
 }
 
-export type EcgIdentity = {
+export type EcgParticipantIdentity = {
   personId: number;
   kind: 'delegate' | 'chair';
   committee: string;
@@ -48,14 +48,17 @@ export type EcgIdentity = {
   revision: string;
 };
 
+export type EcgIdentity = EcgParticipantIdentity | { personId: number; kind: 'kamun_admin'; committee: null; seat: null; revision: string };
+
 function isIdentity(value: unknown): value is EcgIdentity {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  return Number.isSafeInteger(v.personId) && Number(v.personId) > 0
-    && (v.kind === 'delegate' || v.kind === 'chair')
+  if (!Number.isSafeInteger(v.personId) || Number(v.personId) <= 0
+    || typeof v.revision !== 'string' || !/^[a-f0-9]{64}$/.test(v.revision)) return false;
+  if (v.kind === 'kamun_admin') return v.committee === null && v.seat === null;
+  return (v.kind === 'delegate' || v.kind === 'chair')
     && typeof v.committee === 'string' && /^[A-Za-z0-9-]{1,20}$/.test(v.committee)
-    && (v.kind === 'chair' ? v.seat === null : typeof v.seat === 'string' && v.seat.length <= 100)
-    && typeof v.revision === 'string' && /^[a-f0-9]{64}$/.test(v.revision);
+    && (v.kind === 'chair' ? v.seat === null : typeof v.seat === 'string' && v.seat.length <= 100);
 }
 
 export async function ecgRequest(body: object): Promise<{ status: number; identity?: EcgIdentity }> {
@@ -123,7 +126,7 @@ export async function ecgHandoffRequest(personId: number, revision: string, scop
     const value: unknown = await response.json();
     if (!value || typeof value !== 'object') return { status: 503 };
     const data = value as Record<string, unknown>;
-    if (!isIdentity(data.identity) || typeof data.ticket !== 'string'
+    if (!isIdentity(data.identity) || data.identity.kind === 'kamun_admin' || typeof data.ticket !== 'string'
       || !/^[A-Za-z0-9_-]{43}$/.test(data.ticket)) return { status: 503 };
     const url = new URL('/', site);
     url.hash = `handoff=${data.ticket}`;

@@ -1,3 +1,5 @@
+import { AdminUpdateComposer } from '@/components/admin-update-composer';
+import { AdminRemoveButton } from '@/components/admin-remove-button';
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -10,6 +12,7 @@ export default function UpdatesScreen() {
 
   return (
     <Screen onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
+      <AdminUpdateComposer />
       {announcements.map((announcement) => (
         <ContentCard key={announcement.id} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>
           {announcement.audience !== 'all' ? (
@@ -18,6 +21,7 @@ export default function UpdatesScreen() {
             </ThemedText>
           ) : null}
           <ThemedText themeColor="textSecondary">{announcement.body}</ThemedText>
+          <AdminRemoveButton id={announcement.id} title={announcement.title} />
         </ContentCard>
       ))}
       {!announcements.length ? (

@@ -1,0 +1,33 @@
+KAMUN administrator access
+
+Use an existing ECE-issued personal administrator code on the normal code-entry
+screen. Admins use the shared conference home, navigation and pages.
+
+Current powers:
+- Write updates for everyone, chairs or delegates, and remove updates.
+- Browse all meme galleries, including Chairs; post, vote, comment and moderate.
+- Schedule events cannot be removed by admins. Resources cannot be deleted or
+  unpublished. Private gossip remains restricted to committee chairs.
+- Account switching and sign-out are in More. Admin identity does not grant an
+  ECE coffee-ordering ticket.
+
+Backend:
+- 202611080004_ecg_admin_login.sql: verified admin bindings, five-minute grants,
+  refresh, revocation, logout and identity switching.
+- 202611080005_shared_admin_app.sql: scoped gallery access and admin interactions.
+- 202611080006_admin_content_permissions.sql: current update publishing and
+  removal permissions, and schedule/resource protections.
+All three migrations have been applied to production. Preserve their order and
+contents; the final migration supersedes the earlier content-removal permissions.
+
+Validation:
+- npm test
+- npm --prefix apps/mobile run typecheck
+- With PGLITE_MODULE pointing to @electric-sql/pglite/dist/index.js:
+  node supabase/tests/run-meme-votes-comments.mjs
+The SQL runner checks migration 005 behavior before applying 006, then verifies
+current permissions. This preserves coverage of both migration stages.
+
+Deployment:
+From apps/mobile, run npm run deploy:web. The app is hosted at
+https://kamun-2026-app.pages.dev. Reload existing tabs after deployment.

@@ -87,6 +87,10 @@ export default function GossipScreen() {
   const dismissedMessages = inbox.filter((item) => item.status === 'dismissed');
   const visibleMessages = showDismissed ? dismissedMessages : activeMessages;
 
+  if (profile?.accessType === 'admin') return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle="Private committee messages">
+    <ThemedText>Gossip submissions are private to each committee’s chairs.</ThemedText>
+  </Screen>;
+
   if (isChair) {
     return <Screen eyebrow="CHAIR INBOX" title="Gossip box" subtitle={profile?.committeeName ?? 'Messages for your committee'}
       onRefresh={() => void refresh()} refreshing={loading}>

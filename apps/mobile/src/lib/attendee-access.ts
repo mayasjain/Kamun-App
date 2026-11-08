@@ -8,7 +8,7 @@ export { KAMUN_CONFERENCE_ID } from '@/lib/conference-id';
 export type ClaimedAttendeeAccess = {
   conferenceId: string;
   conferenceSlug: string;
-  accessType: 'chair' | 'member';
+  accessType: 'chair' | 'member' | 'admin';
   accessLabel: string;
   committeeId: string | null;
   committeeName: string | null;
@@ -20,7 +20,7 @@ export type ClaimedAttendeeAccess = {
 type ClaimRow = {
   conference_id: string;
   conference_slug: string;
-  access_type: 'chair' | 'member';
+  access_type: 'chair' | 'member' | 'admin';
   access_label: string;
   committee_id: string | null;
   committee_name: string | null;
@@ -113,6 +113,17 @@ export async function restoreAttendeeAccess(): Promise<ClaimedAttendeeAccess | n
     throw sessionError;
   }
   if (!session.session) return null;
+  const { data: adminBinding, error: adminError } = await supabase.from('ecg_admin_bindings')
+    .select('revoked_at').eq('conference_id', KAMUN_CONFERENCE_ID).eq('user_id', session.session.user.id).maybeSingle();
+  if (adminError) throw adminError;
+  if (adminBinding && !adminBinding.revoked_at) {
+    const { data, error } = await supabase.functions.invoke('ecg-refresh', { body: { conferenceId: KAMUN_CONFERENCE_ID } });
+    if (error || data?.error) throw new AccessExpiredError('revoked');
+    const { data: rows, error: profileError } = await supabase.rpc('my_current_admin_profile', { p_conference_id: KAMUN_CONFERENCE_ID });
+    if (profileError) throw profileError;
+    if (!rows?.[0]) throw new AccessExpiredError('revoked');
+    return mapRow(rows[0] as ClaimRow, 'ecg');
+  }
   const { data: membership, error: membershipError } = await supabase.from('attendee_memberships')
     .select('identity_source').eq('conference_id', KAMUN_CONFERENCE_ID).maybeSingle();
   if (membershipError?.code === '42703') return restorePreMigrationMembership();

@@ -84,7 +84,7 @@ export type ConferenceContent = {
 export async function fetchConferenceContent(
   conferenceId: string,
   committeeId: string | null,
-  accessType: 'chair' | 'member',
+  accessType: 'chair' | 'member' | 'admin',
 ): Promise<ConferenceContent> {
   if (!supabase) throw new Error('The KAMUN backend is not configured.');
 
@@ -151,7 +151,7 @@ export async function fetchConferenceContent(
       eventType: item.event_type, roomName: item.room_name, startsAt: item.starts_at, endsAt: item.ends_at,
     })),
     announcements: (announcementsResult.data ?? []).filter((item) =>
-      matchesAudience(item) && (!('audience' in item) || item.audience === 'all' || item.audience === accessType)
+      matchesAudience(item) && (accessType === 'admin' || !('audience' in item) || item.audience === 'all' || item.audience === accessType)
     ).map((item) => ({
       id: item.id, committeeId: item.committee_id, audience: 'audience' in item ? item.audience as Announcement['audience'] : 'all', title: item.title, body: item.body,
       priority: item.priority as Announcement['priority'], publishedAt: item.published_at,

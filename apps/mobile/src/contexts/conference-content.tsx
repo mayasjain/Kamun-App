@@ -3,6 +3,7 @@ import '../lib/install-local-storage';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
+import { supabase } from '@/lib/supabase';
 import { fetchConferenceContent, type ConferenceContent } from '@/lib/conference-content';
 
 type ContentSource = 'live' | 'cache' | null;
@@ -13,6 +14,7 @@ type ConferenceContentContextValue = {
   isLoading: boolean;
   source: ContentSource;
   refresh: () => Promise<void>;
+  removeAnnouncement: (id: string) => Promise<void>;
 };
 
 const ConferenceContentContext = createContext<ConferenceContentContextValue | null>(null);
@@ -71,7 +73,22 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
     };
   }, [cacheKey, profile, refresh]);
 
-  const value = useMemo(() => ({ content, error, isLoading, source, refresh }), [content, error, isLoading, source, refresh]);
+  const removeAnnouncement = useCallback(async (id: string) => {
+    if (!supabase || profile?.accessType !== 'admin') throw new Error('Administrator access required.');
+    const { data, error } = await supabase.rpc('remove_conference_content', {
+      p_conference_id: profile.conferenceId, p_table: 'announcements', p_id: id,
+    });
+    if (error || !data) throw new Error('Could not remove this item. Check your connection and admin access.');
+    setContent(current => {
+      if (!current) return current;
+      const next = { ...current, announcements: current.announcements.filter(item => item.id !== id) };
+      try { globalThis.localStorage?.setItem(cacheKey, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
+      return next;
+    });
+    await refresh();
+  }, [profile, cacheKey, refresh]);
+
+  const value = useMemo(() => ({ content, error, isLoading, source, refresh, removeAnnouncement }), [content, error, isLoading, source, refresh, removeAnnouncement]);
   return <ConferenceContentContext.Provider value={value}>{children}</ConferenceContentContext.Provider>;
 }
 

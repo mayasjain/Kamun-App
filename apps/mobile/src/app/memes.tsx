@@ -27,9 +27,9 @@ export default function MemesScreen() {
  const [notice, setNotice] = useState('');
  const [composing, setComposing] = useState(false);
  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
- const isChair = profile?.accessType === 'chair';
+ const isChair = profile?.accessType === 'chair' || profile?.accessType === 'admin';
  const destination = filter === CHAIRS_GALLERY && !isChair ? null : filter;
- const canPost = !!profile && (destination === null || destination === profile.committeeId || (destination === CHAIRS_GALLERY && isChair));
+ const canPost = !!profile && (profile.accessType === 'admin' || destination === null || destination === profile.committeeId || (destination === CHAIRS_GALLERY && isChair));
  const destinationName = destination === CHAIRS_GALLERY ? 'Chairs' : committees.find(c => c.id === destination)?.abbreviation ?? 'General';
  const [caption, setCaption] = useState('');
  const [busy, setBusy] = useState(false);

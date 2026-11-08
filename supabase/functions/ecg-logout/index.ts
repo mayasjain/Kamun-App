@@ -11,6 +11,10 @@ Deno.serve(async (request) => {
   const data = input && typeof input === 'object' ? input as Record<string, unknown> : {};
   if (typeof data.conferenceId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.conferenceId))
     return reply({ error: 'invalid_input' }, 400);
+  const { error: adminRevokeError } = await clients.admin.rpc('ecg_clear_linked_admin', {
+    p_conference_id: data.conferenceId, p_user_id: clients.userId,
+  });
+  if (adminRevokeError) return reply({ error: 'unavailable' }, 503);
   // Block new handoffs first. Retrying this endpoint remains possible with the same Auth session.
   const { error } = await clients.admin.from('ecg_participant_bindings')
     .update({ revoked_at: new Date().toISOString() })

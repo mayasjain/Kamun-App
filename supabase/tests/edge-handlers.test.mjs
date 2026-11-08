@@ -113,8 +113,8 @@ test('refresh rejects a changed seat and revokes its old revision', async () => 
       ? { data: { user: { id: 'user-1' } }, error: null }
       : { data: { user: null }, error: new Error('bad token') } } }
     : {
-      from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({
-        data: { ecg_person_id: 101, credential_revision: 'a'.repeat(64), revoked_at: null,
+      from: (table) => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({
+        data: table === 'ecg_admin_bindings' ? null : { ecg_person_id: 101, credential_revision: 'a'.repeat(64), revoked_at: null,
           access_type: 'member', seat_label: 'France', committees: { abbreviation: 'ILO' } },
         error: null,
       }) }) }) }) }),
@@ -199,7 +199,7 @@ test('logout revokes the authenticated binding before its linked ECE sessions', 
   const filters = [];
   globalThis.__createSupabaseClient = (_url, key) => key === 'public-test-key'
     ? { auth: { getUser: async (token) => ({ data: { user: token === 'valid-user' ? { id: 'user-1' } : null }, error: null }) } }
-    : { from: (table) => { assert.equal(table, 'ecg_participant_bindings'); return {
+    : { rpc: async () => { events.push('admin-binding'); return { error: null }; }, from: (table) => { assert.equal(table, 'ecg_participant_bindings'); return {
       update: () => ({ eq: (name, value) => { filters.push([name, value]); return {
         eq: async (name, value) => { filters.push([name, value]); events.push('binding'); return { error: null }; },
       }; } }),
@@ -216,7 +216,7 @@ test('logout revokes the authenticated binding before its linked ECE sessions', 
   try {
     const result = await handlers['ecg-logout'](request({ conferenceId, scope: 'attacker-supplied', userId: 'another-user' }));
     assert.equal(result.status, 200);
-    assert.deepEqual(events, ['binding', 'ece']);
+    assert.deepEqual(events, ['admin-binding', 'binding', 'ece']);
     assert.deepEqual(filters, [['conference_id', conferenceId], ['user_id', 'user-1']]);
     assert.equal((await handlers['ecg-logout'](request({ conferenceId }, { Authorization: 'Bearer invalid' }))).status, 401);
     globalThis.fetch = async () => new Response('{}', { status: 503 });
@@ -243,4 +243,45 @@ test('handoff rejects a different person even when the committee and seat match'
     assert.equal((await handlers['ecg-handoff'](request({ conferenceId }))).status, 401);
     assert.deepEqual(calls, ['ecg_revoke_verified_identity']);
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('admin claim uses only verified admin metadata, keeps throttling, and issues no coffee ticket', async () => {
+ const calls = [], actions = [];
+ globalThis.__createSupabaseClient = (_url, key) => key === 'public-test-key'
+  ? { auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) } }
+  : { from: () => ({ update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }) }),
+   rpc: async (name, args) => { calls.push([name,args]); return { data: name === 'ecg_acquire_claim_attempt' ? true : [{ access_type: 'admin' }], error: null }; } };
+ const original = globalThis.fetch;
+ globalThis.fetch = async (_url, opts) => { const body=JSON.parse(opts.body); actions.push(body.action); return new Response(JSON.stringify(body.action === 'logout' ? {ok:true} : {personId:301,kind:'kamun_admin',committee:null,seat:null,revision:'b'.repeat(64)})); };
+ try {
+  const result=await handlers['ecg-claim'](request({code:'FAKECODE',conferenceId,role:'chair'}));
+  assert.equal(result.status,200);
+  assert.equal((await result.json()).membership.access_type,'admin');
+  const args=calls.find(c=>c[0]==='ecg_bind_verified_admin')[1];
+  assert.equal(args.p_ecg_person_id,301); assert.match(args.p_session_scope,/^[a-f0-9]{64}$/);
+  assert.deepEqual(actions,['verify','logout']);
+  assert.equal(calls[0][0],'ecg_acquire_claim_attempt');
+ } finally { globalThis.fetch=original; }
+});
+
+test('admin refresh fails closed on upstream outage and rejects a changed identity', async () => {
+ const calls=[];
+ const { ecgSessionScope }=await import(pathToFileURL(join(dir,'_shared/ecg.js')).href);
+ const scope=await ecgSessionScope('user-1',conferenceId);
+ globalThis.__createSupabaseClient=(_url,key)=>key==='public-test-key'
+  ? {auth:{getUser:async()=>({data:{user:{id:'user-1'}},error:null})}}
+  : {from:()=>({select:()=>({eq:()=>({eq:()=>({maybeSingle:async()=>({data:{ecg_person_id:301,credential_revision:'b'.repeat(64),session_scope:scope,revoked_at:null},error:null})})})})}),
+   rpc:async(name)=>{calls.push(name);return {data:true,error:null};}};
+ const original=globalThis.fetch;
+ try {
+  globalThis.fetch=async()=>new Response(JSON.stringify({personId:301,kind:'kamun_admin',committee:null,seat:null,revision:'b'.repeat(64)}));
+  assert.equal((await handlers['ecg-refresh'](request({conferenceId}))).status,200);
+  assert.equal(calls.pop(),'ecg_refresh_verified_admin');
+  globalThis.fetch=async()=>new Response('{}',{status:503});
+  assert.equal((await handlers['ecg-refresh'](request({conferenceId}))).status,401);
+  assert.equal(calls.pop(),'ecg_clear_linked_admin');
+  globalThis.fetch=async()=>new Response(JSON.stringify(identity));
+  assert.equal((await handlers['ecg-refresh'](request({conferenceId}))).status,401);
+  assert.equal(calls.pop(),'ecg_clear_linked_admin');
+ } finally {globalThis.fetch=original;}
 });

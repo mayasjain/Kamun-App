@@ -30,7 +30,7 @@ export function AttendeeOnboarding() {
             <View style={styles.copy}>
               <ThemedText type="smallBold" style={styles.eyebrow} themeColor="primary">13–15 NOVEMBER 2026 · KARLSRUHE</ThemedText>
               <ThemedText type="title">Enter your code</ThemedText>
-              <ThemedText themeColor="textSecondary">Use your personal delegate or chair code. Your committee and country or chair role will be recognised automatically.</ThemedText>
+              <ThemedText themeColor="textSecondary">Use your personal delegate, chair, or administrator code. Your access will be recognised automatically.</ThemedText>
             </View>
             {restoreError ? <ThemedText themeColor="danger">{restoreError}</ThemedText> : null}
             <AttendeeProfileForm />
