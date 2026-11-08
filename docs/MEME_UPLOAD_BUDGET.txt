@@ -1,0 +1,49 @@
+Meme upload budget rollout
+
+Apply 202611080001_meme_upload_budget.sql, then release the attendee client
+containing reserve_meme_upload support. Older cached clients cannot upload until
+refreshed; do not restore the old unrestricted Storage INSERT policy as a fallback.
+Existing gallery reads, moderation and posted image paths remain unchanged.
+
+The private bucket retains its 8 MiB per-file JPEG/PNG/WebP restrictions. Every
+new upload destination must match an exact server-issued path, valid for ten
+minutes and belonging to a current attendee. Arbitrary direct uploads and copy
+destinations are denied. There is still no attendee UPDATE policy for overwrites
+or moves. The client reserves before uploading and retains failed-post cleanup.
+
+Allocation limits:
+- 10 reservations/account/hour, including failed or abandoned attempts.
+- 100 cumulative paths/account, across conferences.
+- 2,000 cumulative paths for the bucket (at most about 15.625 GiB at 8 MiB/path).
+Existing Storage objects count toward the cumulative limits on migration.
+An atomic bucket-counter UPDATE serializes allocations. Account/hour failures
+roll back all counter changes. The application tables are private to definer
+functions; clients cannot forge or delete reservations or change counters.
+
+Capacity is deliberately not automatically refunded by expiry, object deletion,
+account deletion or soft moderation. Otherwise an abandoned uploaded object could
+outlive its reservation and escape the cap. Raising capacity needs an explicit
+operator change after checking actual Storage usage; never reset counters or
+delete reservation history while backing objects may still exist. This change
+does not delete existing orphan files. Remove any unwanted files through the
+Storage API, not SQL metadata deletion. A future verified reclamation workflow
+may restore slots after confirming backing-file deletion, but is not required
+for enforcement. Fresh anonymous accounts cannot exceed the bucket-wide cap;
+stable-person message/post quotas are a separate finding.
+
+Validation:
+- npm test
+- npm run typecheck
+- From apps/mobile: npx --no-install eslint src/lib/committee-memes.ts
+- Run supabase/tests/meme_upload_budget.sql on a disposable seeded Supabase DB.
+- Offline PostgreSQL substitute: install @electric-sql/pglite in a temporary
+  directory; set PGLITE_MODULE to its dist/index.js absolute path and run
+  node supabase/tests/run-meme-upload-budget.mjs.
+The embedded runner uses actual upload migrations/RLS/RPC SQL and minimal Auth/
+Storage schema fixtures. It does not exercise hosted Storage HTTP transactions,
+backing-file transfer/cleanup, or independent PostgreSQL connections under load.
+Rehearse migration and client upload together on staging before production.
+Deleting and reuploading the same unposted reserved path before its ten-minute
+expiry does not consume another path. This cannot grow retained storage beyond
+the reserved capacity, but this patch is not a total HTTP-request/bandwidth rate
+limiter. Provider/gateway request budgets remain a separate layer.

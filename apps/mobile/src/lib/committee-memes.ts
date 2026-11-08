@@ -35,7 +35,11 @@ export async function postMeme(conferenceId: string, committeeId: string | null,
  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error('Choose a photo smaller than 8 MB.');
  const type = asset.mimeType ?? 'image/jpeg';
  if (!['image/jpeg','image/png','image/webp'].includes(type)) throw new Error('Choose a JPG, PNG or WebP photo.');
- const path = `${user.id}/${conferenceId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${type.split('/')[1]}`;
+ const { data: path, error: reservationError } = await db.rpc('reserve_meme_upload', {
+  p_conference_id: conferenceId, p_content_type: type,
+ });
+ if (reservationError) throw reservationError;
+ if (typeof path !== 'string' || !path) throw new Error('Could not reserve an image upload. Try again.');
  const { error } = await db.storage.from(bucket).upload(path, bytes, { contentType: type, upsert: false });
  if (error) throw error;
  const { error: postError } = await db.rpc('post_committee_meme', { p_conference_id: conferenceId, p_committee_id: committeeId, p_image_path: path, p_caption: caption });
