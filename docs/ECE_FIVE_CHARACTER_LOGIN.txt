@@ -1,0 +1,74 @@
+Five-character ECE login investigation — 9 November 2026
+
+Failure
+The shared code input accepts five characters and enables submission. codeKind
+required exactly eight alphanumeric characters after whitespace/dash removal.
+Five-character imports therefore went to OrganizerProvider.signIn and the legacy
+claim_organizer_message_code RPC, rather than claimAttendeeAccess/ecg-claim.
+Live reproduction with a privately supplied imported token: HTTP 400, SQLSTATE
+22023. The raw database message, token and identity were suppressed.
+
+Fix
+codeKind accepts five or eight alphanumeric characters, case-insensitively,
+preserving existing spaced/dashed ECE codes and prefixed legacy KAMUN routing.
+The home screen omits coffee ordering for admins and guards its open handler.
+Roles continue to come exclusively from private server verification.
+
+Contract/configuration audit
+Client: ensure anonymous Supabase session, invoke ecg-claim with code and
+conferenceId, map returned membership, save profile. No token is persisted in
+profile storage. Backend input allows 4–20 characters; five-character tokens
+already pass. ECE owns credential normalization; lowercase imports passed live.
+Server POST /api/integration/identity uses X-Kamun-Integration-Key and
+{action: "verify", code}. Response is a bare verified identity with personId,
+kind, committee, seat and revision. status uses personId/revision; participant
+ticket uses server-derived scope. Admin committee/seat must both be null.
+The deployed ECG_INTEGRATION_URL and ECG_INTEGRATION_KEY were privately compared
+to production https://kamun-ece-cafe.pages.dev and the supplied production key:
+both match. The integration key is absent from the rebuilt web export.
+No secret values or token/identity values are included in this report.
+
+Bindings and protections
+Fresh imported credentials bind through the existing verified identity RPCs.
+No destructive clearing of historical bindings or cached sessions was necessary.
+Claims overwrite the current session's binding/revision and revoke linked prior
+ECE sessions. Refresh checks person/revision/committee/seat/type; old revisions
+cannot extend five-minute leases. Admin grants remain server-controlled through
+service-role-only binding RPCs and RLS. Admin handoff is rejected server-side.
+Profile restoration still checks live status; caches clear on identity changes;
+late restoration cannot undo logout or overwrite a new sign-in. Existing pending
+logout retry, rate limits, status checks and revocation callbacks are preserved.
+TEST committees remain invalid; no TEST committee was added.
+
+Live API verification using one supplied CSV identity per role
+- Delegate: lowercase private verify/status 200; claim/refresh 200;
+  handoff issuance and ticket exchange 200.
+- Chair: lowercase private verify/status 200; claim/refresh 200;
+  handoff issuance and ticket exchange 200.
+- KAMUN admin: lowercase private verify/status 200; claim/refresh 200;
+  server is_kamun_admin true; handoff 401 unbound, no ticket.
+- Same-session delegate -> chair -> admin -> delegate succeeded. Server admin
+  permission false for participant claims, true only for the admin claim.
+- Linked logout 200; subsequent refresh 401 unbound. Auth session signed out.
+These are live HTTP flow checks, not browser/native UI automation. No orders,
+credential changes, roster imports or participant code revocations were made.
+
+Regression/build verification
+npm test: 41 passed. Added imported five-character routing coverage, including
+lowercase/formatting and invalid lengths, and private Edge contract assertions.
+Existing claim/admin handler tests now exercise five-character synthetic input.
+SQL regression runner: admin grants/RLS, switching, revisions, lease expiry,
+revocation, logout and content permissions passed in disposable PGlite.
+Mobile typecheck and production web export passed.
+Mobile lint fails on the pre-existing synchronous setState effect at
+apps/mobile/src/components/meme-slideshow.tsx:15; changed login files are clean.
+
+Rollout required
+Rebuild/redeploy apps/mobile to Cloudflare project kamun-2026-app, branch main
+(npm --prefix apps/mobile run deploy:web). Reload existing browser tabs afterward.
+Native distributions need a new bundle/build containing codeKind and the admin
+coffee guard. No Edge Function redeploy, migration or secret update is needed.
+Published on 9 November 2026 after user authorization: Cloudflare deployment
+27a1badb, production https://kamun-2026-app.pages.dev. Both the deployment URL
+and production URL serve the exact rebuilt JavaScript bundle (verified by hash).
+Native distributions still require a new bundle/build if applicable.

@@ -88,17 +88,22 @@ test('claim authenticates, rate-limits, and binds only the ECG-derived seat', as
       return { data: [{ committee_name: 'ILO', seat_label: 'France' }], error: null };
     } };
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (_url, options) => new Response(JSON.stringify(
-    JSON.parse(options.body).action === 'logout' ? { ok: true } : identity), { status: 200 });
+  globalThis.fetch = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    assert.equal(new URL(_url).pathname, '/api/integration/identity');
+    assert.equal(options.headers['X-Kamun-Integration-Key'], env.get('ECG_INTEGRATION_KEY'));
+    if (body.action === 'verify') assert.equal(body.code, 'a1b2c');
+    return new Response(JSON.stringify(body.action === 'logout' ? { ok: true } : identity), { status: 200 });
+  };
   try {
-    const success = await handlers['ecg-claim'](request({ code: 'TESTCODE', conferenceId }));
+    const success = await handlers['ecg-claim'](request({ code: 'a1b2c', conferenceId }));
     assert.equal(success.status, 200);
     assert.deepEqual(bindArgs, {
       p_conference_id: conferenceId, p_user_id: 'user-1', p_ecg_person_id: 101,
       p_kind: 'delegate', p_committee_abbreviation: 'ILO', p_seat_label: 'France',
       p_credential_revision: 'a'.repeat(64),
     });
-    assert.equal((await success.text()).includes('TESTCODE'), false);
+    assert.equal((await success.text()).includes('a1b2c'), false);
     assert.equal((await handlers['ecg-claim'](request({ code: 'TESTCODE', conferenceId },
       { Authorization: 'Bearer invalid' }))).status, 401);
     allowed = false;
@@ -254,7 +259,7 @@ test('admin claim uses only verified admin metadata, keeps throttling, and issue
  const original = globalThis.fetch;
  globalThis.fetch = async (_url, opts) => { const body=JSON.parse(opts.body); actions.push(body.action); return new Response(JSON.stringify(body.action === 'logout' ? {ok:true} : {personId:301,kind:'kamun_admin',committee:null,seat:null,revision:'b'.repeat(64)})); };
  try {
-  const result=await handlers['ecg-claim'](request({code:'FAKECODE',conferenceId,role:'chair'}));
+  const result=await handlers['ecg-claim'](request({code:'z9y8x',conferenceId,role:'chair'}));
   assert.equal(result.status,200);
   assert.equal((await result.json()).membership.access_type,'admin');
   const args=calls.find(c=>c[0]==='ecg_bind_verified_admin')[1];

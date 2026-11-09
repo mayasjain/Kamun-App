@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const [openingEcg, setOpeningEcg] = useState(false);
   const [ecgError, setEcgError] = useState<string | null>(null);
   async function openEcg() {
-    if (openingEcg) return;
+    if (openingEcg || profile?.accessType === 'admin') return;
     setEcgError(null);
     setOpeningEcg(true);
     try {
@@ -136,7 +136,7 @@ export default function HomeScreen() {
             <View style={styles.quickHeading}>
               <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>YOUR ESSENTIALS</ThemedText>
             </View>
-            <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            {profile?.accessType !== 'admin' && <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <View style={[styles.coffeeTopline, compact && styles.coffeeToplineCompact]}>
                 <View style={[styles.coffeeIcon, phone && styles.coffeeIconPhone, { backgroundColor: theme.primarySoft }]}>
                   <HomeIcon name="coffee" size={30} color={Brand.pine} />
@@ -161,7 +161,7 @@ export default function HomeScreen() {
                   {openingEcg ? 'Opening ECE Coffee Bar…' : profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
                 </ThemedText>
               </Pressable>
-            </View>
+            </View>}
             <View style={[styles.quickGrid, compact && styles.quickGridCompact]}>
               {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => router.push(item.href)}
