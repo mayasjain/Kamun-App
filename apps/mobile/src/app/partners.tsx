@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Screen } from '@/components/screen';
@@ -9,7 +9,6 @@ import { Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function PartnersScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const { width, fontScale } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(0);
@@ -21,9 +20,6 @@ export default function PartnersScreen() {
 
   return (
     <Screen eyebrow="KAMUN 2026" title="Sponsors & partners" subtitle="The organisations and conferences helping make KAMUN possible.">
-      <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" themeColor="primary">← Back</ThemedText>
-      </Pressable>
 
       <View style={styles.thanks}>
         <ThemedText type="smallBold" style={styles.eyebrow}>WITH GRATITUDE</ThemedText>
@@ -64,7 +60,6 @@ export default function PartnersScreen() {
 }
 
 const styles = StyleSheet.create({
-  back: { minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', paddingRight: Spacing.three },
   pressed: { opacity: 0.7 },
   thanks: { backgroundColor: Brand.pine, borderRadius: Radius.feature, padding: 16, gap: 10 },
   eyebrow: { color: Brand.gold, fontSize: 12, lineHeight: 18, letterSpacing: 0.6 },

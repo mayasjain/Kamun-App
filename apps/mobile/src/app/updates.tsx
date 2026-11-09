@@ -11,7 +11,7 @@ export default function UpdatesScreen() {
   const announcements = content?.announcements ?? [];
 
   return (
-    <Screen onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
+    <Screen showBack={false} onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
       <AdminUpdateComposer />
       {announcements.map((announcement) => (
         <ContentCard key={announcement.id} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>

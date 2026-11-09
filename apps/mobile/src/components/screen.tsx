@@ -3,12 +3,14 @@ import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } fro
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { BackButton } from '@/components/back-button';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type ScreenProps = PropsWithChildren<{
   compactHeader?: boolean;
+  showBack?: boolean;
   eyebrow: string;
   title: string;
   subtitle?: ReactNode;
@@ -16,7 +18,7 @@ type ScreenProps = PropsWithChildren<{
   refreshing?: boolean;
 }>;
 
-export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false, compactHeader = false }: ScreenProps) {
+export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshing = false, compactHeader = false, showBack = true }: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const headingLabel = (eyebrow.charAt(0) + eyebrow.slice(1).toLowerCase()).replace(/kamun/gi, 'KAMUN');
@@ -34,7 +36,7 @@ export function Screen({ eyebrow, title, subtitle, children, onRefresh, refreshi
             <ThemedText type="title" style={[styles.title, phone && styles.phoneTitle, compactHeader && styles.compactTitle, { color: theme.primary, fontWeight: '400' }]}>{title}</ThemedText>
             {subtitle ? <ThemedText themeColor="textSecondary" style={compactHeader ? styles.compactSubtitle : undefined}>{subtitle}</ThemedText> : null}
           </View>
-          <View style={styles.body}>{children}</View>
+          <View style={styles.body}>{showBack ? <BackButton /> : null}{children}</View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

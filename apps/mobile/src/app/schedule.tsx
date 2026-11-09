@@ -110,8 +110,8 @@ export default function ScheduleScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.cream },
-  header: { backgroundColor: palette.cream, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: Spacing.four },
-  headerInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: 4 },
+  header: { backgroundColor: palette.cream, paddingTop: Spacing.four, paddingBottom: Spacing.four },
+  headerInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, gap: 4 },
   headerTitle: { color: palette.green, fontSize: 34, lineHeight: 40, fontWeight: '400' },
   headerSubtitle: { color: '#5E625A', fontSize: 16, lineHeight: 22 },
   scroll: { flex: 1, backgroundColor: palette.cream },

@@ -1,12 +1,13 @@
-import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackButton } from '@/components/back-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/theme';
+import { secretariat } from '@/constants/secretariat';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { phoneCallUrl, whatsappChatUrl } from '@/lib/contact-links';
@@ -17,9 +18,10 @@ const services = [
 ];
 
 export default function EmergencyScreen() {
-  const router = useRouter();
   const { width, fontScale } = useWindowDimensions();
-  const stacked = width < 380 || fontScale > 1.3;
+  const stacked = width < 600 || fontScale > 1.3;
+  const photoSize = width < 600 ? 72 : 80;
+  const photoScale = photoSize / 112;
   const theme = useTheme();
   const { content, isLoading, error, refresh } = useConferenceContent();
   const [linkError, setLinkError] = useState('');
@@ -34,24 +36,17 @@ export default function EmergencyScreen() {
     }
   }
 
-  function goBack() {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  }
-
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerInner}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={goBack} style={styles.backButton}>
-            <ThemedText style={styles.backArrow}>←</ThemedText>
-          </Pressable>
           <ThemedText type="subtitle" style={styles.headerTitle}>Emergency contacts</ThemedText>
         </View>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />}>
+        <BackButton />
         <View style={styles.safetyBanner}>
           <ThemedText style={styles.safetyTitle}>KAMUN is a safe and inclusive space</ThemedText>
           <ThemedText style={styles.safetyCopy}>If you feel unsafe, uncomfortable or overwhelmed, reach out to the Secretariat or our Safety and Awareness team.</ThemedText>
@@ -85,13 +80,22 @@ export default function EmergencyScreen() {
           <View style={[styles.staffList, { backgroundColor: theme.backgroundElement }]}>
             {contacts.map((contact, index) => {
               const name = contact.personName ?? contact.label;
+              const portraitName = name === 'Mani Kondapavuluri' || name === 'Mani'
+                ? 'Venkata Mani Madhava Sai Kondapavuluri' : name === 'Mahima' ? 'Mahima Rajpal' : name;
+              const person = secretariat.find(person => person.name.toLowerCase() === portraitName.trim().toLowerCase());
               const callUrl = phoneCallUrl(contact.phone);
               const whatsappUrl = whatsappChatUrl(contact.phone);
               return (
                 <View key={contact.id} style={[styles.staffCard, stacked && styles.staffCardStacked, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }]}>
-                  <View style={styles.staffIdentity}>
+                  <View style={styles.staffProfile}>
+                    {person ? <View style={{ width: photoSize, height: photoSize, borderRadius: photoSize / 2, overflow: 'hidden', flexShrink: 0, backgroundColor: theme.primarySoft }}>
+                      <Image source={person.photo} resizeMode="contain" accessibilityLabel={name}
+                        style={{ position: 'absolute', width: person.photoLayout.width * photoScale, height: person.photoLayout.height * photoScale, left: person.photoLayout.left * photoScale, top: person.photoLayout.top * photoScale }} />
+                    </View> : null}
+                    <View style={styles.staffIdentity}>
                     <ThemedText type="smallBold" style={styles.staffName}>{name}</ThemedText>
                     {contact.role ? <ThemedText style={styles.staffRole} themeColor="textSecondary">{contact.role}</ThemedText> : null}
+                    </View>
                   </View>
                   {callUrl ? (
                     <View style={[styles.staffActions, stacked && styles.staffActionsStacked]}>
@@ -131,9 +135,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { backgroundColor: Brand.pine },
   headerInner: { alignItems: 'center', alignSelf: 'center', flexDirection: 'row', maxWidth: MaxContentWidth, minHeight: 72, paddingHorizontal: Spacing.three, width: '100%' },
-  backButton: { alignItems: 'center', justifyContent: 'center', minHeight: 48, minWidth: 48 },
-  backArrow: { color: Brand.cream, fontSize: 30, lineHeight: 36 },
-  headerTitle: { fontWeight: '400', color: Brand.cream, flex: 1, fontSize: 24, lineHeight: 29, marginLeft: Spacing.two },
+  headerTitle: { fontWeight: '400', color: Brand.cream, flex: 1, fontSize: 24, lineHeight: 29, marginLeft: 0 },
   scroll: { alignSelf: 'center', gap: Spacing.four, maxWidth: MaxContentWidth, paddingBottom: BottomTabInset + Spacing.five, paddingHorizontal: Spacing.three, paddingTop: Spacing.four, width: '100%' },
   section: { gap: 12 },
   safetyBanner: { backgroundColor: '#E3ECE5', borderRadius: 24, padding: 24, gap: 14 },
@@ -155,6 +157,7 @@ const styles = StyleSheet.create({
   staffCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingVertical: 18 },
   staffCardStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
   staffIdentity: { gap: 3, flex: 1, minWidth: 0 },
+  staffProfile: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 },
   staffRole: { fontSize: 15, lineHeight: 22 },
   staffName: { fontSize: 18, lineHeight: 24 },
   staffActions: { alignItems: 'flex-end', maxWidth: '52%' },

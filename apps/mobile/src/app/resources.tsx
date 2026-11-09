@@ -77,7 +77,7 @@ export default function ResourcesScreen() {
   }
 
   return (
-    <Screen eyebrow="PREPARE" title="Resources" subtitle="Your conference reading, all in one place." onRefresh={() => void refresh()} refreshing={isLoading}>
+    <Screen showBack={false} eyebrow="PREPARE" title="Resources" subtitle="Your conference reading, all in one place." onRefresh={() => void refresh()} refreshing={isLoading}>
       {generalResources.length ? (
         <View style={styles.section}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>CONFERENCE ESSENTIALS</ThemedText>
