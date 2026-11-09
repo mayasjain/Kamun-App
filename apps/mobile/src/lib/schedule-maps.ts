@@ -8,6 +8,7 @@ export function scheduleVenueMapUrl(roomName: string | null): string | null {
 
   if (venue.includes('karlshochschule')) query = 'Karlshochschule International University Karlsruhe';
   else if (venue.includes('europabad')) query = 'Europabad Karlsruhe';
+  else if (venue.includes('intro café') || venue.includes('intro cafe')) query = 'intro CAFÉ Kronenplatz Karlsruhe';
   else if (venue.includes('mathebau') || venue.includes('20.30 mathematik')) query = 'KIT Gebäude 20.30 Mathematik Karlsruhe';
   else if (venue.includes('begegnungsstätte grötzingen')) query = 'Begegnungsstätte Grötzingen Karlsruhe';
   else if (venue.includes('johann-gottfried-tulla')) query = 'Johann-Gottfried-Tulla-Hörsaal KIT Karlsruhe';
