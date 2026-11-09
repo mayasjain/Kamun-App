@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Screen } from '@/components/screen';
@@ -42,7 +42,8 @@ export default function PartnersScreen() {
           </View>
           <View style={styles.grid} onLayout={({ nativeEvent }) => setGridWidth(nativeEvent.layout.width)}>
             {group.entries.map((partner) => (
-              <View key={partner.name} style={[styles.card, { width: groupCardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <Link key={partner.name} href={partner.url} target="_blank" rel="noopener noreferrer" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel={`${partner.name} — visit website`} accessibilityHint="Opens an external website" style={StyleSheet.flatten([styles.card, { width: groupCardWidth, backgroundColor: theme.backgroundElement, borderColor: theme.border }])}>
                 <View style={[styles.logoFrame, { width: logoSize, height: logoSize, borderRadius: logoSize / 2 }, partner.logoBackground ? { backgroundColor: partner.logoBackground } : null]}>
                   {partner.logo ? (
                     <Image source={partner.logo} style={[styles.logo, partner.logoFit === 'contain' ? styles.containedLogo : { borderRadius: logoSize / 2 }]} resizeMode={partner.logoFit ?? "cover"} accessibilityLabel={`${partner.name} logo`} />
@@ -52,7 +53,8 @@ export default function PartnersScreen() {
                 </View>
                 <ThemedText style={styles.partnerName}>{partner.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.partnerDetail}>{partner.detail}</ThemedText>
-              </View>
+              </Pressable>
+              </Link>
             ))}
           </View>
         </View>
