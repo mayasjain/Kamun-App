@@ -3,12 +3,13 @@ import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export type HomeIconProps = {
-  name: 'memes' | 'coffee' | 'emergency' | 'gossip' | 'partners' | 'secretariat' | 'arrow' | 'chevron';
+  name: 'memes' | 'coffee' | 'emergency' | 'gossip' | 'partners' | 'secretariat' | 'music' | 'arrow' | 'chevron';
   size: number;
   color: string;
 };
 
 export function HomeIcon({ name, size, color }: HomeIconProps) {
+  if (name === 'music') return <Feather name="music" size={size} color={color} accessible={false} />;
   if (name === 'partners') return <MaterialCommunityIcons name="handshake-outline" size={size} color={color} accessible={false} />;
   if (name === 'secretariat') return <Feather name="users" size={size} color={color} accessible={false} />;
   if (name === 'memes') return <Feather name="smile" size={size} color={color} accessible={false} />;

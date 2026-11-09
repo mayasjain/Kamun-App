@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HomeIcon } from '@/components/home-icon';
 import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { AppState, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { AppState, Image, Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -16,11 +16,12 @@ import { conferenceDayLabel } from '@/lib/conference-day';
 
 import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
-type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean };
+type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean; external?: boolean };
 
 const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help & contacts', href: '/emergency', urgent: true },
   { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
+  { title: 'Song requests', detail: 'Send a song to the DJs', href: 'https://tally.so/r/NqDZPN', external: true },
   { title: 'Your KAMUN Padlet', detail: 'Meme it till you make it.', href: '/memes' },
   { title: 'Secretariat', detail: 'Meet the team', href: '/secretariat' },
   { title: 'Sponsors & Partners', detail: 'Our pillars of support', href: '/partners' },
@@ -164,13 +165,13 @@ export default function HomeScreen() {
             </View>}
             <View style={[styles.quickGrid, compact && styles.quickGridCompact]}>
               {quickLinks.map((item) => (
-                <Pressable key={item.title} onPress={() => router.push(item.href)}
-                  accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
+                <Pressable key={item.title} onPress={() => item.external ? void Linking.openURL(String(item.href)) : router.push(item.href)}
+                  accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}${item.external ? ', opens in your browser' : ''}`}
                   style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && compact && styles.sponsorsTileCompact, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
-                      : <HomeIcon name={item.href === '/secretariat' ? 'secretariat' : item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
+                      : <HomeIcon name={item.external ? 'music' : item.href === '/secretariat' ? 'secretariat' : item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
                   <View style={[styles.quickCopy, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsCopy]}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
