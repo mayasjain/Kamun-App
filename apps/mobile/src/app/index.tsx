@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HomeIcon } from '@/components/home-icon';
-import { Link, useRouter, type Href } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { AppState, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,7 @@ import { AccessExpiredError } from '@/lib/function-errors';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
+import { conferenceDayLabel } from '@/lib/conference-day';
 
 import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
@@ -27,6 +28,11 @@ const quickLinks: QuickLink[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { previewDay } = useLocalSearchParams<{ previewDay?: string }>();
+  // Preview only the badge; schedule timing and all other live data stay current.
+  const previewBadge = previewDay === '1' ? 'Day 1 - 13 Nov'
+    : previewDay === '2' ? 'Day 2 - 14 Nov'
+    : previewDay === '3' ? 'Day 3 - 15 Nov' : undefined;
   const theme = useTheme();
   const { profile, clearProfile, restoreError } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
@@ -69,14 +75,14 @@ export default function HomeScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}>
-          <View style={styles.masthead}>
+          <View style={[styles.masthead, compact && { flexWrap: 'wrap' }]}>
             <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={[styles.mastheadLogo, phone && styles.mastheadLogoPhone]} />
             <View style={styles.mastheadCopy}>
               <ThemedText type="smallBold" style={[styles.mastheadTitle, { color: theme.text }]}>KAMUN 2026</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">Black Forest Summit · Karlsruhe</ThemedText>
             </View>
             <View style={[styles.dateBadge, { backgroundColor: theme.primarySoft }]}>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>13–15 NOV</ThemedText>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>{previewBadge ?? conferenceDayLabel(content?.conference, now)}</ThemedText>
             </View>
           </View>
 
@@ -207,7 +213,7 @@ const styles = StyleSheet.create({
   mastheadLogo: { height: 52, width: 52 },
   mastheadCopy: { flex: 1, gap: 1, minWidth: 0 },
   mastheadTitle: { fontSize: 17, letterSpacing: 0.8 },
-  dateBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: Spacing.two },
+  dateBadge: { maxWidth: '100%', flexShrink: 1, borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: Spacing.two },
   hero: { backgroundColor: Brand.black, borderRadius: Radius.feature, height: 244, justifyContent: 'flex-end', overflow: 'hidden', width: '100%' },
   heroCompact: { height: 180 },
   heroArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
