@@ -1,3 +1,8 @@
+In-app participant ordering — 10 November 2026
+Participant ordering now runs in KAMUN at /coffee through the authenticated ecg-coffee bridge and ECE private participant API. Existing ECE staff tools, database, cookie API and legacy handoff remain intact.
+Source branch: astra/kamun-inapp-coffee. Portable patch: in-app-ordering.patch.
+See docs/IN_APP_COFFEE.txt in the KAMUN workspace for data flow, validation and rollback.
+
 Current target — 8 November 2026
 Participant/API: https://kamun-ece-cafe.pages.dev
 Staff/admin: https://kamun-ece-covfefe.pages.dev

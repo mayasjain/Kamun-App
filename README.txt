@@ -28,7 +28,8 @@ Local setup
 4. Start the organiser dashboard with npm run dev:admin in another terminal.
 
 The attendee web app is published at https://kamun-2026-app.pages.dev.
-The shared ECE login targets production https://kamun-ece-cafe.pages.dev.
+Coffee ordering is integrated at /coffee; its server bridge targets production https://kamun-ece-cafe.pages.dev.
+Implementation, validation and rollback: docs/IN_APP_COFFEE.txt.
 Staff/admin: https://kamun-ece-covfefe.pages.dev. Use production ECE-issued codes.
 Production secret pairing and live verification are required; see the release checklist.
 Current deployment requirements and verification: docs/ECG_SHARED_CODE_RELEASE.txt

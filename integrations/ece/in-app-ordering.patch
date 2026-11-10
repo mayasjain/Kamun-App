@@ -1,0 +1,560 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 4b434b3..ce6fe93 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -1,5 +1,21 @@
+ # Changes
+ 
++## 2026-11-10 17:56 (Europe/Berlin) — Astra
++**What:** Released the additive cafe participant endpoint (8a7699e5), then KAMUN's authenticated ecg-coffee function and its in-app Coffee Bar (33ec8226). Corrected the staging helper to pass the production account through Wrangler's environment; Pages rejects account_id in config.
++**Why:** Owner approved in-app participant ordering while retaining staff tools and the existing backend.
++**Files:** participant-only staging helper and release documentation; the KAMUN frontend and Supabase bridge remain in the separate conference repo.
++**Validation:** 570 ECE tests, all workspace typechecks/builds passed; KAMUN's 43 mobile tests, 21 edge-handler tests, changed-file lint, typecheck and web build passed. Production cafe health returned production/200/version 26; unauthenticated KAMUN coffee requests returned 401. No production orders, payments, roster, codes or schema changes; no staff deployment, secret rotation or changes to the frozen account. Manual phone/keyboard and signed-in production smoke checks are left to the owner, who offered to check them.
++**Heads-up for Claude:** Keep astra/kamun-inapp-coffee in subsequent cafe releases; deploying old main would remove the additive endpoint. Existing participant cookies and legacy handoff remain compatible. Source has not been pushed to GitHub.
++**Next:** Owner checks Home → Order coffee inside KAMUN and merges this branch before deploying main again.
++
++## 2026-11-10 17:49 (Europe/Berlin) — Astra
++**What:** Added the private KAMUN participant ordering API and extracted the existing state builder. The bridge verifies the current account/revision/committee/seat before reusing the existing order and cancellation engine. Added a participant-only staging helper with no migration or staff deployment.
++**Why:** Owner approved moving participant ordering into KAMUN; staff retain their current tools and database.
++**Files:** participant API, shared state builder, integration route and local mirror, regression tests, staging helper, plan/task documentation.
++**Validation:** 570 tests passed, all workspaces typechecked, and all apps built. New tests cover service authentication, stale identity, ownership, state boundaries, duplicate orders, queue capacity, free-drink pricing and staff-board visibility/status updates. No production orders or roster changes.
++**Heads-up for Claude:** Branch astra/kamun-inapp-coffee; not yet deployed. KAMUN-side frontend and Supabase bridge live in the separate conference workspace. No schema changes, dependencies or secret rotation.
++**Next:** Deploy only the additive cafe endpoint, then KAMUN's authenticated bridge, then its participant UI.
++
+ ## 2026-11-09 20:22 (Europe/Berlin) — Astra
+ **What:** Updated two owner-selected production participant codes through the existing previewed token import. Both matched existing accounts; old codes, sessions and handoff tickets were invalidated.
+ **Why:** Owner requested two specific replacements.
+diff --git a/apps/cafe/functions/api/integration/participant.ts b/apps/cafe/functions/api/integration/participant.ts
+new file mode 100644
+index 0000000..c45f3d3
+--- /dev/null
++++ b/apps/cafe/functions/api/integration/participant.ts
+@@ -0,0 +1,121 @@
++import { z } from 'zod';
++import {
++  buildParticipantState,
++  cancelOwnOrder,
++  checkKamunIdentity,
++  isParticipantDataPurged,
++  orderInputSchema,
++  placeOrder,
++  requestNow,
++  type Env,
++  type PlaceOrderError,
++} from '@covfefe/core';
++
++const identitySchema = z
++  .object({
++    personId: z.number().int().positive(),
++    revision: z.string().regex(/^[a-f0-9]{64}$/),
++    kind: z.enum(['delegate', 'chair']),
++    committee: z.string().min(1).max(20),
++    seat: z.string().max(100).nullable(),
++  })
++  .strict();
++const inputSchema = z.discriminatedUnion('action', [
++  z
++    .object({
++      action: z.literal('state'),
++      identity: identitySchema,
++      query: z
++        .object({ v: z.string().max(30).optional(), b: z.string().max(300).optional() })
++        .strict()
++        .optional(),
++    })
++    .strict(),
++  z
++    .object({ action: z.literal('place_order'), identity: identitySchema, order: orderInputSchema.strict() })
++    .strict(),
++  z
++    .object({
++      action: z.literal('cancel_order'),
++      identity: identitySchema,
++      orderId: z.number().int().positive(),
++    })
++    .strict(),
++]);
++const headers = {
++  'Cache-Control': 'no-store',
++  'Content-Type': 'application/json; charset=utf-8',
++  'X-Content-Type-Options': 'nosniff',
++  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
++};
++const reply = (body: object, status = 200) => new Response(JSON.stringify(body), { status, headers });
++async function authenticated(request: Request, env: Env) {
++  const actual = request.headers.get('X-Kamun-Integration-Key');
++  const expected = env.KAMUN_INTEGRATION_KEY;
++  if (!actual || !expected || expected.length < 32) return false;
++  const digest = (text: string) => crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
++  const [a, b] = await Promise.all([digest(actual), digest(expected)]);
++  const left = new Uint8Array(a),
++    right = new Uint8Array(b);
++  let difference = 0;
++  for (let i = 0; i < left.length; i++) difference |= left[i]! ^ right[i]!;
++  return difference === 0;
++}
++const orderStatus: Partial<Record<PlaceOrderError, number>> = {
++  invalid_input: 400,
++  note_too_long: 400,
++  person_inactive: 401,
++};
++
++/** Server-to-server only. Never consumes browser cookies or permits arbitrary API forwarding. */
++export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
++  if (
++    (new URL(request.url).protocol !== 'https:' && env.ENVIRONMENT !== 'development') ||
++    !(await authenticated(request, env))
++  )
++    return reply({ error: 'not_found' }, 404);
++  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type') ?? ''))
++    return reply({ error: 'invalid_input' }, 400);
++  const raw = await request.text();
++  if (raw.length > 4096) return reply({ error: 'invalid_input' }, 400);
++  let parsed: unknown;
++  try {
++    parsed = JSON.parse(raw);
++  } catch {
++    return reply({ error: 'invalid_input' }, 400);
++  }
++  const input = inputSchema.safeParse(parsed);
++  if (!input.success) return reply({ error: 'invalid_input' }, 400);
++  try {
++    if (await isParticipantDataPurged(env.DB)) return reply({ error: 'data_purged' }, 410);
++    const data = input.data;
++    const identity = await checkKamunIdentity(env.DB, data.identity.personId, data.identity.revision);
++    if (
++      !identity ||
++      identity.kind === 'kamun_admin' ||
++      identity.kind !== data.identity.kind ||
++      identity.committee !== data.identity.committee ||
++      identity.seat !== data.identity.seat
++    )
++      return reply({ error: 'inactive' }, 401);
++    // requestNow ignores time travel in production; only local/preview fixtures can supply it.
++    const now = requestNow(env, new URL(request.url).searchParams.get('at') ?? undefined);
++    if (data.action === 'state') {
++      const state = await buildParticipantState(env, now, identity.personId, data.query);
++      return state ? reply({ identity, result: state }) : reply({ error: 'inactive' }, 401);
++    }
++    if (data.action === 'place_order') {
++      const result = await placeOrder(env.DB, now, identity.personId, data.order);
++      return result.ok
++        ? reply({ identity, result: { order: result.value } }, 201)
++        : reply({ identity, error: result.error }, orderStatus[result.error] ?? 409);
++    }
++    const result = await cancelOwnOrder(env.DB, now, identity.personId, data.orderId);
++    return result.ok
++      ? reply({ identity, result: { ok: true } })
++      : reply({ identity, error: result.error }, 409);
++  } catch {
++    // Don't log the integration key, participant identity, or order contents.
++    return reply({ error: 'unavailable' }, 503);
++  }
++};
+diff --git a/docs/PLAN.md b/docs/PLAN.md
+index 7fa7758..6865f5c 100644
+--- a/docs/PLAN.md
++++ b/docs/PLAN.md
+@@ -1233,3 +1233,6 @@ Deploy additive migrations 0011 and 0012 and the new participant/staff code toge
+ 
+ ### Participant back navigation — 2026-11-04
+ A 44px back-arrow button above the participant header returns through browser history without signing out. It is disabled when the tab has no previous history entry. When ECE is opened from Kamun in the same tab, it returns to Kamun; no destination URL or credentials are added to the link.
++
++### KAMUN in-app ordering — 2026-11-10
++Owner approved participant ordering inside KAMUN using its existing Supabase identity, while staff continue in covfefe. Add a service-key-only participant endpoint; verify the current ECE identity tuple before every read or mutation, then reuse the existing state builder and order engine. Existing participant-cookie and staff APIs remain unchanged. No new database schema or dependencies. KAMUN adopts its own green-and-gold UI.
+diff --git a/docs/TASKS.md b/docs/TASKS.md
+index e2a2782..b87bf59 100644
+--- a/docs/TASKS.md
++++ b/docs/TASKS.md
+@@ -152,3 +152,6 @@ Tick it `[x]` when it's merged. Owner-only tasks are marked 👤. Spec: [`PLAN.m
+ - [x] Personal KAMUN-only admin code, private identity integration and production rollout — claimed: Astra 2026-11-08. Migration 0017 and both production apps deployed; code saved privately (0600), live verify/status pass and coffee login/handoff rejected. 552 tests, typecheck and both coffee builds pass. Handoff: docs/KAMUN-ADMIN.md.
+ 
+ - [ ] KAMUN app team: accept the `kamun_admin` identity, enforce administration server-side and complete joint login/logout/revocation testing (docs/KAMUN-ADMIN.md).
++
++## KAMUN in-app participant ordering
++- completed: Astra 2026-11-10. Private participant API/shared state builder tested and deployed; staff workflows unchanged. Source branch astra/kamun-inapp-coffee awaits merge.
+diff --git a/local/functions/api/integration/participant.ts b/local/functions/api/integration/participant.ts
+new file mode 100644
+index 0000000..0b9083f
+--- /dev/null
++++ b/local/functions/api/integration/participant.ts
+@@ -0,0 +1 @@
++export { onRequestPost } from '../../../../apps/cafe/functions/api/integration/participant';
+diff --git a/packages/core/src/index.ts b/packages/core/src/index.ts
+index 5555a21..b031c88 100644
+--- a/packages/core/src/index.ts
++++ b/packages/core/src/index.ts
+@@ -24,3 +24,5 @@ export * from './csv';
+ export * from './ceremony-stats';
+ 
+ export { verifyKamunCode, checkKamunIdentity } from './kamun-integration';
++
++export { buildParticipantState } from './participant-state';
+diff --git a/packages/core/src/participant-api.ts b/packages/core/src/participant-api.ts
+index 6cab667..e5d6cce 100644
+--- a/packages/core/src/participant-api.ts
++++ b/packages/core/src/participant-api.ts
+@@ -10,7 +10,6 @@ import { consumeKamunHandoff } from './kamun-handoff';
+ import { isParticipantDataPurged } from './admin-records';
+ import { getMenu, getSchedule, getSettings, getVersion, publicSettings } from './catalog';
+ import { type Env, isProduction } from './env';
+-import { ACTIVE_SQL } from './engine-common';
+ import { apiSecurityHeaders, jsonMutations, sameOriginMutations } from './http';
+ import { requestNow } from './now';
+ import {
+@@ -20,10 +19,10 @@ import {
+   setOrderStatus,
+   type PlaceOrderError,
+ } from './orders';
+-import { closeRound, latestRound, openRound, roundState } from './rounds';
+-import { fromLocal, scheduleAt, toLocal } from './schedule';
++import { closeRound, openRound } from './rounds';
++import { scheduleAt, toLocal } from './schedule';
+ import { participantFromToken, revokeSession } from './sessions';
+-import { participantView } from './views';
++import { buildParticipantState } from './participant-state';
+ 
+ type Ctx = { Bindings: Env; Variables: { personId: number } };
+ 
+@@ -166,58 +165,16 @@ export function createParticipantApi() {
+    * that don't bump the version.
+    */
+   app.get('/state', async (c) => {
+-    const db = c.env.DB;
+-    const now = requestNow(c.env, c.req.query('at'));
+-    const [version, schedule, round, delivery] = await Promise.all([
+-      getVersion(db),
+-      getSchedule(db),
+-      latestRound(db),
+-      // Orders retain their delivery deadlines when the admin edits the schedule afterwards.
+-      db
+-        .prepare(
+-          `SELECT MAX(CASE WHEN deliver_until <= ?1 THEN deliver_until END) AS epoch,
+-                         MIN(CASE WHEN deliver_until > ?1 THEN deliver_until END) AS next
+-                    FROM orders WHERE person_id = ?2 AND fulfilment = 'delivery'
+-                      AND status IN ${ACTIVE_SQL} AND deliver_until IS NOT NULL`,
+-        )
+-        .bind(now.toISOString(), c.get('personId'))
+-        .first<{ epoch: string | null; next: string | null }>(),
+-    ]);
+-    const sched = scheduleAt(schedule, now);
+-    const rs = round ? roundState(round, now) : null;
+-    const local = toLocal(now);
+-    // Advance the calendar day, then convert its midnight in Berlin (also correct across DST).
+-    const nextDay = new Date(Date.parse(`${local.day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+-    const midnight = fromLocal(nextDay, '00:00').toISOString();
+-    const boundary = `${c.get('personId')}.${local.day}.${sched.current?.id ?? 0}.${rs?.id ?? 0}.${rs?.open ? 1 : 0}.${delivery?.epoch ?? '0'}`;
+-    const nextBoundaryAt =
+-      [sched.nextBoundaryAt, rs?.open ? rs.autoCloseAt : null, delivery?.next, midnight]
+-        .filter((x): x is string => !!x)
+-        .sort()[0] ?? null;
+-
+-    if (c.req.query('v') === String(version) && c.req.query('b') === boundary) {
+-      return c.json({ unchanged: true, version, boundary, nextBoundaryAt });
+-    }
+-    const [settings, menu, me] = await Promise.all([
+-      getSettings(db),
+-      getMenu(db),
+-      participantView(db, now, c.get('personId')),
+-    ]);
+-    if (!me) return unauthenticated(c);
+-    return c.json({
+-      unchanged: false,
+-      version,
+-      boundary,
+-      nextBoundaryAt,
+-      environment: c.env.ENVIRONMENT,
+-      timeTravel: !isProduction(c.env),
+-      now: now.toISOString(),
+-      nowLocal: local,
+-      settings: publicSettings(settings),
+-      schedule: { blocks: schedule.filter((b) => b.enabled), ...sched },
+-      menu,
+-      me,
+-    });
++    const state = await buildParticipantState(
++      c.env,
++      requestNow(c.env, c.req.query('at')),
++      c.get('personId'),
++      {
++        v: c.req.query('v'),
++        b: c.req.query('b'),
++      },
++    );
++    return state ? c.json(state) : unauthenticated(c);
+   });
+ 
+   app.post('/orders', async (c) => {
+diff --git a/packages/core/src/participant-state.ts b/packages/core/src/participant-state.ts
+new file mode 100644
+index 0000000..69b0585
+--- /dev/null
++++ b/packages/core/src/participant-state.ts
+@@ -0,0 +1,66 @@
++import { getMenu, getSchedule, getSettings, getVersion, publicSettings } from './catalog';
++import { type Env, isProduction } from './env';
++import { ACTIVE_SQL } from './engine-common';
++import { latestRound, roundState } from './rounds';
++import { fromLocal, scheduleAt, toLocal } from './schedule';
++import { participantView } from './views';
++
++/** Shared by the cookie API and the authenticated KAMUN server bridge. */
++export async function buildParticipantState(
++  env: Env,
++  now: Date,
++  personId: number,
++  query: { v?: string; b?: string } = {},
++) {
++  const db = env.DB;
++  const [version, schedule, round, delivery] = await Promise.all([
++    getVersion(db),
++    getSchedule(db),
++    latestRound(db),
++    // Orders retain their delivery deadlines when the admin edits the schedule afterwards.
++    db
++      .prepare(
++        `SELECT MAX(CASE WHEN deliver_until <= ?1 THEN deliver_until END) AS epoch,
++                         MIN(CASE WHEN deliver_until > ?1 THEN deliver_until END) AS next
++                    FROM orders WHERE person_id = ?2 AND fulfilment = 'delivery'
++                      AND status IN ${ACTIVE_SQL} AND deliver_until IS NOT NULL`,
++      )
++      .bind(now.toISOString(), personId)
++      .first<{ epoch: string | null; next: string | null }>(),
++  ]);
++  const sched = scheduleAt(schedule, now);
++  const rs = round ? roundState(round, now) : null;
++  const local = toLocal(now);
++  // Advance the calendar day, then convert its midnight in Berlin (also correct across DST).
++  const nextDay = new Date(Date.parse(`${local.day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
++  const midnight = fromLocal(nextDay, '00:00').toISOString();
++  const boundary = `${personId}.${local.day}.${sched.current?.id ?? 0}.${rs?.id ?? 0}.${rs?.open ? 1 : 0}.${delivery?.epoch ?? '0'}`;
++  const nextBoundaryAt =
++    [sched.nextBoundaryAt, rs?.open ? rs.autoCloseAt : null, delivery?.next, midnight]
++      .filter((x): x is string => !!x)
++      .sort()[0] ?? null;
++
++  if (query.v === String(version) && query.b === boundary) {
++    return { unchanged: true as const, version, boundary, nextBoundaryAt };
++  }
++  const [settings, menu, me] = await Promise.all([
++    getSettings(db),
++    getMenu(db),
++    participantView(db, now, personId),
++  ]);
++  if (!me) return null;
++  return {
++    unchanged: false as const,
++    version,
++    boundary,
++    nextBoundaryAt,
++    environment: env.ENVIRONMENT,
++    timeTravel: !isProduction(env),
++    now: now.toISOString(),
++    nowLocal: local,
++    settings: publicSettings(settings),
++    schedule: { blocks: schedule.filter((b) => b.enabled), ...sched },
++    menu,
++    me,
++  };
++}
+diff --git a/packages/core/test/kamun-coffee-api.test.ts b/packages/core/test/kamun-coffee-api.test.ts
+new file mode 100644
+index 0000000..533cbb1
+--- /dev/null
++++ b/packages/core/test/kamun-coffee-api.test.ts
+@@ -0,0 +1,152 @@
++import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
++import { onRequestPost } from '../../../apps/cafe/functions/api/integration/participant';
++import { buildParticipantState } from '../src/participant-state';
++import { verifyKamunCode } from '../src/kamun-integration';
++import { openRound } from '../src/rounds';
++import { staffBoard } from '../src/views';
++import { setOrderStatus } from '../src/orders';
++import { addPerson, at, codeFor, createTestDb, psl, TEST_PEPPER, type TestDb } from './helpers/db';
++import type { Env } from '../src/env';
++
++let fixture: TestDb;
++const secret = 'test-only-kamun-coffee-integration-key-123456789';
++beforeAll(async () => {
++  fixture = await createTestDb('kamun-coffee-api');
++}, 60_000);
++beforeEach(async () => {
++  await fixture.reset();
++});
++afterAll(() => fixture?.dispose());
++const environment = () => ({ DB: fixture.db, ENVIRONMENT: 'preview', KAMUN_INTEGRATION_KEY: secret }) as Env;
++async function identity(kind: 'delegate' | 'chair' = 'delegate', seat = 'France') {
++  const personId = await addPerson(fixture.db, {
++    committee: 'ILO',
++    kind,
++    ...(kind === 'delegate' ? { seat } : {}),
++  });
++  return (await verifyKamunCode(fixture.db, TEST_PEPPER, await codeFor(fixture.db, personId)))!;
++}
++function invoke(body: object, key: string | null = secret, time = '2026-11-14T09:45') {
++  const request = new Request(`https://coffee.example.test/api/integration/participant?at=${time}`, {
++    method: 'POST',
++    headers: { 'Content-Type': 'application/json', ...(key ? { 'X-Kamun-Integration-Key': key } : {}) },
++    body: JSON.stringify(body),
++  });
++  return (onRequestPost as unknown as (context: { request: Request; env: Env }) => Promise<Response>)({
++    request,
++    env: environment(),
++  });
++}
++async function json(response: Response) {
++  return (await response.json()) as {
++    result: {
++      version: number;
++      boundary: string;
++      unchanged: boolean;
++      me: { orders: { id: number; status: string; priceCents: number }[] };
++      order: { id: number };
++    };
++    error?: string;
++  };
++}
++
++describe('KAMUN in-app ordering bridge', () => {
++  it('requires the service key and rejects forged fields and changed identities', async () => {
++    const who = await identity();
++    expect((await invoke({ action: 'state', identity: who }, null)).status).toBe(404);
++    expect((await invoke({ action: 'state', identity: who }, 'wrong')).status).toBe(404);
++    expect((await invoke({ action: 'state', identity: { ...who, revision: '0'.repeat(64) } })).status).toBe(
++      401,
++    );
++    expect((await invoke({ action: 'state', identity: { ...who, seat: 'Brazil' } })).status).toBe(401);
++    expect((await invoke({ action: 'state', identity: { ...who, kind: 'chair' } })).status).toBe(401);
++    expect(
++      (await invoke({ action: 'place_order', identity: who, order: { ...psl(), priceCents: 0 } })).status,
++    ).toBe(400);
++    expect((await invoke({ action: 'state', identity: { ...who, kind: 'kamun_admin' } })).status).toBe(400);
++    await fixture.db.prepare('UPDATE people SET active = 0 WHERE id = ?').bind(who.personId).run();
++    expect((await invoke({ action: 'state', identity: who })).status).toBe(401);
++  });
++
++  it('returns the same state as the cookie API builder and preserves boundary short-circuiting', async () => {
++    const who = await identity();
++    const response = await invoke({ action: 'state', identity: who });
++    expect(response.status).toBe(200);
++    const body = await json(response);
++    expect(body.result).toEqual(await buildParticipantState(environment(), at.satSessionII, who.personId));
++    const unchanged = await json(
++      await invoke({
++        action: 'state',
++        identity: who,
++        query: { v: String(body.result.version), b: body.result.boundary },
++      }),
++    );
++    expect(unchanged.result).toMatchObject({ unchanged: true });
++    const nextBlock = await json(
++      await invoke(
++        {
++          action: 'state',
++          identity: who,
++          query: { v: String(body.result.version), b: body.result.boundary },
++        },
++        secret,
++        '2026-11-14T10:40',
++      ),
++    );
++    expect(nextBlock.result.unchanged).toBe(false);
++  });
++
++  it('deduplicates a lost-response retry and feeds existing staff status changes back to KAMUN', async () => {
++    const who = await identity();
++    await openRound(fixture.db, at.satSessionII, 'barista', { capacity: 1, until: 'block' });
++    const order = psl();
++    const first = await json(await invoke({ action: 'place_order', identity: who, order }));
++    const second = await json(await invoke({ action: 'place_order', identity: who, order }));
++    expect(first.result.order.id).toBe(second.result.order.id);
++    expect(
++      (await staffBoard(fixture.db, at.satSessionII)).orders.some(
++        (order) => order.id === first.result.order.id,
++      ),
++    ).toBe(true);
++    expect(await fixture.db.prepare('SELECT count(*) AS n FROM orders').first('n')).toBe(1);
++    await setOrderStatus(fixture.db, at.satSessionII, 'barista', first.result.order.id, 'ready');
++    const state = await json(await invoke({ action: 'state', identity: who }));
++    expect(state.result.me.orders[0]).toMatchObject({ id: first.result.order.id, status: 'ready' });
++    expect(
++      (await json(await invoke({ action: 'cancel_order', identity: who, orderId: first.result.order.id })))
++        .error,
++    ).toBe('not_cancellable');
++  });
++
++  it('enforces queue capacity and ownership on cancel and only returns your own orders', async () => {
++    const a = await identity();
++    const b = await identity('delegate', 'Brazil');
++    await openRound(fixture.db, at.satSessionII, 'barista', { capacity: 1, until: 'block' });
++    const order = await json(await invoke({ action: 'place_order', identity: a, order: psl() }));
++    expect((await invoke({ action: 'place_order', identity: b, order: psl() })).status).toBe(409);
++    expect((await json(await invoke({ action: 'state', identity: b }))).result.me.orders).toEqual([]);
++    expect(
++      (await json(await invoke({ action: 'cancel_order', identity: b, orderId: order.result.order.id })))
++        .error,
++    ).toBe('not_cancellable');
++    expect(
++      (await invoke({ action: 'cancel_order', identity: a, orderId: order.result.order.id })).status,
++    ).toBe(200);
++  });
++
++  it('preserves chair round bypass, option validation, and server-side free-drink pricing', async () => {
++    const who = await identity('chair');
++    await fixture.db.prepare("UPDATE settings SET value_json = 'true' WHERE key = 'paid_mode'").run();
++    await fixture.db.prepare("UPDATE settings SET value_json = '1' WHERE key = 'free_drinks_per_day'").run();
++    await fixture.db.prepare('UPDATE menu_items SET price_cents = 200 WHERE id = 1').run();
++    const placed = await invoke({ action: 'place_order', identity: who, order: psl() });
++    expect(placed.status).toBe(201);
++    expect(
++      (await json(await invoke({ action: 'state', identity: who }))).result.me.orders[0]!.priceCents,
++    ).toBe(0);
++    await fixture.db.prepare('UPDATE options SET available = 0 WHERE id = 2').run();
++    expect((await json(await invoke({ action: 'place_order', identity: who, order: psl() }))).error).toBe(
++      'option_unavailable',
++    );
++  });
++});
+diff --git a/scripts/stage-kamun-coffee.mjs b/scripts/stage-kamun-coffee.mjs
+new file mode 100644
+index 0000000..16e3903
+--- /dev/null
++++ b/scripts/stage-kamun-coffee.mjs
+@@ -0,0 +1,37 @@
++// Stage the participant-only additive KAMUN bridge without running migrations or changing staff.
++import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
++import path from 'node:path';
++import { root, run } from './lib.mjs';
++import { readProduction, productionVars, productionEnv } from './prod-config.mjs';
++import { safeWranglerEnv } from './demo-config.mjs';
++const config = readProduction();
++const stage = path.join(root, '.deploy', 'kamun-inapp-participant');
++mkdirSync(stage, { recursive: true });
++cpSync(path.join(root, 'apps/cafe/dist'), path.join(stage, 'dist'), { recursive: true });
++cpSync(path.join(root, 'apps/cafe/functions'), path.join(stage, 'functions'), { recursive: true });
++writeFileSync(
++  path.join(stage, 'wrangler.json'),
++  JSON.stringify(
++    {
++      name: config.projects.cafe,
++      pages_build_output_dir: 'dist',
++      compatibility_date: '2026-10-01',
++      vars: productionVars(config, 'cafe'),
++      d1_databases: [{ binding: 'DB', database_name: config.database.name, database_id: config.database.id }],
++    },
++    null,
++    2,
++  ) + '\n',
++);
++console.log('Staged participant-only release; no database or staff changes.');
++
++if (process.argv.includes('--deploy')) {
++  run(
++    'wrangler',
++    ['pages', 'deploy', '--project-name', config.projects.cafe, '--branch', 'main', '--commit-dirty=true'],
++    {
++      cwd: stage,
++      env: productionEnv(config, safeWranglerEnv()),
++    },
++  );
++}

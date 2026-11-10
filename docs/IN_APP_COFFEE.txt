@@ -1,0 +1,38 @@
+# In-app ECE participant ordering
+
+KAMUN's Home coffee card opens `/coffee`. Delegates and chairs use their existing ECE-backed KAMUN identity. Legacy identities still use More to connect their personal code; KAMUN-only administrators cannot order. The existing Home coffee card styling is preserved.
+
+## Data flow and authorization
+
+1. The app invokes the Supabase `ecg-coffee` function with its existing session and conference ID.
+2. The function verifies the user and reads their active `ecg_participant_bindings` row. Actor identity and prices are not accepted from the client.
+3. It calls ECE's private `POST /api/integration/participant` using the existing server-only integration secret. ECE checks the complete current identity tuple before running any action.
+4. ECE reuses `buildParticipantState`, `placeOrder` and `cancelOwnOrder` against its existing D1 database. Its cookie-based participant API and staff service remain compatible.
+5. Only participant results and allowlisted business errors return to the app. Private identity metadata and integration secrets are not returned. All responses use `Cache-Control: no-store`.
+
+Actions: `state` with optional version/boundary query; `place_order` with item/option IDs, note, fulfilment and request UUID; `cancel_order` with the order ID. The server scopes every read and cancellation to the verified account. The engine enforces current availability, rounds, limits, prices and free drinks.
+
+## Client behaviour
+
+The Coffee Bar shows current service/queue status, menu, options, active and earlier orders, destination, confirmed prices, free allowance and balance. Payments remain at the foyer counter. Polling runs every five seconds with an active order and thirty otherwise, observes schedule boundaries, pauses off-screen/in the background, and refreshes on return. Only the newest read may update the UI. Identity changes remount the coffee session.
+
+There is no offline submission queue. A mutation with an uncertain response retains its request UUID and frozen payload. The participant can review and retry the same request; ECE's per-person idempotency constraint prevents a duplicate. Coffee state/drafts are held in memory, not written to the PWA shell cache or device storage. Closing/reloading the app discards an unresolved draft; the next visit fetches the actual server order list.
+
+## Validation
+
+- `npm --prefix apps/mobile run typecheck`
+- Changed-file Expo lint; existing full lint has an unrelated meme-slideshow effect error.
+- `npm --prefix apps/mobile run test`: 43 tests including coffee client and display cases.
+- `node --test supabase/tests/*handlers.test.mjs`: 21 tests including five bridge authorization/validation cases.
+- ECE: all workspace typechecks/builds and 570 tests passed against local fixtures. Integration tests cover identity mismatch/revocation, forged fields, cancellation ownership, state boundaries, round capacity, retry deduplication, free pricing, and staff board/status visibility.
+- No production orders, codes, people or payments were changed for testing. Real-phone layout and keyboard checks require the owner's manual check; computer-use access was unavailable.
+
+## Release and rollback
+
+No database migrations or new secrets. ECE's existing `KAMUN_INTEGRATION_KEY` and Supabase's paired `ECG_INTEGRATION_KEY` remain server-only. ECE runtime target remains `https://kamun-ece-cafe.pages.dev`; no changes to the frozen account, DNS or staff service.
+
+Deploy the additive ECE endpoint first, `ecg-coffee` second, and KAMUN web last. Keep legacy handoff endpoints for older clients and rollback. Restore the preceding KAMUN web deployment to roll back the frontend; the additive server endpoints can safely remain deployed. Native distributions require a new app bundle.
+
+ECE participant deployment: `8a7699e5`. Supabase: `ecg-coffee` deployed to the existing KAMUN project. KAMUN web deployment: `33ec8226`. Production ECE health passed; unauthenticated bridge requests returned 401. Signed-in UI and phone checks are owner-assisted.
+
+ECE source is maintained on `astra/kamun-inapp-coffee`; the portable implementation patch is `integrations/ece/in-app-ordering.patch`. No GitHub upload is implied by this local source handoff.

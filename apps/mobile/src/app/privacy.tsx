@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: 'Connected services',
-    body: 'The conference app uses Supabase for sign-in, data and uploaded content. Coffee ordering opens the separate ECE service, which has its own privacy information. External links, including Instagram and the feedback survey, open services with their own privacy policies.',
+    body: 'The conference app uses Supabase for sign-in, data and uploaded content. Coffee ordering takes place inside KAMUN and uses the ECE service to store and process your drink choices, options, notes, order times, status, delivery or pickup details, and any balance. Bar staff and runners see the information needed to prepare and fulfil your order. ECE’s privacy information also applies to its handling of coffee-order data. External links, including Instagram and the feedback survey, open services with their own privacy policies.',
   },
   {
     title: 'Questions and deletion requests',

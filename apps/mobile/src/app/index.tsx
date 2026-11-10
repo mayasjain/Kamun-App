@@ -8,14 +8,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { AccessExpiredError } from '@/lib/function-errors';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
 import { conferenceDayLabel } from '@/lib/conference-day';
 import { orderAnnouncements } from '@/lib/announcement-order';
 
-import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
 type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean; external?: boolean };
 
@@ -36,28 +34,11 @@ export default function HomeScreen() {
     : previewDay === '2' ? 'Day 2 - 14 Nov'
     : previewDay === '3' ? 'Day 3 - 15 Nov' : undefined;
   const theme = useTheme();
-  const { profile, clearProfile } = useAttendeeProfile();
+  const { profile } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
   const phone = width < 600;
   const compact = width < 375 || fontScale > 1.2;
   const [now, setNow] = useState(Date.now);
-  const [openingEcg, setOpeningEcg] = useState(false);
-  const [ecgError, setEcgError] = useState<string | null>(null);
-  async function openEcg() {
-    if (openingEcg || profile?.accessType === 'admin') return;
-    setEcgError(null);
-    setOpeningEcg(true);
-    try {
-      if (profile?.identitySource !== 'ecg') {
-        throw new Error('Use your personal KAMUN code in More → Change access code to connect coffee ordering.');
-      }
-      await openEcgWithKamunIdentity();
-    }
-    catch (error) {
-      if (error instanceof AccessExpiredError) clearProfile();
-      setEcgError(error instanceof Error ? error.message : 'KAMUN coffee ordering is unavailable right now.');
-    } finally { setOpeningEcg(false); }
-  }
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
@@ -158,12 +139,10 @@ export default function HomeScreen() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityState={{ busy: openingEcg, disabled: openingEcg }}
-                disabled={openingEcg}
-                onPress={() => profile?.identitySource === 'ecg' ? void openEcg() : router.push('/more')}
-                style={({ pressed }) => [styles.coffeeButton, (pressed || openingEcg) && styles.pressed]}>
+                onPress={() => router.push(profile?.identitySource === 'ecg' ? '/coffee' : '/more')}
+                style={({ pressed }) => [styles.coffeeButton, pressed && styles.pressed]}>
                 <ThemedText type="smallBold" style={styles.coffeeButtonText}>
-                  {openingEcg ? 'Opening ECE Coffee Bar…' : profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
+                  {profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
                 </ThemedText>
               </Pressable>
             </View>}
@@ -200,7 +179,6 @@ export default function HomeScreen() {
                 </Pressable>
               ))}
             </View>
-            {ecgError ? <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.danger }}>{ecgError}</ThemedText> : null}
           </View>
 
         </ScrollView>

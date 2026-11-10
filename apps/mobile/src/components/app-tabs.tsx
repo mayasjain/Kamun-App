@@ -33,6 +33,7 @@ export default function AppTabs() {
         </NativeTabs.Trigger>
       ))}
 
+      <NativeTabs.Trigger name="coffee" hidden />
       <NativeTabs.Trigger name="privacy" hidden />
       <NativeTabs.Trigger name="committees" hidden />
       <NativeTabs.Trigger name="emergency" hidden />
