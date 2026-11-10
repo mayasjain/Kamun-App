@@ -122,5 +122,3 @@ export interface State extends Overview {
   nextBoundaryAt: string | null;
   me: Me;
 }
-
-export const ACTIVE: readonly OrderStatus[] = ['queued', 'preparing', 'ready'];

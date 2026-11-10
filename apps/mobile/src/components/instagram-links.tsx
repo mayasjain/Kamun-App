@@ -43,7 +43,6 @@ const styles = StyleSheet.create({
   tileSection: { width: '100%' },
   tileLinks: { width: '100%', flexWrap: 'nowrap', gap: 8 },
   tile: { flex: 1, flexBasis: 0, minWidth: 64, minHeight: 76, borderRadius: 14, gap: 8, padding: 10 },
-  tileButton: { width: '100%', minHeight: 76, padding: 10, gap: 8, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.65 },
   instagramLogo: { width: 24, height: 24 },
 });

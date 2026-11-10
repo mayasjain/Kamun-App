@@ -7,7 +7,7 @@ import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { claimAttendeeAccess, claimLegacyChairAccess, claimLegacyMemberAccess } from '@/lib/attendee-access';
 import { useTheme } from '@/hooks/use-theme';
 import { useOrganizer } from '@/contexts/organizer';
-import { closeEcgSession } from '@/lib/ecg-handoff';
+import { closeEcgSession } from '@/lib/ecg-session';
 import { codeKind } from '@/lib/code-kind';
 
 type Props = { submitLabel?: string; disabled?: boolean; onSubmittingChange?: (busy: boolean) => void };

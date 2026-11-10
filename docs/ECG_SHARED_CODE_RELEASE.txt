@@ -1,151 +1,41 @@
-# Production cutover — 8 November 2026
+KAMUN + ECE integration configuration
 
-Target participant/API: https://kamun-ece-cafe.pages.dev
-Target staff/admin: https://kamun-ece-covfefe.pages.dev
-The deleted Atelier projects must not be used or recreated. All notes below the
-historical marker are historical and do not establish production readiness.
+Production services
+- Participant/API: https://kamun-ece-cafe.pages.dev
+- Staff/admin: https://kamun-ece-covfefe.pages.dev
+- KAMUN attendee app: https://kamun-2026-app.pages.dev
+- Supabase project: jkbtxjefzzmplmrvaubc
+Deleted Atelier projects must not be used or recreated.
 
-Configuration contract
-- Mobile EXPO_PUBLIC_ECE_URL=https://kamun-ece-cafe.pages.dev (local and hosted build environments).
-  The default handoff origin also uses this production URL. Rebuild/redeploy the
-  attendee web export and any native builds to replace their bundled configuration.
-- Supabase project jkbtxjefzzmplmrvaubc: set ECG_INTEGRATION_URL=https://kamun-ece-cafe.pages.dev.
-- The owner must securely set ECG_INTEGRATION_KEY to production ECE's
-  KAMUN_INTEGRATION_KEY. It must match both production participant and staff.
-  Never reuse the old Atelier key or put this key in EXPO_PUBLIC_* variables,
-  source, logs, documentation, command arguments or Git.
-- Production staff KAMUN_REVOCATION_URL must be exactly:
+Server configuration
+- Supabase ECG_INTEGRATION_URL targets the production participant/API origin.
+- Supabase ECG_INTEGRATION_KEY must match ECE KAMUN_INTEGRATION_KEY on the
+  participant and staff services. Keep keys server-only, separate from LOGIN_PEPPER.
+- Staff KAMUN_REVOCATION_URL targets:
   https://jkbtxjefzzmplmrvaubc.supabase.co/functions/v1/ecg-revocation
-  Verify this value in Cloudflare production environment bindings. If absent or
-  different, the ECE owner must update it and redeploy the staff application.
-- Both ECE services must contain the shared-login integration routes and additive
-  migrations through 0012_kamun_linked_sessions.sql on their production database.
-  Do not reset or import the roster, run provision:demo, or change DNS/domains.
-- KAMUN claim, refresh, handoff, logout and revocation handlers are unchanged;
-  the paired URL/key are runtime Supabase secrets. No function redeploy is needed
-  solely for secret changes. Preserve their existing authentication configuration.
+- ECE requires the shared-login routes, linked-session migrations through
+  0012_kamun_linked_sessions.sql and the additive participant integration endpoint.
+- Preserve existing function authentication configuration and database migrations.
+  Never reset/import the production roster or recreate deleted TEST identities.
 
-Production verification still required with owner-authorized test accounts
-- Delegate and chair code claim/refresh; handoff ticket exchange without re-entry.
-- Switch from an existing different ECE account; never restore that prior identity.
-- One-use and expired tickets; reload/reopen; linked logout and interrupted retry.
-- Account switching revokes prior linked sessions; staff revocation reaches the
-  callback and clears the revoked KAMUN binding. Other independent logins survive.
-- Verify matching staff identity/orders only with authorized test data.
-Public reachability alone cannot verify the private key, callback binding or login.
+Current client flow
+- ECE-issued personal codes establish a verified KAMUN identity. Five- and
+  eight-character codes are accepted after whitespace/dash normalization.
+- Delegates and chairs order inside KAMUN through ecg-coffee. Admin identities
+  cannot order. ECE owns the menu, limits, prices, schedule and staff operations.
+- Claim, refresh, logout and revocation remain active. Logout retry is required
+  before restoring a saved identity after an interrupted sign-out.
+- The backend handoff endpoint remains for older released clients and rollback;
+  the current app no longer contains the unused website-redirect function.
+- See IN_APP_COFFEE.txt for participant API behaviour and rollout order;
+  ECG_ADMIN_LOGIN.txt for administrator permissions; integrations/ece/README.txt
+  for the portable ECE source patches.
 
-## Cutover results — 8 November 2026
-
-Completed:
-- Supabase production ECG_INTEGRATION_URL and ECG_INTEGRATION_KEY updated using
-  the owner-supplied production credentials file. No credential values were logged
-  or committed. Temporary secret transport file removed after the update.
-- KAMUN web export published to kamun-2026-app, deployment 3054ca44.
-- Owner confirmed replacing staff KAMUN_REVOCATION_URL with the callback above
-  and redeploying the current staff build. This is owner confirmation; no live
-  code revocation was triggered because that would change participant credentials.
-- Production key authentication verified: incorrect key 404, invalid code 401,
-  isolated linked logout 200.
-- Supplied ECE TEST identities: ticket issuance/exchange 200, state 200,
-  exchange over an existing account cookie 200, replay 401, scoped logout 200,
-  old cookie after logout 401. Tests created no orders and changed no codes.
-- All 30 automated tests, both apps' typechecks and mobile web export passed.
-  Added rejection coverage for the deleted participant origin and staff origin.
-  Full lint is blocked by the existing set-state-in-effect error in
-  apps/mobile/src/components/meme-slideshow.tsx:15.
-
-Remaining:
-- Full KAMUN claim returned 409 identity_unavailable for the supplied TEST codes.
-  All seven supplied participant codes map to ECE committee TEST; KAMUN rejects
-  unknown committees. Obtain an authorized delegate/chair test code for an actual
-  KAMUN committee securely from the owner, then repeat claim/refresh/handoff,
-  account switching and logout through KAMUN. Do not add TEST to the live
-  conference just to bypass this check.
-- Active ECE production deployment settings still include custom-domain values:
-  participant CANONICAL_HOST=cafe.kamun.org and custom-domain REDIRECT_HOSTS;
-  staff CANONICAL_HOST=covfefe.kamun.org and
-  PARTICIPANT_URL=https://cafe.kamun.org. pages.dev endpoints currently work and
-  do not redirect to those domains, but staff participant links still need updating.
-  In the current production ECE source/deployment configuration, use:
-    participant CANONICAL_HOST=kamun-ece-cafe.pages.dev
-    participant REDIRECT_HOSTS=""
-    staff CANONICAL_HOST=kamun-ece-covfefe.pages.dev
-    staff REDIRECT_HOSTS=""
-    staff PARTICIPANT_URL=https://kamun-ece-cafe.pages.dev
-  Redeploy the current production ECE builds, preserving all database and secret
-  bindings. These values are controlled by ECE deployment configuration; do not
-  deploy the historical Atelier checkout or patch to overwrite production.
-- Live staff-to-KAMUN revocation delivery remains untested. Test only with an
-  owner-authorized disposable identity; do not revoke real participant codes.
-- Native apps, if distributed, need rebuilt bundles with the new public ECE URL.
-
-# Historical release records (superseded; not current deployment instructions)
-
-# Deployment update — 4 November 2026
-
-Deployed to the owner's separate ECE test instance:
-- Participant: https://ece-atelier-cafe.pages.dev
-- Staff: https://ece-atelier-staff.pages.dev
-- Shared D1: ece-atelier (ee533e9e-a03b-401a-b56a-67f0e34a6593), additive migrations 0011/0012 applied after backup.
-- Kamun project jkbtxjefzzmplmrvaubc: all three 20261027 migrations applied atomically after rollback-only rehearsals of both SQL authorization tests.
-- All five ecg-* Edge Functions deployed individually. They validate user tokens or the private revocation key inside the handlers.
-- Matching private integration keys configured on ECE participant/staff and Supabase. Staff revocation callback configured.
-- Mobile .env.local now points EXPO_PUBLIC_ECE_URL at the atelier participant URL; restart Expo to pick up the change.
-- ECE typecheck, 481 tests and builds passed. Kamun 24 tests and mobile typecheck passed.
-- Live private endpoint rejects missing keys and invalid codes correctly. User manually confirmed automatic login from Kamun into ECE. Linked logout remains unverified manually.
-- Participant back arrow deployed 4 November 2026; uses browser history and preserves login. Participant typecheck/build passed and published bundle verified. No browser automation was available for visual QA.
-- Original CSV codes belong to the original ECE deployment, not this separate instance. Existing TEST committee codes cannot map to Kamun's conference committees. Codes generated for existing ILO test-instance accounts 16 (Australia) and 17 (Brazil).
-- Prepared deployment checkout: /private/tmp/kamun-ece-deploy, branch astra/atelier-shared-login. Durable source patch remains integrations/ece/single-login.patch. No source pushed to GitHub.
-
-The older release notes below describe the previous undeployed state.
-
-# KAMUN + ECE shared-login release — 28 October 2026
-
-Status: IMPLEMENTED AND TESTED LOCALLY; NOT DEPLOYED OR VERIFIED ON THE LIVE HOST.
-This replaces the earlier direct-link release decision. The user approved a personal-code login that remembers access and opens ECE as the same person without another code entry.
-
-## Attendee workflow
-
-- One ECE-issued personal code identifies a delegate's committee-country seat or an individual chair's committee and role. ECE remains the code authority and the owner of orders, menus, rounds and staff accounts.
-- KAMUN verifies the code through a private server endpoint and saves its own Supabase session and nonsecret profile. It never persists the reusable ECE code or login pepper.
-- On return, KAMUN displays saved information immediately and verifies access in the background. A network failure preserves cached information; confirmed expired/revoked access clears the profile and content cache. Protected server operations still require a valid binding.
-- Opening ECE requests a 60-second, single-use ticket. ECE strips it from the URL, exchanges it for its normal HTTP-only cookie and replaces any previously remembered account. An invalid handoff does not fall back to the old account.
-- ECE cookies persist until the configured participant_session_until expiry (the seed currently uses 16 November 2026 at 22:59 UTC), revocation or logout. Browser storage clearing/private browsing can remove saved sessions.
-- Signing out from KAMUN revokes ECE sessions and unused tickets opened from that KAMUN login, then signs out the local Supabase session. Other devices' independent logins are unaffected. A pending logout is saved and retried on return; failed logout is not reported as successful.
-- Successful code changes revoke the preceding linked ECE sessions before binding the new identity. Old KAMUN-only chair/member codes remain transitional access and cannot open the shared ECE flow. Organiser and staff credentials remain separate.
-
-## What is available
-
-KAMUN source: this workspace, including ecg-claim, ecg-refresh, ecg-handoff, ecg-logout and ecg-revocation.
-ECE source: local branch astra/kamun-single-login, commit 8d8638c, based on a59a9af, with the restored integration plus scoped logout. A portable patch and installation notes are in integrations/ece/. The branch has NOT been pushed: automatic approval review rejected exporting source to GitHub without explicit user authorization for that destination.
-
-The earlier 4f6821c ECE integration was reverted by a59a9af. Do not deploy the older astra/kamun-identity-integration branch and assume it contains the feature. The new branch includes the linked-session migration and additional tests.
-
-Read-only account checks this session found:
-- Supabase CLI lists only the existing Kamun App project (jkbtxjefzzmplmrvaubc). The previously documented staging project ngviwvnxrvaukkctnvie is not available in the connected account.
-- Cloudflare CLI lists the isolated kamun-ecg-kamun-test Pages project, but not the friend's live participant or staff projects.
-- Docker is installed but its daemon is not running. No fresh PostgreSQL/RLS rehearsal was performed this session.
-
-The earlier observation that cafe.kamun.org serves the friend's preview/demo database has not been rechecked this session. No remote deployment, database migration, secret change, DNS change, roster import, order creation or code distribution occurred.
-
-## Deployment order
-
-1. Restore or select a disposable Supabase staging project. Pair it with an isolated ECE test database containing fake delegates and chairs. Do not reuse real participant codes in the test database.
-2. On ECE, apply additive migrations through 0012_kamun_linked_sessions.sql and deploy the new branch. Do not run provision:demo: it resets people and codes. Configure KAMUN_INTEGRATION_KEY on participant/staff services and KAMUN_REVOCATION_URL on the staff service, using the staging Supabase revocation URL.
-3. Apply KAMUN migrations 202610270001_ecg_identity.sql, 202610270002_ecg_access_rules.sql and 202610270003_personal_attendee_login.sql. Run supabase/tests/ecg_identity.sql and personal_attendee_login.sql on staging. The third migration disables legacy shared member codes.
-4. Set ECG_INTEGRATION_URL to the paired ECE participant HTTPS origin and ECG_INTEGRATION_KEY to the same private integration secret. Deploy all five Edge Functions, including ecg-logout. Integration secrets stay server-side and must differ from LOGIN_PEPPER.
-5. Set the app's public Supabase URL/key to that staging project and EXPO_PUBLIC_ECE_URL to exactly the same participant origin used by ECG_INTEGRATION_URL. The mobile handoff rejects any other destination.
-6. Test the full browser/phone flow for a delegate and chair: first code entry, assigned identity, ECE handoff over an existing different-account cookie, reload/close/reopen, offline return, logout and retry, code switching, revoked codes, and replay/expired tickets. Verify orders reach the matching staff environment using fake data.
-7. Only after staging passes, the ECE owner must deploy to the existing code-authority environment under their Cloudflare account and arrange the paired KAMUN rollout. Confirm the roster/host/database, preserve codes and stable account IDs, and back up databases before cutover. Do not silently move the chosen codes to another D1: the deployment script does not migrate accounts.
-
-## Existing roster decision (preserved)
-
-The previous session recorded 205 non-TEST ECE codes as the intended final set, with the friend's existing D1 as their authority; the seven TEST codes are excluded. This was not reverified this session. Do not copy the private CSV into Git, public bundles or a second database. The previously recorded user decision says these codes had not yet been distributed. Recheck distribution state before any cutover or rotation.
-
-## Verification in this session
-
-- KAMUN: 21 focused Node tests pass (code routing, persistent profile restoration, offline recovery, logout races, handoff destination restrictions, revoked identity, authenticated logout and retry).
-- KAMUN mobile: lint, TypeScript and web export pass.
-- ECE: all 481 tests pass using the real D1 emulator, including one-use/expired tickets, existing-cookie replacement, linked-session persistence, per-installation logout and concurrent logout/exchange. Typecheck and both app builds pass.
-- Local KAMUN HTTP server responds 200. Browser automation was unavailable; no live delegate/phone/browser end-to-end verification is claimed.
-- Actual network latency, fresh PostgreSQL/RLS tests, live shared login, live logout, deployed secrets/migrations, real roster uniqueness and real order/staff flow remain unverified.
+Verification
+- Existing live checks verified claim/refresh and linked logout, identity
+  switching and older ticket exchanges without creating orders or changing codes.
+- Staff-to-KAMUN revocation delivery still needs an owner-authorized disposable
+  account. Do not revoke real participant credentials for testing.
+- Real-phone layout, keyboard and vibration checks remain owner-assisted.
+- Run npm run check and the mobile web build locally. Public HTTP reachability
+  alone does not verify private secrets, callbacks or signed-in participant flows.

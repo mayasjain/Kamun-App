@@ -35,6 +35,8 @@ Production secret pairing and live verification are required; see the release ch
 Current deployment requirements and verification: docs/ECG_SHARED_CODE_RELEASE.txt
 ECE source patch and installation instructions: integrations/ece/README.txt
 Legacy KAMUN test codes do not establish an ECE identity.
+ECE personal code routing accepts five or eight alphanumeric characters after
+whitespace/dash normalization; identity and permissions are verified server-side.
 
 Validation
 - From the repository root: npm run check (lint, type checks and automated tests).
@@ -54,6 +56,6 @@ Cloudflare attendee web deployment
 - Project: kamun-2026-app. Config: apps/mobile/wrangler.json.
 - From apps/mobile: npm run deploy:web (requires Cloudflare login).
 - Build-time variables in .env.local: EXPO_PUBLIC_SUPABASE_URL,
-  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY, EXPO_PUBLIC_ECE_URL.
+  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
 - Only the attendee static web export is uploaded; the organiser dashboard stays separate.
 - The published origin has its own saved login, so enter your ECE code once there.

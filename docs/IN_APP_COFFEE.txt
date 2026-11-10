@@ -21,8 +21,8 @@ There is no offline submission queue. A mutation with an uncertain response reta
 ## Validation
 
 - `npm --prefix apps/mobile run typecheck`
-- Changed-file Expo lint; existing full lint has an unrelated meme-slideshow effect error.
-- `npm --prefix apps/mobile run test`: 50 tests including coffee client/display, full schedule, progress stages, ready-alert lifecycle and supported/unsupported haptic cases.
+- Full mobile and admin lint: `npm run lint`.
+- `npm --prefix apps/mobile run test` covers coffee client/display, full schedule, progress stages, ready-alert lifecycle and supported/unsupported haptic cases.
 - `node --test supabase/tests/*handlers.test.mjs`: 21 tests including five bridge authorization/validation cases.
 - ECE: all workspace typechecks/builds and 570 tests passed against local fixtures. Integration tests cover identity mismatch/revocation, forged fields, cancellation ownership, state boundaries, round capacity, retry deduplication, free pricing, and staff board/status visibility.
 - No production orders, codes, people or payments were changed for testing. Real-phone layout and keyboard checks require the owner's manual check; computer-use access was unavailable.
@@ -43,6 +43,6 @@ Coffee Bar now includes the full enabled ECE schedule grouped by Berlin calendar
 
 Ready alerts are foreground-only. Existing ready orders show a banner on initial entry without an unexpected vibration. A newly observed ready transition attempts one vibration; repeated polling and dismissal do not repeat it. The alert disappears when its order leaves ready status, and a later staff undo/new ready transition may alert again. Dismissing an alert does not change the order. Vibration respects reduced-motion preferences and fails silently on unsupported browsers; the banner remains available. Android native builds declare VIBRATE; installed native apps need a rebuilt bundle/config for that change.
 
-The complete coffee-specific privacy notice is available at /coffee-privacy, linked from Coffee Bar and the general privacy page. It adapts the existing ECE notice, distinguishes coffee retention from unrelated KAMUN content, and explains that in-app ordering uses no extra ECE cookie and creates no closed-app coffee push subscription. The organiser’s official contact and data-protection links were checked.
+The complete coffee-specific privacy notice is available at /coffee-privacy, linked from the general privacy page. It adapts the existing ECE notice, distinguishes coffee retention from unrelated KAMUN content, and explains that in-app ordering uses no extra ECE cookie and creates no closed-app coffee push subscription. The organiser’s official contact and data-protection links were checked.
 
 No ECE backend, schema, prices, allowance rules, payment methods or staff behaviour changed in this feature-completion update. Phone visual verification remains owner-assisted.

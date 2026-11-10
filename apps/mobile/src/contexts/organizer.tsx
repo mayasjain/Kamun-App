@@ -3,7 +3,7 @@ import '../lib/install-local-storage';
 import { createContext, type PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { resumePendingSignOut } from '@/lib/ecg-handoff';
+import { resumePendingSignOut } from '@/lib/ecg-session';
 import { supabase } from '@/lib/supabase';
 
 type OrganizerMode = 'attendee' | 'organizer';

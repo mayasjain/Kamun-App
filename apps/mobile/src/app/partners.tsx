@@ -60,7 +60,6 @@ export default function PartnersScreen() {
 }
 
 const styles = StyleSheet.create({
-  pressed: { opacity: 0.7 },
   thanks: { backgroundColor: Brand.pine, borderRadius: Radius.feature, padding: 16, gap: 10 },
   eyebrow: { color: Brand.gold, fontSize: 12, lineHeight: 18, letterSpacing: 0.6 },
   thanksTitle: { color: Brand.white, fontSize: 18, lineHeight: 24 },

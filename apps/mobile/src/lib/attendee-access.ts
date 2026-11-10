@@ -2,7 +2,7 @@ import { AccessExpiredError, accessHasExpired, functionErrorReason } from '@/lib
 import { supabase } from '@/lib/supabase';
 
 import { KAMUN_CONFERENCE_ID } from '@/lib/conference-id';
-import { resumePendingSignOut } from '@/lib/ecg-handoff';
+import { resumePendingSignOut } from '@/lib/ecg-session';
 export { KAMUN_CONFERENCE_ID } from '@/lib/conference-id';
 
 export type ClaimedAttendeeAccess = {

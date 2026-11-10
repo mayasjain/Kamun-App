@@ -9,10 +9,11 @@ export function MemeSlideshow({ slides, title, onClose }: { slides: Meme[]; titl
  const [index, setIndex] = useState(0);
  const [playing, setPlaying] = useState(false);
  const [urls, setUrls] = useState<Record<string, string>>({});
- const [failed, setFailed] = useState(false);
+ const [failedUri, setFailedUri] = useState<string | null>(null);
  const slide = slides[index];
  const uri = slide ? urls[slide.id] ?? slide.imageUrl : '';
- useEffect(() => { setFailed(false); }, [uri]);
+ const failed = failedUri === uri;
+ if (failedUri !== null && failedUri !== uri) setFailedUri(null);
  useEffect(() => {
   if (!playing || slides.length < 2) return;
   const timer = setInterval(() => setIndex(i => (i + 1) % slides.length), 8000);
@@ -65,7 +66,7 @@ export function MemeSlideshow({ slides, title, onClose }: { slides: Meme[]; titl
     <Control label="Close" onPress={onClose} />
    </View>
    <View style={styles.stage}>
-    {failed || !uri ? <ThemedText style={styles.text}>Photo unavailable. Close and restart the slideshow to retry.</ThemedText> : <Image key={uri} source={{ uri }} accessibilityLabel={slide?.caption || 'Committee meme'} resizeMode="contain" style={styles.image} onError={() => { setFailed(true); setPlaying(false); }} />}
+    {failed || !uri ? <ThemedText style={styles.text}>Photo unavailable. Close and restart the slideshow to retry.</ThemedText> : <Image key={uri} source={{ uri }} accessibilityLabel={slide?.caption || 'Committee meme'} resizeMode="contain" style={styles.image} onError={() => { setFailedUri(uri); setPlaying(false); }} />}
    </View>
    {slide?.caption ? <ScrollView style={styles.caption}><ThemedText style={styles.captionText}>{slide.caption}</ThemedText></ScrollView> : null}
    <View style={styles.controls}>

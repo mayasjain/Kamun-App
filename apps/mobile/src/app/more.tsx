@@ -10,7 +10,7 @@ import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { signOutOfBothApps } from '@/lib/ecg-handoff';
+import { signOutOfBothApps } from '@/lib/ecg-session';
 import { supabase } from '@/lib/supabase';
 
 export default function MoreScreen() {
