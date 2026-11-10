@@ -88,7 +88,7 @@ export function CoffeeOrderSheet({ draft, item, paid, free, chooseFulfilment, on
               style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]} />
             <ThemedText type="small" themeColor="textSecondary">{note.length}/60</ThemedText>
           </View>
-          {paid ? <ThemedText type="small" themeColor="textSecondary">{free ? 'Your next drink is free under today’s allowance.' : `Estimated total ${coffeeMoney(price)}. Pay at the counter in the foyer.`} The final price is confirmed when the order is placed.</ThemedText> : null}
+          {paid ? <ThemedText type="small" themeColor="textSecondary">{free ? 'Your next drink uses your one free drink for the whole conference.' : `Estimated total ${coffeeMoney(price)}. Pay at the counter in the foyer.`} The final price is confirmed when the order is placed. Cash only for paid drinks.</ThemedText> : null}
           {error ? <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{error}</ThemedText> : null}
           {!online ? <Pressable accessibilityRole="button" onPress={() => void onRefresh()} style={styles.textButton}>
             <ThemedText themeColor="primary">Check connection and refresh</ThemedText>

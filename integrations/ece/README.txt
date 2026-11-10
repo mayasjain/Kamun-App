@@ -18,3 +18,11 @@ Source artifacts
   The current ECE checkout is authoritative; patches are not deployment configs.
 - ECE source: https://github.com/karan-kc/covfefe. Deployment and source uploads
   remain separate operations. Never reset/import the current production roster.
+
+Conference menu/allowance update — 10 November 2026
+- conference-menu-allowance.patch is based on ECE main after the in-app bridge
+  merge. It adds two drinks, migration 0019, conference-wide atomic pricing,
+  regression tests and cash-only participant copy. Apply only after git apply
+  --check on the matching base, then run ECE tests/typechecks/builds.
+- Deploy migration 0019 and the cafe/staff code before the matching KAMUN UI.
+  Do not reseed production or recreate TEST accounts.

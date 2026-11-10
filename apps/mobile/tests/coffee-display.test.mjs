@@ -74,3 +74,11 @@ test('order progress distinguishes queued, preparing, ready and the correct fina
   assert.equal(coffeeProgress({ status: 'picked_up', fulfilment: 'pickup' }).labels[3], 'Picked up');
   assert.equal(coffeeProgress({ status: 'cancelled', fulfilment: 'delivery' }), null);
 });
+
+test('whole euro prices omit decimals while fractional euro prices retain cents', async () => {
+  const { coffeeMoney } = await import('../src/lib/coffee-display.ts');
+  assert.equal(coffeeMoney(200), '€2');
+  assert.equal(coffeeMoney(0), '€0');
+  assert.equal(coffeeMoney(250), '€2.50');
+  assert.equal(coffeeMoney(205), '€2.05');
+});

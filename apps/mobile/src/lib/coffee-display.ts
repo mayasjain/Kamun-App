@@ -1,7 +1,7 @@
 import type { Order, State } from './coffee-types';
 
 export const activeCoffeeOrder = (order: Order) => ['queued', 'preparing', 'ready'].includes(order.status);
-export const coffeeMoney = (cents: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+export const coffeeMoney = (cents: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 }).format(cents / 100);
 
 /** Advisory only: ECE enforces all limits, schedule and prices atomically on submission. */
 export function coffeeBlockedReason(state: State): string | null {

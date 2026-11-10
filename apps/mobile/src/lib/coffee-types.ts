@@ -46,7 +46,7 @@ export interface PublicSettings {
   barLocationLabel: string;
   bannerText: string;
   paidMode: boolean;
-  /** In paid mode, each account's free drinks per day. */
+  /** Legacy API field name: each account's free drinks for the whole conference. */
   freeDrinksPerDay: number;
 }
 
@@ -112,7 +112,7 @@ export interface Me {
   dailyLimit: number | null;
   queue: { kind: 'round'; round: RoundState | null } | { kind: 'chairs'; paused: boolean };
   tabCents: number | null;
-  /** Paid mode: free drinks left today (null when nothing is charged). */
+  /** Legacy API field name: free drinks left for the conference (null when unpaid). */
   freeLeftToday: number | null;
 }
 

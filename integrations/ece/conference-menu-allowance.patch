@@ -1,0 +1,427 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index a11ed8e..3336d7d 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -1,3 +1,10 @@
++## 2026-11-10 — Astra
++**What:** Conference-wide free-drink accounting, two additional €2 drinks, compact prices and cash-only participant copy. Legacy API keys retain their names for compatibility.
++**Why:** Owner requested one free drink for the whole conference rather than one per day.
++**Files:** order engine/read models, migration 0019, menu seed, participant copy, staff settings label and conference tests.
++**Heads-up for Claude:** Existing order prices/payments remain unchanged; cancelled orders restore allowance. 572 ECE tests, workspace typechecks and builds pass; KAMUN has 74 passing tests, lint/typechecks and web build. Production rollout is pending. KAMUN UI changes are in its separate repository.
++**Next:** Validate locally, then deploy the additive menu migration and updated cafe/staff engine together with KAMUN.
++
+ # Changes
+ 
+ ## 2026-11-10 18:41 (Europe/Berlin) — Astra
+diff --git a/apps/cafe/src/Home.tsx b/apps/cafe/src/Home.tsx
+index cbc85c9..9b272cd 100644
+--- a/apps/cafe/src/Home.tsx
++++ b/apps/cafe/src/Home.tsx
+@@ -91,7 +91,7 @@ export function Home({
+       </section>
+ 
+       {me.tabCents !== null && me.tabCents > 0 && (
+-        <p className="notice">Your tab: {euros(me.tabCents)}. Pay at the counter in the foyer.</p>
++        <p className="notice">Your tab: {euros(me.tabCents)}. Cash only. Pay at the counter in the foyer.</p>
+       )}
+ 
+       {history.length > 0 && (
+diff --git a/apps/cafe/src/OrderSheet.tsx b/apps/cafe/src/OrderSheet.tsx
+index b568762..585db20 100644
+--- a/apps/cafe/src/OrderSheet.tsx
++++ b/apps/cafe/src/OrderSheet.tsx
+@@ -15,7 +15,7 @@ export function OrderSheet({
+ }: {
+   item: MenuItem;
+   paid: boolean;
+-  /** Paid mode: this would be the account's free drink today. The server decides when it saves the order. */
++  /** Paid mode: this would be the account's free drink for the conference. The server decides when it saves the order. */
+   free?: boolean;
+   /** The current block lets the participant pick delivery or pickup. */
+   chooseFulfilment: boolean;
+@@ -165,8 +165,8 @@ export function OrderSheet({
+           {paid && (
+             <p className="muted price-note">
+               {free
+-                ? 'This is your free drink for today.'
+-                : `${euros(price)} goes on your tab. Pay at the counter in the foyer.`}
++                ? 'This is your free drink for the conference. Paid drinks are cash only.'
++                : `${euros(price)} goes on your tab. Cash only. Pay at the counter in the foyer.`}
+             </p>
+           )}
+           <button className="btn" disabled={busy || (chooseFulfilment && !fulfilment)}>
+diff --git a/apps/cafe/src/copy.ts b/apps/cafe/src/copy.ts
+index 848c8c0..d163dbc 100644
+--- a/apps/cafe/src/copy.ts
++++ b/apps/cafe/src/copy.ts
+@@ -73,15 +73,15 @@ export const dayLabel = (day: string, style: 'short' | 'long' = 'short') =>
+     month: style === 'long' ? 'long' : 'short',
+   });
+ 
+-export const euros = (cents: number) => `€${(cents / 100).toFixed(2)}`;
++export const euros = (cents: number) => `€${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+ 
+-/** The price rule in one line, for the menu (owner, 2026-11-07: one free drink a day, then €2). */
++/** The price rule in one line, for the menu (owner, 2026-11-07: one free drink per conference, then €2). */
+ export function priceRule(freeDrinksPerDay: number, freeLeftToday: number | null = null): string {
+   if (freeLeftToday !== null && freeDrinksPerDay > 0 && freeLeftToday === 0)
+-    return 'You’ve had today’s free drink. Every drink now goes on your tab, paid at the counter in the foyer.';
++    return 'You’ve had your conference free drink. Every drink now goes on your tab, paid in cash only at the counter in the foyer.';
+   if (freeDrinksPerDay === 1)
+-    return 'Your first drink each day is free. After that, every drink goes on your tab, paid at the counter in the foyer.';
++    return 'Your first drink of the whole conference is free. After that, every drink goes on your tab, paid in cash only at the counter in the foyer.';
+   if (freeDrinksPerDay > 1)
+-    return `Your first ${freeDrinksPerDay} drinks each day are free. After that, every drink goes on your tab, paid at the counter in the foyer.`;
+-  return 'Drinks go on your tab, paid at the counter in the foyer.';
++    return `Your first ${freeDrinksPerDay} drinks of the whole conference are free. After that, every drink goes on your tab, paid in cash only at the counter in the foyer.`;
++  return 'Drinks go on your tab, paid in cash only at the counter in the foyer.';
+ }
+diff --git a/apps/cafe/src/types.ts b/apps/cafe/src/types.ts
+index 1bb437a..39d6686 100644
+--- a/apps/cafe/src/types.ts
++++ b/apps/cafe/src/types.ts
+@@ -46,7 +46,7 @@ export interface PublicSettings {
+   barLocationLabel: string;
+   bannerText: string;
+   paidMode: boolean;
+-  /** In paid mode, each account's free drinks per day. */
++  /** Legacy key name; allowance now applies to the whole conference. */
+   freeDrinksPerDay: number;
+ }
+ 
+@@ -112,7 +112,7 @@ export interface Me {
+   dailyLimit: number | null;
+   queue: { kind: 'round'; round: RoundState | null } | { kind: 'chairs'; paused: boolean };
+   tabCents: number | null;
+-  /** Paid mode: free drinks left today (null when nothing is charged). */
++  /** Paid mode: free drinks left for the conference (null when nothing is charged). */
+   freeLeftToday: number | null;
+ }
+ 
+diff --git a/apps/covfefe/src/admin/SettingsPanel.tsx b/apps/covfefe/src/admin/SettingsPanel.tsx
+index de970f1..b26f524 100644
+--- a/apps/covfefe/src/admin/SettingsPanel.tsx
++++ b/apps/covfefe/src/admin/SettingsPanel.tsx
+@@ -181,10 +181,14 @@ export function SettingsPanel({
+           Show prices and keep a tab per person (paid in person later). Drinks ordered while this is off stay
+           free.
+         </label>
+-        {intInput('free_drinks_per_day', 'Free drinks per person per day (then the menu price)', {
+-          min: 0,
+-          max: 10,
+-        })}
++        {intInput(
++          'free_drinks_per_day',
++          'Free drinks per person for the whole conference (then the menu price)',
++          {
++            min: 0,
++            max: 10,
++          },
++        )}
+       </fieldset>
+ 
+       {error && (
+diff --git a/db/seed/base.sql b/db/seed/base.sql
+index 1a9ceae..67aa410 100644
+--- a/db/seed/base.sql
++++ b/db/seed/base.sql
+@@ -56,8 +56,8 @@ INSERT OR IGNORE INTO schedule_blocks (id, day, start_local, end_local, label, k
+   (11, '2026-11-15', '12:00', '13:15', 'Lunch',                 'meal',    'none'),
+   (12, '2026-11-15', '13:15', '15:30', 'Committee Session VII', 'session', 'delivery');
+ 
+--- The conference menu (owner, 2026-11-07): three espresso drinks, oat milk only, no extras, so no options.
+--- Every drink is €2; each account's first drink of the day is free (free_drinks_per_day below).
++-- The conference menu (owner, 2026-11-07): five drinks, oat milk, no extras, so no options.
++-- Every drink is €2; each account's first drink of the whole conference is free (free_drinks_per_day below).
+ INSERT OR IGNORE INTO menu_items (id, name, description, emoji, price_cents, available, sort) VALUES
+   (1, 'Pumpkin Spice Latte', 'Espresso, steamed oat milk, pumpkin spice and cinnamon', '🎃', 200, 1, 1),
+   (3, 'Cappuccino',          'Espresso with oat milk foam', '☕', 200, 1, 3);
+@@ -66,6 +66,14 @@ INSERT OR IGNORE INTO menu_items (id, name, description, emoji, price_cents, ava
+   SELECT 6, 'Cardamom Spice Latte', 'Espresso, steamed oat milk and cardamom', '🌿', 200, 1, 2
+    WHERE NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Cardamom Spice Latte');
+ 
++-- Additional conference drinks (2026-11-10).
++INSERT OR IGNORE INTO menu_items (id, name, description, emoji, price_cents, available, sort)
++  SELECT 7, 'Hot chocolate with marshmallows', 'Hot chocolate with steamed oat milk and marshmallows', '🍫', 200, 1, 4
++   WHERE NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Hot chocolate with marshmallows');
++INSERT OR IGNORE INTO menu_items (id, name, description, emoji, price_cents, available, sort)
++  SELECT 8, 'Flat White', 'Espresso with steamed oat milk', '☕', 200, 1, 5
++   WHERE NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Flat White');
++
+ -- Settings (PLAN §5.6). Values are JSON.
+ INSERT OR IGNORE INTO settings (key, value_json) VALUES
+   ('round_size_default',        '20'),
+diff --git a/docs/PLAN.md b/docs/PLAN.md
+index f910576..a43d116 100644
+--- a/docs/PLAN.md
++++ b/docs/PLAN.md
+@@ -457,18 +457,18 @@ Built for a tablet in landscape, and also works on a phone. Several devices can
+     count as picked up even if their original fulfilment was delivery.
+ - **Purge:** delete all participant and order data after the conference. Aggregate stats are kept first.
+ 
+-### 5.7 Paid mode (on for the conference: one free drink a day, then €2)
++### 5.7 Paid mode (one free drink for the whole conference, then €2)
+ 
+ - Paid mode only tallies what people owe. There's **no payment gateway**: people pay at the **counter in the
+   foyer**, and whoever runs it records the payment on the **Tabs** screen, under its own foyer counter login
+   (owner, 2026-11-07 and 2026-11-08).
+ - With `paid_mode` on:
+   - Prices show on the menu (every drink is €2).
+-  - **`free_drinks_per_day`** (1): each account's first drink of a conference day is free, chairs included.
++  - **`free_drinks_per_day`** (1): each account's first drink of the whole conference is free, chairs included.
+     The price is decided inside the order INSERT, so two quick orders can't both be the free one. A cancelled
+     drink was never made, so the next order gets the free drink back. Jad's edits keep a free drink free.
+   - Each order snapshots its price (item plus option deltas, or €0 for the free one).
+-  - The menu says the rule; the order sheet says "This is your free drink for today" or "€2.00 goes on your
++  - The menu says the rule; the order sheet says "This is your free drink for the conference" or "€2 goes on your
+     tab"; the participant sees "Your tab: €4.00. Pay at the counter in the foyer."
+   - The **Tabs** screen lists the total per person by committee and role, with "mark paid". Chairs show by name,
+     so two chairs of one committee can be told apart. Only the admin gets the CSV export. Looking someone up
+@@ -869,6 +869,8 @@ The task-level checklist is in [`TASKS.md`](TASKS.md).
+ 
+ ## 14. Decision log
+ 
++2026-11-10 — Owner: one free drink per account for the whole conference, not per day; later drinks use menu prices. Cancellation restores allowance; existing prices/payments are not recalculated. Add Hot chocolate with marshmallows and Flat White at €2 each. Cash only at the foyer counter; show whole-euro prices without .00. Legacy `free_drinks_per_day` / `freeDrinksPerDay` / `freeLeftToday` names remain compatible but now refer to conference scope. Migration 0019 adds menu/settings only.
++
+ TEST record deletion (owner, 2026-11-09, supersedes retention below): permanently delete the seven inactive TEST account records and five TEST seats from production. All had no orders/payments. Keep the empty TEST committee configured; do not reseed production TEST accounts. Live checks confirmed no TEST people/seats remaining, one KAMUN admin and no unrelated account, code, seat, order, payment or staff credential changes. Ordinary code creation cannot recreate deleted TEST people without their seats.
+ 
+ Production credential cleanup (owner, 2026-11-09): remove all seven TEST login keys and disable those accounts, retaining their seat/account records so ordinary "Create codes for all" cannot recreate their credentials. Delete both imported CSV KAMUN-admin identities; keep only `kamun-admin:personal`, whose private code remains in `local/kamun-admin-credentials.txt`. Remove targeted sessions and handoff tickets as part of cleanup. Live verification confirmed one active KAMUN admin and no remaining TEST keys/sessions/tickets, with unrelated accounts, orders, payments and staff credentials preserved. Staff admin login is unchanged. Do not reapply the original CSV's two admin rows: that would recreate the removed identities. The final CSV is an original import source, not a complete statement of current admin access. KAMUN's status checks reject the removed identities; existing external app leases must refresh within the existing five-minute limit.
+diff --git a/docs/TASKS.md b/docs/TASKS.md
+index e7dcb12..aa322e5 100644
+--- a/docs/TASKS.md
++++ b/docs/TASKS.md
+@@ -160,3 +160,5 @@ Tick it `[x]` when it's merged. Owner-only tasks are marked 👤. Spec: [`PLAN.m
+ 
+ ## Codebase maintenance
+ - [x] Audit and remove verified unused code, obsolete feature remnants and unnecessary files — claimed: Astra 2026-11-10. Merged `astra/dead-code-cleanup` into main at the owner’s request: unused helpers, split-board filter/previews, test setup and two unused badges removed; TypeScript unused checks enabled. 570 tests, typecheck and full build pass. Credentials/recovery files and active features retained.
++
++- [ ] Conference-wide free drink, hot chocolate/Flat White menu, whole-euro prices and cash-only copy — claimed: Astra 2026-11-10. Implemented locally; 572 ECE tests, typechecks and builds pass. Production rollout pending.
+diff --git a/packages/core/src/catalog.ts b/packages/core/src/catalog.ts
+index 662c01d..65f2679 100644
+--- a/packages/core/src/catalog.ts
++++ b/packages/core/src/catalog.ts
+@@ -35,6 +35,7 @@ export interface PublicSettings {
+   bannerText: string;
+   paidMode: boolean;
+   /** Free drinks per account per day in paid mode (0 = every drink is paid). */
++  /** Legacy key name; allowance now applies to the whole conference. */
+   freeDrinksPerDay: number;
+ }
+ 
+diff --git a/packages/core/src/orders.ts b/packages/core/src/orders.ts
+index dcf8c9c..62bc447 100644
+--- a/packages/core/src/orders.ts
++++ b/packages/core/src/orders.ts
+@@ -288,7 +288,6 @@ export async function placeOrder(
+       note.value,
+       // Decided inside the INSERT, so two quick orders can't both be the free one.
+       personId,
+-      day,
+       settings.freeDrinksPerDay,
+       priceCents,
+       fulfilment,
+@@ -332,15 +331,15 @@ const DAILY_COUNT_SQL = `SELECT count(*) FROM orders WHERE person_id = ? AND con
+    AND NOT (status = 'cancelled' AND COALESCE(cancelled_by, '') IN ('barista', 'admin'))`;
+ 
+ /**
+- * Drinks that used up a free one today: every order of the day that wasn't cancelled. A cancelled drink was
+- * never made, so the free drink goes to the next order (owner, 2026-11-07: one free a day, then €2).
++ * Conference allowance: all non-cancelled orders for this account, across every day.
++ * Cancellation restores eligibility; price snapshots and daily order limits remain unchanged.
+  */
+-export const FREE_USED_SQL = `SELECT count(*) FROM orders WHERE person_id = ? AND conf_day = ? AND status != 'cancelled'`;
++export const FREE_USED_SQL = `SELECT count(*) FROM orders WHERE person_id = ? AND status != 'cancelled'`;
+ 
+-export async function freeDrinksUsed(db: D1Database, personId: number, day: string): Promise<number> {
++export async function freeDrinksUsed(db: D1Database, personId: number): Promise<number> {
+   const row = await db
+     .prepare(FREE_USED_SQL.replace('SELECT count(*)', 'SELECT count(*) AS n'))
+-    .bind(personId, day)
++    .bind(personId)
+     .first<{ n: number }>();
+   return row?.n ?? 0;
+ }
+diff --git a/packages/core/src/queue-settings.ts b/packages/core/src/queue-settings.ts
+index d017530..6b099cc 100644
+--- a/packages/core/src/queue-settings.ts
++++ b/packages/core/src/queue-settings.ts
+@@ -13,6 +13,7 @@ export interface QueueSettings {
+   overrideRoundMaxMinutes: number;
+   paidMode: boolean;
+   /** In paid mode, each account's first N drinks of a conference day cost nothing (owner, 2026-11-07). */
++  /** Legacy key name; allowance now applies to the whole conference. */
+   freeDrinksPerDay: number;
+ }
+ 
+diff --git a/packages/core/src/views.ts b/packages/core/src/views.ts
+index 5c65c35..7cf67ff 100644
+--- a/packages/core/src/views.ts
++++ b/packages/core/src/views.ts
+@@ -101,7 +101,7 @@ export interface ParticipantView {
+   dailyLimit: number | null;
+   queue: { kind: 'round'; round: RoundState | null } | { kind: 'chairs'; paused: boolean };
+   tabCents: number | null;
+-  /** Paid mode: free drinks this account has left today (null when nothing is charged). */
++  /** Paid mode: free drinks this account has left for the conference (null when nothing is charged). */
+   freeLeftToday: number | null;
+ }
+ 
+@@ -159,7 +159,7 @@ export async function participantView(
+       : { kind: 'round', round: await currentRoundState(db, now) },
+     tabCents: settings.paidMode ? (tab!.results[0] as { owed: number }).owed : null,
+     freeLeftToday: settings.paidMode
+-      ? Math.max(0, settings.freeDrinksPerDay - (await freeDrinksUsed(db, personId, toLocal(now).day)))
++      ? Math.max(0, settings.freeDrinksPerDay - (await freeDrinksUsed(db, personId)))
+       : null,
+   };
+ }
+diff --git a/packages/core/test/conference.test.ts b/packages/core/test/conference.test.ts
+index c52c727..010e06d 100644
+--- a/packages/core/test/conference.test.ts
++++ b/packages/core/test/conference.test.ts
+@@ -78,17 +78,19 @@ describe('conference data', () => {
+     expect(room["Francis Bailey (EIC of the Freeman's Journal) (US CC)"]).toBe('4.048');
+   });
+ 
+-  it('has the three espresso drinks at €2, oat milk only and no extras', async () => {
++  it('has the five conference drinks at €2 and no extras', async () => {
+     const menu = await getMenu(t.db);
+     expect(menu.map((m) => [m.name, m.priceCents, m.optionGroups.length])).toEqual([
+       ['Pumpkin Spice Latte', 200, 0],
+       ['Cardamom Spice Latte', 200, 0],
+       ['Cappuccino', 200, 0],
++      ['Hot chocolate with marshmallows', 200, 0],
++      ['Flat White', 200, 0],
+     ]);
+-    expect(menu.every((m) => m.description.startsWith('Espresso'))).toBe(true);
++    expect(menu.every((m) => m.description.includes('oat milk'))).toBe(true);
+   });
+ 
+-  it('charges after one free drink a day, with no daily maximum', async () => {
++  it('charges after one free drink per conference, with no daily maximum', async () => {
+     expect(await getQueueSettings(t.db)).toMatchObject({
+       paidMode: true,
+       freeDrinksPerDay: 1,
+@@ -97,12 +99,12 @@ describe('conference data', () => {
+   });
+ });
+ 
+-describe('one free drink a day, then €2 on the tab', () => {
++describe('one free drink per conference, then €2 on the tab', () => {
+   beforeEach(async () => {
+     await openRound(t.db, at.satSessionII, 'barista', { until: 'block', capacity: 50 });
+   });
+ 
+-  it('makes a delegation’s first drink of the day free and puts later ones on the tab', async () => {
++  it('makes a delegation’s first drink of the conference free and puts later ones on the tab', async () => {
+     const p = await addPerson(t.db, { committee: 'ILO', seat: 'France' });
+     expect((await participantView(t.db, at.satSessionII, p))!).toMatchObject({
+       freeLeftToday: 1,
+@@ -139,13 +141,24 @@ describe('one free drink a day, then €2 on the tab', () => {
+     expect((await Promise.all(ids.map(price))).sort()).toEqual([0, 200]);
+   });
+ 
+-  it('starts a new free drink each conference day', async () => {
++  it('does not reset the free drink on the second conference day', async () => {
+     const p = await addPerson(t.db, { committee: 'ILO', seat: 'France' });
+     const saturday = await order(p);
+     await deliver(saturday);
+     await openRound(t.db, sunSessionVI, 'barista', { until: 'block', capacity: 50 });
+-    expect((await participantView(t.db, sunSessionVI, p))!.freeLeftToday).toBe(1);
+-    expect(await price(await order(p, sunSessionVI))).toBe(0);
++    expect((await participantView(t.db, sunSessionVI, p))!.freeLeftToday).toBe(0);
++    expect(await price(await order(p, sunSessionVI))).toBe(200);
++  });
++
++  it('keeps chair allowance across days and does not share it with another account', async () => {
++    const chair = await addPerson(t.db, { kind: 'chair', committee: 'DISEC' });
++    const first = await order(chair);
++    await deliver(first);
++    expect((await participantView(t.db, sunSessionVI, chair))!.freeLeftToday).toBe(0);
++    expect(await price(await order(chair, sunSessionVI))).toBe(200);
++    const other = await addPerson(t.db, { kind: 'chair', committee: 'DISEC' });
++    expect((await participantView(t.db, sunSessionVI, other))!.freeLeftToday).toBe(1);
++    expect(await price(await order(other, sunSessionVI))).toBe(0);
+   });
+ 
+   it('keeps a free drink free when Jad changes it, and a paid one paid', async () => {
+@@ -247,11 +260,13 @@ describe('migrations 0013 and 0014 on a database seeded before 2026-11-07', () =
+         { id: 12, start_local: '13:15', end_local: '15:30' },
+       ]);
+       const menu = await getMenu(db);
+-      expect(menu.map((m) => m.id)).toEqual([1, 6, 3]); // the seed's ids: a later seed run adds nothing
++      expect(menu.map((m) => m.id)).toEqual([1, 6, 3, 7, 8]); // the seed's ids: a later seed run adds nothing
+       expect(menu.map((m) => [m.name, m.priceCents, m.optionGroups.length])).toEqual([
+         ['Pumpkin Spice Latte', 200, 0],
+         ['Cardamom Spiced Latte', 200, 0],
+         ['Cappuccino', 200, 0],
++        ['Hot chocolate with marshmallows', 200, 0],
++        ['Flat White', 200, 0],
+       ]);
+       expect(await getQueueSettings(db)).toMatchObject({
+         paidMode: true,
+@@ -263,3 +278,43 @@ describe('migrations 0013 and 0014 on a database seeded before 2026-11-07', () =
+     }
+   });
+ });
++
++describe('conference allowance migration', () => {
++  it('adds drinks idempotently without changing existing order prices or payments', async () => {
++    const old = await createTestDb('conference-allowance-upgrade', {
++      migrationsThrough: '0018',
++      conference: true,
++    });
++    try {
++      const db = old.db;
++      await db
++        .prepare("DELETE FROM menu_items WHERE name IN ('Hot chocolate with marshmallows', 'Flat White')")
++        .run();
++      const p = await addPerson(db, { kind: 'chair', committee: 'DISEC' });
++      const first = await placeOrder(db, at.satSessionII, p, drink());
++      expect(first.ok).toBe(true);
++      const before = await db.prepare('SELECT * FROM orders').all();
++      const payments = await db.prepare('SELECT * FROM payments').all();
++      const require = createRequire(import.meta.url);
++      const { unstable_splitSqlQuery } = require('wrangler');
++      const sql = readFileSync(
++        new URL('../../../db/migrations/0019_conference_coffee_allowance.sql', import.meta.url),
++        'utf8',
++      );
++      for (let i = 0; i < 2; i++)
++        await db.batch(unstable_splitSqlQuery(sql).map((query: string) => db.prepare(query)));
++      expect((await db.prepare('SELECT * FROM orders').all()).results).toEqual(before.results);
++      expect((await db.prepare('SELECT * FROM payments').all()).results).toEqual(payments.results);
++      expect((await getMenu(db)).map((item) => item.name)).toEqual([
++        'Pumpkin Spice Latte',
++        'Cardamom Spice Latte',
++        'Cappuccino',
++        'Hot chocolate with marshmallows',
++        'Flat White',
++      ]);
++      expect((await participantView(db, sunSessionVI, p))!.freeLeftToday).toBe(0);
++    } finally {
++      await old.dispose();
++    }
++  });
++});
+diff --git a/db/migrations/0019_conference_coffee_allowance.sql b/db/migrations/0019_conference_coffee_allowance.sql
+new file mode 100644
+index 0000000..1a3e64d
+--- /dev/null
++++ b/db/migrations/0019_conference_coffee_allowance.sql
+@@ -0,0 +1,15 @@
++-- One free drink per account for the entire conference. Keep the legacy settings key
++-- for API compatibility. Existing price snapshots, accounts and payments are unchanged.
++INSERT INTO settings (key, value_json) VALUES ('free_drinks_per_day', '1')
++ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json;
++
++-- Add to existing installations; empty databases get the full menu from base.sql.
++INSERT INTO menu_items (name, description, emoji, price_cents, available, sort)
++SELECT 'Hot chocolate with marshmallows', 'Hot chocolate with steamed oat milk and marshmallows', '🍫', 200, 1, 4
++WHERE EXISTS (SELECT 1 FROM menu_items)
++  AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Hot chocolate with marshmallows');
++INSERT INTO menu_items (name, description, emoji, price_cents, available, sort)
++SELECT 'Flat White', 'Espresso with steamed oat milk', '☕', 200, 1, 5
++WHERE EXISTS (SELECT 1 FROM menu_items)
++  AND NOT EXISTS (SELECT 1 FROM menu_items WHERE name = 'Flat White');
++UPDATE meta SET value = value + 1 WHERE key = 'version';

@@ -136,7 +136,11 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
         {active.length ? <View style={styles.section}><ThemedText accessibilityRole="header" style={styles.heading}>Your {active.length === 1 ? 'order' : 'orders'}</ThemedText>{active.map(orderCard)}</View> : null}
         <View style={styles.section}>
           <ThemedText accessibilityRole="header" style={styles.heading}>Menu</ThemedText>
-          {state.settings.paidMode ? <ThemedText type="small" themeColor="textSecondary">{state.me.freeLeftToday !== null && state.me.freeLeftToday > 0 ? `${state.me.freeLeftToday} free ${state.me.freeLeftToday === 1 ? 'drink' : 'drinks'} left today. ` : ''}Prices are confirmed when ordering. Pay at the counter in the foyer.</ThemedText> : null}
+          {state.settings.paidMode ? <View style={[styles.allowanceNotice, { backgroundColor: theme.primarySoft, borderColor: theme.border }]}>
+            <ThemedText accessibilityRole="header" style={styles.allowanceTitle} themeColor="primary">{state.me.freeLeftToday !== null && state.me.freeLeftToday > 0 ? `${state.me.freeLeftToday} free ${state.me.freeLeftToday === 1 ? 'drink' : 'drinks'} left for the conference` : 'Your conference free drink has been used'}</ThemedText>
+            <ThemedText type="small" themeColor="primary">One free drink per person for the whole conference. After that, menu prices apply.</ThemedText>
+            <ThemedText type="smallBold" themeColor="primary">Cash only · Pay at the counter in the foyer.</ThemedText>
+          </View> : null}
           {blocked ? <ThemedText type="small" themeColor="textSecondary">{blocked}</ThemedText> : null}
           {!state.menu.length ? <ThemedText type="small" themeColor="textSecondary">The menu is being prepared. Check back shortly.</ThemedText> : null}
           {state.menu.map(item => {
@@ -163,7 +167,7 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
             </View>;
           })}
         </View>
-        {state.me.tabCents !== null ? <View style={[styles.card, card]}><ThemedText type="smallBold">Outstanding balance · {coffeeMoney(state.me.tabCents)}</ThemedText><ThemedText type="small" themeColor="textSecondary">Payments are recorded at the counter in the foyer.</ThemedText></View> : null}
+        {state.me.tabCents !== null ? <View style={[styles.card, card]}><ThemedText type="smallBold">Outstanding balance · {coffeeMoney(state.me.tabCents)}</ThemedText><ThemedText type="small" themeColor="textSecondary">Cash only · Pay at the counter in the foyer.</ThemedText></View> : null}
         {history.length ? <View style={styles.section}><ThemedText accessibilityRole="header" style={styles.heading}>Earlier orders</ThemedText>{history.map(orderCard)}</View> : null}
         <CoffeeSchedule schedule={state.schedule} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.credit}>Coffee brewed by {state.settings.baristaName}</ThemedText>
@@ -175,6 +179,8 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
   </>;
 }
 const styles = StyleSheet.create({
+  allowanceNotice: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 8 },
+  allowanceTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600' },
   readyBanner: { borderRadius: 18, padding: 18, gap: 10 },
   textButton: { minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 4 },
   card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },

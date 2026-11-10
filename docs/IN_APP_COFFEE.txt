@@ -46,3 +46,10 @@ Ready alerts are foreground-only. Existing ready orders show a banner on initial
 The complete coffee-specific privacy notice is available at /coffee-privacy, linked from the general privacy page. It adapts the existing ECE notice, distinguishes coffee retention from unrelated KAMUN content, and explains that in-app ordering uses no extra ECE cookie and creates no closed-app coffee push subscription. The organiser’s official contact and data-protection links were checked.
 
 No ECE backend, schema, prices, allowance rules, payment methods or staff behaviour changed in this feature-completion update. Phone visual verification remains owner-assisted.
+
+Conference menu and allowance update — 10 November 2026
+
+ECE migration 0019 adds Hot chocolate with marshmallows and Flat White at €2, and keeps the allowance at one per account. The order engine now counts all non-cancelled orders across the conference, rather than filtering by day. Existing price snapshots and payments remain unchanged. Legacy wire/settings fields freeDrinksPerDay/freeLeftToday/free_drinks_per_day retain their names for compatibility, but now represent the whole conference. KAMUN shows a prominent conference allowance notice, cash-only reminders in the menu/order sheet/balance, and whole-euro prices without decimal zeros. Deploy ECE before publishing this KAMUN wording.
+
+Production release — 10 November 2026
+Migration 0019 applied successfully. ECE cafe 6a572b75, staff db341e4f, KAMUN f5f58b3d deployed. Public production overview verified five €2 drinks and allowance 1. Local validation: 572 ECE tests, 74 KAMUN tests, typechecks, lint and builds passed. No test orders, payment changes, credential changes or roster resets were performed. Signed-in phone verification remains manual.
