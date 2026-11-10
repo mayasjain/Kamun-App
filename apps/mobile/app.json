@@ -19,7 +19,8 @@
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/branding/kamun-logo-v2.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.VIBRATE"]
     },
     "web": {
       "output": "static",

@@ -25,13 +25,36 @@ export function coffeeOrderStatus(order: Order, bar: string) {
 }
 export function coffeeOpening(state: State) {
   const current = state.schedule.current;
-  const next = state.schedule.blocks.find(block => block.fulfilment !== 'none'
+  const next = coffeeScheduleDays(state.schedule.blocks).flatMap(day => day.blocks).find(block => block.fulfilment !== 'none'
     && (block.day > state.nowLocal.day || (block.day === state.nowLocal.day && block.start > state.nowLocal.time)));
   if (current && current.fulfilment !== 'none') {
     const how = current.fulfilment === 'delivery' ? 'Delivery to your committee room'
       : current.fulfilment === 'pickup' ? `Pickup at ${state.settings.barLocationLabel}` : 'Choose delivery or pickup';
-    return { title: current.label, detail: `Until ${current.end} · ${how}` };
+    return { eyebrow: 'Now', title: current.label, detail: `Until ${current.end} · ${how}` };
   }
-  if (next) return { title: current?.label ?? 'Next opening', detail: `Next: ${next.day} at ${next.start} · ${next.label}` };
-  return { title: 'Coffee bar closed', detail: 'There are no more scheduled openings.' };
+  if (next) return { eyebrow: 'Next', title: next.label, detail: `${coffeeDayLabel(next.day)} at ${next.start}` };
+  return { eyebrow: 'Coffee Bar', title: 'Coffee bar closed', detail: 'There are no more scheduled openings.' };
+}
+
+export function coffeeDayLabel(day: string) {
+  const date = new Date(`${day}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? day : new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Europe/Berlin',
+  }).format(date);
+}
+
+export function coffeeScheduleDays(blocks: readonly import('./coffee-types').Block[]) {
+  const sorted = blocks.filter(block => block.enabled).sort((a, b) => a.day.localeCompare(b.day) || a.start.localeCompare(b.start) || a.id - b.id);
+  return [...new Set(sorted.map(block => block.day))].map(day => ({ day, blocks: sorted.filter(block => block.day === day) }));
+}
+
+export function coffeeFulfilmentLabel(fulfilment: import('./coffee-types').BlockFulfilment) {
+  return { delivery: 'Delivery to committee rooms', pickup: 'Pickup at the coffee bar', either: 'Delivery or pickup', none: 'Closed for ordering' }[fulfilment];
+}
+
+export function coffeeProgress(order: Pick<Order, 'status' | 'fulfilment'>) {
+  if (order.status === 'cancelled') return null;
+  const labels = ['In queue', 'Being made', 'Ready', order.fulfilment === 'delivery' ? 'Delivered' : 'Picked up'];
+  const index = { queued: 0, preparing: 1, ready: 2, delivered: 3, picked_up: 3 }[order.status];
+  return { labels, index };
 }

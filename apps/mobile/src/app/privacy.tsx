@@ -1,4 +1,5 @@
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -52,6 +53,7 @@ export default function PrivacyScreen() {
           </View>
         ))}
       </View>
+      <Link href="/coffee-privacy" asChild><Pressable accessibilityRole="link" style={styles.coffeeLink}><ThemedText type="small" themeColor="primary">Full coffee-ordering privacy information</ThemedText></Pressable></Link>
       <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>KAMUN 2026 · Made for delegates</ThemedText>
     </Screen>
   );
@@ -65,5 +67,6 @@ const styles = StyleSheet.create({
   introTitle: { fontSize: 20, lineHeight: 27, fontWeight: '500' },
   sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
   bodyPhone: { fontSize: 14, lineHeight: 22 },
+  coffeeLink: { minHeight: 48, justifyContent: 'center', paddingVertical: 8 },
   footer: { fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 8 },
 });

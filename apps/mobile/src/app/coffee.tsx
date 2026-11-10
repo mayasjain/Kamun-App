@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { CoffeeOrderProgress } from '@/components/coffee-order-progress';
+import { CoffeeSchedule } from '@/components/coffee-schedule';
 import { CoffeeOrderSheet, type CoffeeDraft } from '@/components/coffee-order-sheet';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -85,6 +87,7 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
       </View>
       {order.options.length ? <ThemedText type="small" themeColor="textSecondary">{order.options.map(option => option.label).join(' · ')}</ThemedText> : null}
       {order.note ? <ThemedText type="small" themeColor="textSecondary">Note: {order.note}</ThemedText> : null}
+      <CoffeeOrderProgress order={order} />
       <ThemedText accessibilityLiveRegion="polite" type="smallBold" themeColor={order.status === 'ready' ? 'primary' : 'text'}>{coffeeOrderStatus(order, state!.settings.barLocationLabel)}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{order.fulfilment === 'delivery' ? `Delivery${order.roomCode ? ` · Room ${order.roomCode}` : ' to your committee room'}` : `Pickup · ${state!.settings.barLocationLabel}`}</ThemedText>
       {order.status === 'queued' ? <Pressable accessibilityRole="button" accessibilityLabel={`Cancel order ${order.dayCode}`} disabled={!coffee.online || coffee.busy}
@@ -102,12 +105,27 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
         <Pressable accessibilityRole="button" onPress={() => void coffee.refresh()} style={styles.textButton}><ThemedText type="smallBold" themeColor="primary">Refresh coffee bar</ThemedText></Pressable>
       </View> : null}
       {notice ? <ThemedText accessibilityLiveRegion="polite" type="small" themeColor="primary">{notice}</ThemedText> : null}
+      {state && coffee.readyOrders.length ? <View style={[styles.readyBanner, { backgroundColor: theme.primary }]}>
+        <ThemedText accessibilityRole="header" accessibilityLiveRegion="polite" style={[styles.heading, { color: theme.onPrimary }]}>{coffee.readyOrders.length === 1 ? `Order #${coffee.readyOrders[0].dayCode} is ready!` : `${coffee.readyOrders.length} orders are ready!`}</ThemedText>
+        {coffee.readyOrders.map(order => <ThemedText key={order.id} type="small" style={{ color: theme.onPrimary }}>#{order.dayCode} · {order.itemName}{'\n'}{coffeeOrderStatus(order, state.settings.barLocationLabel)}</ThemedText>)}
+        <Pressable accessibilityRole="button" accessibilityLabel="Dismiss ready alert" onPress={coffee.dismissReady} style={styles.textButton}><ThemedText type="smallBold" style={{ color: theme.onPrimary }}>Dismiss alert</ThemedText></Pressable>
+      </View> : null}
       {state ? <>
-        <View style={[styles.card, { backgroundColor: theme.primarySoft, borderColor: theme.border }]}>
-          <ThemedText accessibilityRole="header" style={styles.heading} themeColor="primary">{opening!.title}</ThemedText>
+        <View style={[styles.card, styles.overviewCard, card]}>
+          <ThemedText style={styles.eyebrow} themeColor="textSecondary">YOU ARE</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.overviewTitle} themeColor="primary">{[state.me.person.committee?.short, state.me.person.role].filter(Boolean).join(' · ')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{state.me.person.room ? [`Room ${state.me.person.room.code}`, state.me.person.room.building].filter(Boolean).join(' · ') : 'Room not assigned yet'}</ThemedText>
+        </View>
+        <View style={[styles.card, styles.overviewCard, card]}>
+          <ThemedText style={styles.eyebrow} themeColor="textSecondary">{opening!.eyebrow.toUpperCase()}</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.overviewTitle} themeColor="primary">{opening!.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{opening!.detail}</ThemedText>
-          <ThemedText type="smallBold" themeColor="primary">{queueLabel}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{state.me.person.committee?.short} · {state.me.person.role}{state.me.person.room ? ` · Room ${state.me.person.room.code}` : ''}</ThemedText>
+        </View>
+        <View style={styles.queueStatus}>
+          <View accessible={false} style={[styles.queueDot, { backgroundColor: blocked ? theme.textSecondary : theme.primary }]} />
+          <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{queueLabel}</ThemedText>
+        </View>
+        <View style={styles.section}>
           {state.me.dailyLimit !== null ? <ThemedText type="small" themeColor="textSecondary">{Math.max(0, state.me.dailyLimit - state.me.dailyCount)} of {state.me.dailyLimit} orders left today</ThemedText> : null}
           {state.settings.bannerText ? <ThemedText type="small">{state.settings.bannerText}</ThemedText> : null}
         </View>
@@ -147,6 +165,7 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
         </View>
         {state.me.tabCents !== null ? <View style={[styles.card, card]}><ThemedText type="smallBold">Outstanding balance · {coffeeMoney(state.me.tabCents)}</ThemedText><ThemedText type="small" themeColor="textSecondary">Payments are recorded at the counter in the foyer.</ThemedText></View> : null}
         {history.length ? <View style={styles.section}><ThemedText accessibilityRole="header" style={styles.heading}>Earlier orders</ThemedText>{history.map(orderCard)}</View> : null}
+        <CoffeeSchedule schedule={state.schedule} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.credit}>Coffee brewed by {state.settings.baristaName}</ThemedText>
       </> : null}
     </Screen>
@@ -156,8 +175,14 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
   </>;
 }
 const styles = StyleSheet.create({
+  readyBanner: { borderRadius: 18, padding: 18, gap: 10 },
   textButton: { minHeight: 48, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 4 },
   card: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 8 },
+  overviewCard: { padding: 20, gap: 10 },
+  eyebrow: { fontSize: 12, lineHeight: 18, fontWeight: '600', letterSpacing: 2 },
+  overviewTitle: { fontSize: 24, lineHeight: 32, fontWeight: '600' },
+  queueStatus: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  queueDot: { width: 8, height: 8, borderRadius: 4 },
   section: { gap: 12 },
   heading: { fontSize: 19, lineHeight: 26, fontWeight: '500' },
   orderHeading: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },

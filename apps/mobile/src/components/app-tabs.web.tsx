@@ -23,6 +23,7 @@ import { createNavigationScrollTracker } from '@/lib/navigation-scroll';
 const parentSections: Record<string, string> = {
   '/privacy': 'more',
   '/coffee': 'index',
+  '/coffee-privacy': 'index',
   '/committees': 'resources',
   '/emergency': 'index',
   '/memes': 'index',
@@ -42,6 +43,7 @@ export default function AppTabs() {
               <TabButton section={item.name}>{item.label}</TabButton>
             </TabTrigger>
           ))}
+          <TabTrigger name="coffee-privacy" href="/coffee-privacy" style={styles.hiddenTab} />
           <TabTrigger name="coffee" href="/coffee" style={styles.hiddenTab} />
           <TabTrigger name="privacy" href="/privacy" style={styles.hiddenTab} />
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />

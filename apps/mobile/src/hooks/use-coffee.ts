@@ -4,9 +4,11 @@ import { useFocusEffect } from 'expo-router';
 
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { coffeeRequest, CoffeeError, type CoffeeAction, type CoffeeStateResponse } from '@/lib/coffee-client';
+import { createCoffeeReadyTracker } from '@/lib/coffee-ready';
+import { signalCoffeeReady } from '@/lib/coffee-ready-signal';
 import { activeCoffeeOrder } from '@/lib/coffee-display';
 import { AccessExpiredError } from '@/lib/function-errors';
-import type { State } from '@/lib/coffee-types';
+import type { Order, State } from '@/lib/coffee-types';
 
 export function useCoffee(conferenceId: string) {
   const { clearProfile } = useAttendeeProfile();
@@ -16,6 +18,8 @@ export function useCoffee(conferenceId: string) {
   const [online, setOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [readyTracker] = useState(createCoffeeReadyTracker);
+  const [readyOrders, setReadyOrders] = useState<Order[]>([]);
   const current = useRef<State | null>(null);
   const active = useRef(false);
   const readVersion = useRef(0);
@@ -41,6 +45,9 @@ export function useCoffee(conferenceId: string) {
         if (!data.me || !Array.isArray(data.me.orders) || !Array.isArray(data.menu) || !data.schedule || !data.settings)
           throw new CoffeeError('unavailable');
         current.current = data;
+        const alerts = readyTracker.update(data.me.orders);
+        setReadyOrders(alerts.visible);
+        if (alerts.newlyReady.length) void signalCoffeeReady(() => active.current && visible());
         clockOffset.current = Date.parse(data.now) - Date.now();
       }
       setState(current.current);
@@ -51,8 +58,8 @@ export function useCoffee(conferenceId: string) {
       if (!active.current || version !== readVersion.current) return;
       setOnline(false);
       setError(cause instanceof Error ? cause.message : 'Could not refresh coffee ordering.');
-      if (cause instanceof AccessExpiredError) { current.current = null; setState(null); clearProfile(); }
-      if (cause instanceof CoffeeError && cause.code === 'data_purged') { current.current = null; setState(null); }
+      if (cause instanceof AccessExpiredError) { current.current = null; setState(null); setReadyOrders([]); readyTracker.reset(); clearProfile(); }
+      if (cause instanceof CoffeeError && cause.code === 'data_purged') { current.current = null; setState(null); setReadyOrders([]); readyTracker.reset(); }
     } finally {
       if (active.current && version === readVersion.current) {
         setLoading(false);
@@ -62,7 +69,7 @@ export function useCoffee(conferenceId: string) {
         due.current = Math.max(Date.now() + 1000, Math.min(Date.now() + interval, boundary));
       }
     }
-  }, [conferenceId, clearProfile]);
+  }, [conferenceId, clearProfile, readyTracker]);
 
   useFocusEffect(useCallback(() => {
     active.current = true;
@@ -100,7 +107,7 @@ export function useCoffee(conferenceId: string) {
     } catch (cause) {
       if (active.current) {
         setActionError(cause instanceof Error ? cause.message : 'Coffee ordering could not be reached.');
-        if (cause instanceof AccessExpiredError) { current.current = null; setState(null); clearProfile(); }
+        if (cause instanceof AccessExpiredError) { current.current = null; setState(null); setReadyOrders([]); readyTracker.reset(); clearProfile(); }
         if (cause instanceof CoffeeError && cause.uncertain) setOnline(false);
       }
       throw cause;
@@ -110,5 +117,9 @@ export function useCoffee(conferenceId: string) {
       locked.current = false;
     }
   }
-  return { state, error: actionError || error, online, loading, busy, refresh: () => { setActionError(''); setLoading(true); return refresh(true); }, mutate };
+  function dismissReady() {
+    readyTracker.dismiss(readyOrders.map(order => order.id));
+    setReadyOrders([]);
+  }
+  return { state, readyOrders, dismissReady, error: actionError || error, online, loading, busy, refresh: () => { setActionError(''); setLoading(true); return refresh(true); }, mutate };
 }

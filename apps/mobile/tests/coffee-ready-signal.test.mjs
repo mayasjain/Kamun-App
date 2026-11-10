@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import ts from '../node_modules/typescript/lib/typescript.js';
+const dir = mkdtempSync(join(tmpdir(), 'coffee-haptics-'));
+writeFileSync(join(dir, 'package.json'), '{"type":"module"}');
+writeFileSync(join(dir, 'native.js'), `
+export const Platform = { get OS() { return globalThis.__platform; } };
+export const AccessibilityInfo = { isReduceMotionEnabled: () => globalThis.__motion() };
+export const Vibration = { vibrate: value => globalThis.__pulses.push(value) };
+`);
+const input = readFileSync(new URL('../src/lib/coffee-ready-signal.ts', import.meta.url), 'utf8').replace("'react-native'", "'./native.js'");
+writeFileSync(join(dir, 'signal.js'), ts.transpileModule(input, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
+const { signalCoffeeReady } = await import(pathToFileURL(join(dir, 'signal.js')));
+
+test('web vibration is optional, foreground-only, and respects reduced motion', async () => {
+  globalThis.__platform = 'web';
+  const pulses = [];
+  let reduced = false;
+  globalThis.window = { matchMedia: () => ({ matches: reduced }) };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { vibrate: value => pulses.push(value) } });
+  await signalCoffeeReady(() => false);
+  assert.equal(pulses.length, 0);
+  await signalCoffeeReady(() => true);
+  assert.deepEqual(pulses, [[200, 100, 200]]);
+  reduced = true;
+  await signalCoffeeReady(() => true);
+  assert.equal(pulses.length, 1);
+  globalThis.navigator.vibrate = undefined;
+  reduced = false;
+  await assert.doesNotReject(signalCoffeeReady(() => true));
+});
+test('native haptics recheck visibility after the accessibility setting resolves', async () => {
+  globalThis.__platform = 'ios';
+  globalThis.__pulses = [];
+  globalThis.__motion = async () => false;
+  await signalCoffeeReady(() => true);
+  assert.deepEqual(globalThis.__pulses, [[0, 200, 100, 200]]);
+  let resolve;
+  let visible = true;
+  globalThis.__motion = () => new Promise(done => { resolve = done; });
+  const pending = signalCoffeeReady(() => visible);
+  visible = false;
+  resolve(false);
+  await pending;
+  assert.equal(globalThis.__pulses.length, 1);
+  globalThis.__motion = async () => true;
+  await signalCoffeeReady(() => true);
+  assert.equal(globalThis.__pulses.length, 1);
+});
