@@ -1,3 +1,4 @@
+import { PushNotificationSettings } from '@/components/push-notification-settings';
 import { AdminUpdateComposer } from '@/components/admin-update-composer';
 import { AdminRemoveButton } from '@/components/admin-remove-button';
 import { ContentCard } from '@/components/content-card';
@@ -12,6 +13,7 @@ export default function UpdatesScreen() {
 
   return (
     <Screen showBack={false} onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
+      <PushNotificationSettings />
       <AdminUpdateComposer />
       {announcements.map((announcement) => (
         <ContentCard key={announcement.id} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>

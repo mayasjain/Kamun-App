@@ -110,7 +110,7 @@ export function OrganizerMessages() {
             onPress={() => void publish()} style={[styles.primaryButton, { backgroundColor: busy || !conferenceId || !title.trim() || !body.trim() ? theme.disabledBackground : theme.primary }]}>
             <ThemedText type="smallBold" style={{ color: busy || !conferenceId || !title.trim() || !body.trim() ? theme.disabledText : theme.onPrimary }}>{busy ? 'Publishing…' : 'Publish message'}</ThemedText>
           </Pressable>
-          <ThemedText type="small" themeColor="textSecondary">Messages appear in Updates. Phone push alerts are not active yet.</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">Messages appear in Updates. Phone alerts go to attendees who enable notifications.</ThemedText>
         </View>
       </ContentCard>
       <ThemedText type="subtitle">Published messages</ThemedText>

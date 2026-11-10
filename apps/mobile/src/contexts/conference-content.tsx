@@ -2,6 +2,7 @@ import '../lib/install-local-storage';
 
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { AppState } from 'react-native';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { supabase } from '@/lib/supabase';
 import { fetchConferenceContent, type ConferenceContent } from '@/lib/conference-content';
@@ -28,10 +29,10 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
   const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.accessType ?? 'none'}.${profile?.committeeId ?? 'all'}.v4`;
   const requestVersion = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silent = false) => {
     if (!profile) return;
     const version = ++requestVersion.current;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const liveContent = await fetchConferenceContent(profile.conferenceId, profile.committeeId, profile.accessType);
@@ -72,6 +73,34 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
       requestVersion.current += 1;
     };
   }, [cacheKey, profile, refresh]);
+
+  useEffect(() => {
+    if (!profile) return;
+    let pending = false;
+    const refreshVisible = () => {
+      if (pending || AppState.currentState !== 'active'
+        || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
+      pending = true;
+      void refresh(true).finally(() => { pending = false; });
+    };
+    const timer = setInterval(refreshVisible, 30_000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') refreshVisible();
+    });
+    const onVisible = () => refreshVisible();
+    const onPush = (event: MessageEvent) => {
+      if (event.data?.type === 'KAMUN_UPDATE') refreshVisible();
+    };
+    if (typeof window !== 'undefined') window.addEventListener('online', onVisible);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', onPush);
+    return () => {
+      clearInterval(timer); subscription.remove();
+      if (typeof window !== 'undefined') window.removeEventListener('online', onVisible);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) navigator.serviceWorker.removeEventListener('message', onPush);
+    };
+  }, [profile, refresh]);
 
   const removeAnnouncement = useCallback(async (id: string) => {
     if (!supabase || profile?.accessType !== 'admin') throw new Error('Administrator access required.');

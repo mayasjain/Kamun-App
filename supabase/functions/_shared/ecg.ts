@@ -16,7 +16,7 @@ export function options(request: Request) {
   return request.method === 'OPTIONS' ? new Response(null, { status: 204, headers: jsonHeaders }) : null;
 }
 
-function secretKey() {
+export function secretKey() {
   const modern = Deno.env.get('SUPABASE_SECRET_KEYS');
   if (modern) {
     try { return (JSON.parse(modern) as Record<string, string>).default; } catch { /* Invalid configuration. */ }

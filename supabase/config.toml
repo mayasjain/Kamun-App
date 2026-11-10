@@ -13,3 +13,9 @@ verify_jwt = false
 
 [functions.ecg-revocation]
 verify_jwt = false
+
+[functions.push-subscribe]
+verify_jwt = false
+
+[functions.push-dispatch]
+verify_jwt = false

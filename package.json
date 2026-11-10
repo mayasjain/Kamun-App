@@ -6,7 +6,7 @@
     "dev:admin": "npm --prefix apps/admin run dev",
     "lint": "npm --prefix apps/mobile run lint && npm --prefix apps/admin run lint",
     "typecheck": "npm --prefix apps/mobile run typecheck && npm --prefix apps/admin run typecheck",
-    "test": "node --test apps/mobile/tests/*.test.mjs apps/admin/tests/*.test.mjs supabase/tests/edge-handlers.test.mjs",
+    "test": "node --test apps/mobile/tests/*.test.mjs apps/admin/tests/*.test.mjs supabase/tests/*handlers.test.mjs",
     "check": "npm run lint && npm run typecheck && npm test"
   }
 }

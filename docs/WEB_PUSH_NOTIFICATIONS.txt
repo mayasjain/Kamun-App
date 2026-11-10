@@ -1,0 +1,111 @@
+KAMUN home-screen notifications — 9 November 2026
+
+Scope and operation
+This adds Web Push for the existing iPhone/iPad and Android home-screen WEB app.
+It does not configure APNs/FCM for separate Expo native binaries.
+In Updates, tap Enable notifications and allow the OS prompt on each device.
+iPhone/iPad requires iOS/iPadOS 16.4+ and opening KAMUN from its Home Screen icon.
+Android requires a browser/device with Push API and notifications enabled.
+Enable/disable is per device. Signing out or changing access invalidates the
+previous identity's subscription. Sign in and enable again for the new identity.
+
+New updates automatically refresh while the app is visible (within 30 seconds),
+on foreground/reconnect, and immediately when its worker receives a push.
+Push alerts show generic text: New KAMUN update / Open Updates to read the latest
+announcement. Clicking opens /updates. Private titles/bodies are fetched only
+inside the authenticated app. Existing home UI and tile layouts are unchanged.
+The worker never caches HTML, app bundles, API responses or tokens.
+
+Architecture and security
+- A notification-only /sw.js receives pushes and handles notification clicks.
+- push-subscribe authenticates the Supabase session. Only a current verified ECE
+  identity can register a device. The backend derives role, committee, identity
+  and revision; it ignores client-supplied role/user identity.
+- Endpoints are HTTPS and restricted to known Apple/Google/Mozilla/Windows push
+  providers. Credentials, alternate ports and arbitrary hosts are rejected.
+- Subscription endpoints/keys are private, RLS-protected and service-role-only.
+  A device may disable only its authenticated user's subscription. Max 10 enabled
+  subscriptions per user; reassignment rotates the row ID and deletes old jobs.
+- Publication triggers enqueue per-device jobs in the publishing transaction.
+  All publishing paths are covered. No historical announcements are backfilled.
+  Ordinary title/body edits do not re-notify. Scheduled publication waits until
+  published_at. Unpublished, expired or removed updates cannot be delivered.
+- Server audience checks enforce conference, Everyone/Chair/Delegate, committee
+  and verified admin access. The audience picker does not authorize delivery.
+- Each delivery rechecks current binding + person/revision/kind/committee/seat
+  against ECE's private status endpoint, then rechecks DB eligibility after that
+  network request. Five-minute FOREGROUND access leases are not extended by push.
+  Closed apps can receive alerts only while ECE still validates their credential.
+- Revocation/logout/switching disables subscriptions. Existing claim/refresh,
+  revocation, logout and account-switching controls remain intact.
+- Dedicated VAPID signing keys are separate from ECE integration credentials.
+  Private signing/dispatch keys live in Supabase secrets; the dispatcher key also
+  lives in Vault. Only the public VAPID key is returned to the client on request.
+- Dispatcher uses a dedicated secret, not a user JWT. Subscription/provider error
+  bodies are never logged or returned. Replies contain sanitized counters/errors.
+- Queue jobs use skip-locked claims and expiring unique leases. A stale worker
+  cannot acknowledge a newer worker's lease. Transient failures retry with bounded
+  backoff (up to 6 attempts). HTTP 404/410 disables an expired endpoint. Successful
+  jobs are not resent. Providers can still cause duplicate delivery after a crash;
+  stable notification tags collapse duplicates. Provider TTL is five minutes.
+- A publication wakeup starts delivery after commit. Larger batches chain wakeups;
+  a minute cron retries outages. Old jobs and disabled device metadata are cleaned
+  after seven days. Native push remains subject to device/network/Focus settings;
+  arrival is not a guarantee of immediate lock-screen display.
+
+Source and deployment
+Migrations:
+  supabase/migrations/202611090001_web_push.sql
+  supabase/migrations/202611090002_web_push_schedule.sql
+The second requires Supabase Vault, pg_net and pg_cron. Production uses Vault
+names web_push_dispatch_key and web_push_dispatch_url. The latter points to
+https://jkbtxjefzzmplmrvaubc.supabase.co/functions/v1/push-dispatch.
+Edge secrets: WEB_PUSH_PUBLIC_KEY, WEB_PUSH_PRIVATE_KEY, WEB_PUSH_DISPATCH_KEY.
+Preserve the key pair across deployments. Rotating it requires devices to
+resubscribe; do not regenerate keys during ordinary builds.
+Deploy push-subscribe and push-dispatch with verify_jwt=false as in config.toml;
+both authenticate inside the handler. Deploy the web export, including /sw.js,
+manifest, icons and _headers, to the existing kamun-2026-app Cloudflare project.
+Do not expose private signing or dispatch keys as EXPO_PUBLIC_* configuration.
+Production schema and scheduler were applied with Management API queries because
+this project has no normal migration-history table. Do not blindly db push the
+entire historic migration set onto the existing production database.
+
+Validation
+- npm test: 52 tests pass (existing tests plus browser/worker and sender tests).
+- npm --prefix apps/mobile run typecheck: pass.
+- ESLint on all changed app files: pass. Full lint has the previously known
+  unrelated meme-slideshow synchronous setState effect error.
+- PGLITE_MODULE=/path/to/@electric-sql/pglite/dist/index.js
+  node supabase/tests/run-web-push.mjs
+  Validates real PostgreSQL functions/RLS: audiences, drafts/future publication,
+  edit deduplication, queue leases, expired grants, logout, device reassignment,
+  removed updates and private endpoint access. Uses disposable synthetic fixtures.
+- Live: config 200 with public key only, verified participant claim 200,
+  arbitrary-host endpoint 400, subscription registration/status 200, disable 200,
+  linked logout 200, registration after logout 403, unauthenticated dispatcher 401.
+- Dedicated scheduler-to-sender smoke request: HTTP 200; both cron jobs active.
+  The live subscription check used an inert endpoint and sent no notification.
+- Actual Apple/Google push-service receipt and lock-screen delivery still require
+  a physical device opt-in. No real phone subscription was available to this
+  coding session; automated tests simulate worker/permission/provider behavior.
+
+Device acceptance check after deployment
+1. Reopen/reload KAMUN from the Home Screen, sign in, open Updates.
+2. Tap Enable notifications and allow. Repeat on iPhone and Android.
+3. Publish an intended announcement to the correct audience, then background or
+   lock the receiving phone. Check the alert and tap it to open Updates.
+4. Check chair-only/delegate-only isolation using their respective devices.
+5. Disable notifications and verify future alerts stop. Re-enable, then sign out
+   and verify later alerts stop for that identity. Test account switching too.
+6. Test app-open automatic refresh without a manual reload.
+
+Production web rollout
+Cloudflare deployment 099d477e, https://kamun-2026-app.pages.dev.
+Verified production /updates references the rebuilt bundle; bundle and /sw.js
+match local build hashes/content. /sw.js returns no-store cache headers. The
+published bundle contains the opt-in action and no private signing/dispatch/ECE
+integration key configuration names.
+The inert test subscription was disabled and its linked ECE binding revoked.
+The final test-session Auth logout HTTP request hit a network failure after these
+checks; no active participant grant or enabled push subscription was retained.
