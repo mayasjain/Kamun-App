@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/branding/kamun-logo-v2.png",
     "scheme": "kamun",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/branding/kamun-logo-v2.png",
       "bundleIdentifier": "org.munika.kamun",

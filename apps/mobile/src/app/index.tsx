@@ -163,17 +163,17 @@ export default function HomeScreen() {
                 </ThemedText>
               </Pressable>
             </View>}
-            <View style={[styles.quickGrid, (phone || compact) && styles.quickGridCompact]}>
+            <View style={styles.quickGrid}>
               {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => item.external ? void Linking.openURL(String(item.href)) : router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}${item.external ? ', opens in your browser' : ''}`}
-                  style={({ pressed }) => [styles.quickTile, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsTile, (item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && compact && styles.sponsorsTileCompact, phone && styles.quickTilePhone, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
                       : <HomeIcon name={item.external ? 'music' : item.href === '/secretariat' ? 'secretariat' : item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
                   </View>
-                  <View style={[styles.quickCopy, (phone || item.href === '/partners' || item.href === '/memes' || item.href === '/secretariat') && styles.sponsorsCopy]}>
+                  <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
                   </View>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   coffeeCardPhone: { padding: 16, gap: 12 },
   coffeeIconPhone: { width: 40, height: 40, borderRadius: 14 },
   coffeeTitlePhone: { fontSize: 18, lineHeight: 24 },
-  quickTilePhone: { flex: 0, flexBasis: 'auto', width: '100%', flexDirection: 'row', alignItems: 'center', minHeight: 100, padding: 14, gap: 14 },
+  quickTilePhone: { padding: 14, gap: 14 },
   quickIconPhone: { width: 40, height: 40, borderRadius: 14 },
   quickTitlePhone: { fontSize: 16, lineHeight: 22 },
   root: { flex: 1 },
@@ -249,14 +249,10 @@ const styles = StyleSheet.create({
   coffeeDescription: { color: Brand.black, fontSize: 16, lineHeight: 24 },
   coffeeButton: { backgroundColor: Brand.pine, flexDirection: 'row', gap: Spacing.twoAndHalf, minHeight: 52, borderRadius: 16, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   coffeeButtonText: { color: Brand.white, textAlign: 'center' },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three, alignItems: 'stretch' },
-  quickGridCompact: { flexDirection: 'column' },
-  quickTile: { flex: 1, minWidth: 0, minHeight: 180, padding: Spacing.four, borderRadius: Radius.feature, borderWidth: 1, gap: Spacing.four },
-  sponsorsTile: { flexBasis: '100%', flexDirection: 'row', alignItems: 'center', minHeight: 100, gap: Spacing.three },
-  sponsorsTileCompact: { flexBasis: 'auto' },
-  sponsorsCopy: { flex: 1, minWidth: 0 },
+  quickGrid: { flexDirection: 'column', gap: Spacing.three, alignItems: 'stretch' },
+  quickTile: { width: '100%', flexDirection: 'row', alignItems: 'center', minWidth: 0, minHeight: 100, padding: Spacing.four, borderRadius: Radius.feature, borderWidth: 1, gap: Spacing.three },
   quickIcon: { alignItems: 'center', borderRadius: 18, height: 56, flexShrink: 0, justifyContent: 'center', width: 56 },
-  quickCopy: { gap: Spacing.two },
+  quickCopy: { flex: 1, minWidth: 0, gap: Spacing.two },
   quickTitle: { fontSize: 18, lineHeight: 24 },
   connectionNotice: { borderRadius: Radius.card, borderWidth: 1, gap: Spacing.one, padding: Spacing.three },
   pressed: { opacity: 0.76 },
