@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { CoffeeOrderSheet, type CoffeeDraft } from '@/components/coffee-order-sheet';
 import { Screen } from '@/components/screen';
@@ -27,6 +27,8 @@ export default function CoffeeScreen() {
 function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
   const theme = useTheme();
   const coffee = useCoffee(conferenceId);
+  const { width, fontScale } = useWindowDimensions();
+  const compactMenu = width < 480 || fontScale > 1.2;
   const [draft, setDraft] = useState<CoffeeDraft | null>(null);
   const [showOrder, setShowOrder] = useState(false);
   const [notice, setNotice] = useState('');
@@ -121,14 +123,26 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
           {!state.menu.length ? <ThemedText type="small" themeColor="textSecondary">The menu is being prepared. Check back shortly.</ThemedText> : null}
           {state.menu.map(item => {
             const disabled = !coffee.online || coffee.busy || pending || !!blocked || !item.available;
-            return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.name}${!item.available ? ', unavailable' : ''}`} accessibilityState={{ disabled }} disabled={disabled} onPress={() => startOrder(item)}
-              style={({ pressed }) => [styles.menuItem, card, pressed && styles.pressed]}>
-              <View style={styles.menuCopy}><ThemedText style={styles.menuTitle}>{item.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{item.description}</ThemedText></View>
-              <View style={styles.menuAction}>
-                {state.settings.paidMode ? <ThemedText type="smallBold">{coffeeMoney(item.priceCents)}</ThemedText> : null}
-                <ThemedText type="smallBold" style={{ color: disabled ? theme.textSecondary : theme.primary }}>{!item.available ? 'Unavailable' : 'Order'}</ThemedText>
+            return <View key={item.id} style={[styles.menuItem, card]}>
+              <View style={[styles.drinkIcon, { backgroundColor: theme.background }]} accessible={false}>
+                <ThemedText style={styles.drinkEmoji}>{item.emoji || '☕'}</ThemedText>
               </View>
-            </Pressable>;
+              <View style={styles.menuBody}>
+                <View style={styles.menuTopline}>
+                  <ThemedText style={styles.menuTitle}>{item.name}</ThemedText>
+                  {state.settings.paidMode ? <ThemedText style={styles.menuPrice}>{coffeeMoney(item.priceCents)}</ThemedText> : null}
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">{item.description}</ThemedText>
+                {compactMenu ? <Pressable accessibilityRole="button" accessibilityLabel={`Order ${item.name}`} accessibilityState={{ disabled }} disabled={disabled} onPress={() => startOrder(item)}
+                  style={({ pressed }) => [styles.orderPill, styles.orderPillCompact, { backgroundColor: disabled ? theme.disabledBackground : theme.primary }, pressed && styles.pressed]}>
+                  <ThemedText type="smallBold" style={{ color: disabled ? theme.disabledText : theme.onPrimary }}>{!item.available ? 'Unavailable' : 'Order'}</ThemedText>
+                </Pressable> : null}
+              </View>
+              {!compactMenu ? <Pressable accessibilityRole="button" accessibilityLabel={`Order ${item.name}`} accessibilityState={{ disabled }} disabled={disabled} onPress={() => startOrder(item)}
+                style={({ pressed }) => [styles.orderPill, { backgroundColor: disabled ? theme.disabledBackground : theme.primary }, pressed && styles.pressed]}>
+                <ThemedText type="smallBold" style={{ color: disabled ? theme.disabledText : theme.onPrimary }}>{!item.available ? 'Unavailable' : 'Order'}</ThemedText>
+              </Pressable> : null}
+            </View>;
           })}
         </View>
         {state.me.tabCents !== null ? <View style={[styles.card, card]}><ThemedText type="smallBold">Outstanding balance · {coffeeMoney(state.me.tabCents)}</ThemedText><ThemedText type="small" themeColor="textSecondary">Payments are recorded at the counter in the foyer.</ThemedText></View> : null}
@@ -148,10 +162,15 @@ const styles = StyleSheet.create({
   heading: { fontSize: 19, lineHeight: 26, fontWeight: '500' },
   orderHeading: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
   orderTitle: { flex: 1, minWidth: 100, fontSize: 17, lineHeight: 24, fontWeight: '500' },
-  menuItem: { borderWidth: 1, borderRadius: 18, minHeight: 88, padding: 16, gap: 12, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  menuCopy: { flex: 1, minWidth: 150, gap: 5 },
-  menuTitle: { fontSize: 16, lineHeight: 23, fontWeight: '500' },
-  menuAction: { minWidth: 68, alignItems: 'flex-end', gap: 6 },
+  menuItem: { borderWidth: 1, borderRadius: 20, minHeight: 96, padding: 16, gap: 14, flexDirection: 'row', alignItems: 'center' },
+  drinkIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  drinkEmoji: { fontSize: 30, lineHeight: 38 },
+  menuBody: { flex: 1, minWidth: 0, gap: 6 },
+  menuTopline: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 4 },
+  menuTitle: { fontSize: 16, lineHeight: 23, fontWeight: '600', flexShrink: 1 },
+  menuPrice: { fontSize: 16, lineHeight: 23, fontWeight: '600' },
+  orderPill: { minHeight: 44, minWidth: 76, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  orderPillCompact: { alignSelf: 'flex-start', marginTop: 4 },
   loading: { alignItems: 'center', paddingVertical: 24, gap: 16 },
   credit: { textAlign: 'center', fontSize: 12 },
   pressed: { opacity: 0.7 },
