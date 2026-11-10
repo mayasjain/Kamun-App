@@ -58,7 +58,7 @@ export default function ScheduleScreen() {
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View style={styles.headerInner}>
-          <ThemedText style={styles.headerTitle}>Schedule</ThemedText>
+          <ThemedText accessibilityRole="header" style={styles.headerTitle}>Schedule</ThemedText>
           <ThemedText style={styles.headerSubtitle}>{audience} · KAMUN 2026</ThemedText>
         </View>
       </View>
@@ -69,7 +69,7 @@ export default function ScheduleScreen() {
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={palette.green} />}>
         {Object.entries(groupedEvents).map(([day, dayEvents]) => (
           <View key={day} style={styles.dayPanel}>
-            <ThemedText style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
+            <ThemedText accessibilityRole="header" style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
             {dayEvents.map((event, index) => {
               const mapUrl = scheduleVenueMapUrl(event.roomName);
               const cuisine = mealCuisines[event.id];

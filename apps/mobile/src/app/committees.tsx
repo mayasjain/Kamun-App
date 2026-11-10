@@ -30,7 +30,7 @@ function CommitteeCard({ committee }: { committee: Committee }) {
         </View>
         <View style={styles.cardHeading}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>{metadata || 'COMMITTEE'}</ThemedText>
-          <ThemedText type="subtitle" style={styles.committeeName}>{committee.name}</ThemedText>
+          <ThemedText accessibilityRole="header" type="subtitle" style={styles.committeeName}>{committee.name}</ThemedText>
         </View>
         <ThemedText
           accessibilityElementsHidden

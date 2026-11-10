@@ -14,6 +14,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
   return (
     <Text
+      accessibilityRole={type === 'title' ? 'header' : undefined}
       style={[
         { color: theme[themeColor ?? 'text'] },
         type === 'default' && styles.default,

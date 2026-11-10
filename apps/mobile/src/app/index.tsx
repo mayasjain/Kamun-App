@@ -13,6 +13,7 @@ import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
 import { conferenceDayLabel } from '@/lib/conference-day';
+import { orderAnnouncements } from '@/lib/announcement-order';
 
 import { openEcgWithKamunIdentity } from '@/lib/ecg-handoff';
 
@@ -69,12 +70,13 @@ export default function HomeScreen() {
   const { content, error, isLoading, source } = useConferenceContent();
   const nextEvent = content?.scheduleEvents.find((event) => Date.parse(event.endsAt) > now);
   const eventIsLive = nextEvent ? Date.parse(nextEvent.startsAt) <= now : false;
-  const announcement = content?.announcements[0];
-  const urgentAnnouncement = announcement?.priority === 'urgent';
+  const announcements = orderAnnouncements(content?.announcements ?? []);
+  const urgentAnnouncements = announcements.filter(item => item.priority === 'urgent');
+  const homeAnnouncements = urgentAnnouncements.length ? urgentAnnouncements : [announcements[0]];
 
   return (
     <ThemedView style={styles.root}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={[styles.content, phone && styles.phoneContent]} showsVerticalScrollIndicator={false}>
           <View style={[styles.masthead, compact && { flexWrap: 'wrap' }]}>
             <Image accessibilityLabel="KAMUN crest" resizeMode="contain" source={require('../../assets/branding/kamun-logo-v2.png')} style={[styles.mastheadLogo, phone && styles.mastheadLogoPhone]} />
@@ -91,7 +93,7 @@ export default function HomeScreen() {
             <Image source={require('../../assets/branding/kamun-banner.png')} resizeMode="cover" style={styles.heroArt} accessible={false} />
             <View style={[styles.heroCopy, phone && styles.heroCopyPhone]}>
               <ThemedText type="smallBold" style={styles.heroEyebrow}>KARLSRUHE · 2026</ThemedText>
-              <ThemedText style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Diplomacy in the heart of the Black Forest.</ThemedText>
+              <ThemedText style={[styles.heroTitle, (phone || compact) && styles.heroTitleCompact]}>Diplomacy in the heart of the Black Forest.</ThemedText>
             </View>
           </View>
 
@@ -115,27 +117,29 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeading}>
               <View>
-                <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>LATEST UPDATE</ThemedText>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>Conference news</ThemedText>
+                <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>{urgentAnnouncements.length ? 'IMPORTANT UPDATES' : 'LATEST UPDATE'}</ThemedText>
+                <ThemedText accessibilityRole="header" type="subtitle" style={[styles.sectionTitle, phone && styles.sectionTitlePhone]}>{urgentAnnouncements.length ? 'Urgent updates' : 'Conference news'}</ThemedText>
               </View>
             </View>
-            <Link href="/updates" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel={`View updates. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderLeftColor: urgentAnnouncement ? theme.danger : theme.accent }, pressed && styles.pressed]}>
-                {urgentAnnouncement ? <View style={[styles.statusBadge, { backgroundColor: theme.danger }]}>
+            {homeAnnouncements.map(announcement => <Link key={announcement?.id ?? 'empty'} href="/updates" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel={`${announcement?.priority === 'urgent' ? 'Urgent update' : 'View updates'}. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderLeftColor: announcement?.priority === 'urgent' ? theme.danger : theme.accent }, pressed && styles.pressed]}>
+                {announcement?.priority === 'urgent' ? <View style={[styles.statusBadge, { backgroundColor: theme.danger }]}>
                   <ThemedText type="smallBold" themeColor="onDanger">URGENT</ThemedText>
                 </View> : null}
-                <ThemedText type="subtitle" style={styles.updateTitle}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
-                <ThemedText themeColor="textSecondary" numberOfLines={3}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
+                <ThemedText accessibilityRole="header" type="subtitle" style={[styles.updateTitle, phone && styles.updateTitlePhone]}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
+                <ThemedText themeColor="textSecondary" style={phone && styles.bodyPhone} numberOfLines={3}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
                 <View style={[styles.updateAction, { borderTopColor: theme.border }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>Open updates →</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>Open updates</ThemedText>
                 </View>
               </Pressable>
-            </Link>
+            </Link>)}
           </View>
 
           <View style={styles.section}>
-            <View style={styles.quickHeading}>
-              <ThemedText type="smallBold" style={[styles.eyebrow, { color: theme.primary }]}>YOUR ESSENTIALS</ThemedText>
+            <View style={styles.essentialsHeading}>
+              <ThemedText type="small" style={{ color: theme.primary }}>KAMUN 2026</ThemedText>
+              <ThemedText accessibilityRole="header" type="subtitle" style={[styles.essentialsTitle, phone && styles.essentialsTitlePhone, { color: theme.primary }]}>Your essentials</ThemedText>
+              <ThemedText themeColor="textSecondary" style={phone && styles.bodyPhone}>Everything you need, in one place.</ThemedText>
             </View>
             {profile?.accessType !== 'admin' && <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <View style={[styles.coffeeTopline, compact && styles.coffeeToplineCompact]}>
@@ -164,10 +168,10 @@ export default function HomeScreen() {
               </Pressable>
             </View>}
             <View style={styles.quickGrid}>
-              {quickLinks.map((item) => (
+              {quickLinks.slice(0, 4).map((item) => (
                 <Pressable key={item.title} onPress={() => item.external ? void Linking.openURL(String(item.href)) : router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}${item.external ? ', opens in your browser' : ''}`}
-                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
+                  style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, compact && styles.quickTileStacked, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
@@ -175,7 +179,23 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">{item.detail}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={phone && styles.quickDetailPhone}>{item.detail}</ThemedText>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+            <ThemedText accessibilityRole="header" type="small" style={[styles.conferenceLabel, { color: theme.primary }]}>CONFERENCE INFO</ThemedText>
+            <View style={[styles.conferenceList, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              {quickLinks.slice(4).map((item, index) => (
+                <Pressable key={item.title} onPress={() => router.push(item.href)}
+                  accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
+                  style={({ pressed }) => [styles.conferenceRow, index > 0 && { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
+                  <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: theme.primarySoft }]}>
+                    <HomeIcon name={item.href === '/secretariat' ? 'secretariat' : 'partners'} size={27} color={theme.primary} />
+                  </View>
+                  <View style={styles.quickCopy}>
+                    <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={phone && styles.quickDetailPhone}>{item.detail}</ThemedText>
                   </View>
                 </Pressable>
               ))}
@@ -196,6 +216,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  bodyPhone: { fontSize: 14, lineHeight: 21 },
+  quickDetailPhone: { fontSize: 13, lineHeight: 19 },
+  sectionTitlePhone: { fontSize: 21, lineHeight: 28 },
+  updateTitlePhone: { fontSize: 19, lineHeight: 25 },
+  essentialsTitlePhone: { fontSize: 22, lineHeight: 29 },
   phoneContent: { paddingHorizontal: 16, gap: 18 },
   mastheadLogoPhone: { width: 40, height: 40 },
   heroCopyPhone: { padding: 18 },
@@ -204,9 +229,9 @@ const styles = StyleSheet.create({
   coffeeCardPhone: { padding: 16, gap: 12 },
   coffeeIconPhone: { width: 40, height: 40, borderRadius: 14 },
   coffeeTitlePhone: { fontSize: 18, lineHeight: 24 },
-  quickTilePhone: { padding: 14, gap: 14 },
+  quickTilePhone: { padding: 16, gap: 14, minHeight: 164 },
   quickIconPhone: { width: 40, height: 40, borderRadius: 14 },
-  quickTitlePhone: { fontSize: 16, lineHeight: 22 },
+  quickTitlePhone: { fontSize: 15, lineHeight: 20 },
   root: { flex: 1 },
   safeArea: { flex: 1 },
   content: { alignSelf: 'center', gap: Spacing.five, maxWidth: MaxContentWidth, paddingBottom: Math.max(BottomTabInset, 80) + Spacing.five, paddingHorizontal: 20, paddingTop: Spacing.two, width: '100%' },
@@ -216,12 +241,12 @@ const styles = StyleSheet.create({
   mastheadTitle: { fontSize: 17, letterSpacing: 0.8 },
   dateBadge: { maxWidth: '100%', flexShrink: 1, borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: Spacing.two },
   hero: { backgroundColor: Brand.black, borderRadius: Radius.feature, height: 244, justifyContent: 'flex-end', overflow: 'hidden', width: '100%' },
-  heroCompact: { height: 180 },
+  heroCompact: { height: undefined, minHeight: 180 },
   heroArt: { ...StyleSheet.absoluteFill, height: '100%', width: '100%' },
   heroCopy: { gap: Spacing.two, maxWidth: 520, padding: Spacing.four },
   heroEyebrow: { color: Brand.gold, fontSize: 12, letterSpacing: 1.8 },
   heroTitle: { color: Brand.white, fontSize: 34, fontWeight: '500', lineHeight: 39 },
-  heroTitleCompact: { fontSize: 24, lineHeight: 30 },
+  heroTitleCompact: { fontSize: 22, lineHeight: 28 },
   eyebrow: { fontSize: 12, letterSpacing: 1.5 },
   scheduleCard: { backgroundColor: Brand.parchment, borderColor: Brand.goldDark, borderRadius: Radius.feature, borderWidth: 2, minHeight: 280, paddingHorizontal: Spacing.four, paddingVertical: Spacing.five },
   scheduleTopline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, justifyContent: 'space-between' },
@@ -238,7 +263,11 @@ const styles = StyleSheet.create({
   updateAction: { borderTopWidth: 1, marginTop: Spacing.four, paddingTop: Spacing.three },
   statusBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.twoAndHalf, paddingVertical: 6 },
   updateTitle: { fontSize: 21, lineHeight: 27, marginBottom: Spacing.two },
-  quickHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  essentialsHeading: { gap: 6, marginBottom: 4 },
+  essentialsTitle: { fontSize: 26, lineHeight: 34, fontWeight: '600' },
+  conferenceLabel: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8, marginTop: 4 },
+  conferenceList: { borderWidth: 1, borderRadius: 22, overflow: 'hidden' },
+  conferenceRow: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 18, minHeight: 96 },
   coffeeCard: { borderWidth: 1, borderRadius: Radius.feature, padding: Spacing.four, gap: Spacing.three },
   coffeeTopline: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three },
   coffeeToplineCompact: { alignItems: 'flex-start' },
@@ -249,8 +278,9 @@ const styles = StyleSheet.create({
   coffeeDescription: { color: Brand.black, fontSize: 16, lineHeight: 24 },
   coffeeButton: { backgroundColor: Brand.pine, flexDirection: 'row', gap: Spacing.twoAndHalf, minHeight: 52, borderRadius: 16, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   coffeeButtonText: { color: Brand.white, textAlign: 'center' },
-  quickGrid: { flexDirection: 'column', gap: Spacing.three, alignItems: 'stretch' },
-  quickTile: { width: '100%', flexDirection: 'row', alignItems: 'center', minWidth: 0, minHeight: 100, padding: Spacing.four, borderRadius: Radius.feature, borderWidth: 1, gap: Spacing.three },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'stretch' },
+  quickTile: { width: '47%', flexGrow: 1, flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, minHeight: 190, padding: 20, borderRadius: 22, borderWidth: 1, gap: 20 },
+  quickTileStacked: { width: '100%', flexDirection: 'row', alignItems: 'center', minHeight: 100 },
   quickIcon: { alignItems: 'center', borderRadius: 18, height: 56, flexShrink: 0, justifyContent: 'center', width: 56 },
   quickCopy: { flex: 1, minWidth: 0, gap: Spacing.two },
   quickTitle: { fontSize: 18, lineHeight: 24 },

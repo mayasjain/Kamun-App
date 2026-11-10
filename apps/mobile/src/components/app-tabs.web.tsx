@@ -7,6 +7,7 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { Pressable, View, StyleSheet } from 'react-native';
+import { usePathname } from 'expo-router';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,6 +17,17 @@ import { ThemedView } from './themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { primaryNavigation } from '@/constants/navigation';
 
+// Detail destinations retain the visible selection of their parent section.
+const parentSections: Record<string, string> = {
+  '/privacy': 'more',
+  '/committees': 'resources',
+  '/emergency': 'index',
+  '/memes': 'index',
+  '/gossip': 'index',
+  '/partners': 'index',
+  '/secretariat': 'index',
+};
+
 export default function AppTabs() {
   return (
     <Tabs>
@@ -24,9 +36,10 @@ export default function AppTabs() {
         <CustomTabList>
           {primaryNavigation.map((item) => (
             <TabTrigger key={item.name} name={item.name === 'index' ? 'home' : item.name} href={item.href} asChild>
-              <TabButton>{item.label}</TabButton>
+              <TabButton section={item.name}>{item.label}</TabButton>
             </TabTrigger>
           ))}
+          <TabTrigger name="privacy" href="/privacy" style={styles.hiddenTab} />
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
           <TabTrigger name="memes" href="/memes" style={styles.hiddenTab} />
@@ -39,13 +52,15 @@ export default function AppTabs() {
   );
 }
 
-function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+function TabButton({ children, isFocused, section, ...props }: TabTriggerSlotProps & { section: string }) {
+  const pathname = usePathname().replace(/\/$/, '');
+  const selected = parentSections[pathname] ? parentSections[pathname] === section : isFocused;
   return (
-    <Pressable {...props} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+    <Pressable {...props} accessibilityRole="link" aria-current={selected ? 'location' : undefined} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
+        type={selected ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <ThemedText style={[styles.tabLabel, isFocused && styles.tabLabelActive]} type="small" themeColor={isFocused ? 'primary' : 'textSecondary'}>
+        <ThemedText style={[styles.tabLabel, selected && styles.tabLabelActive]} type="small" themeColor={selected ? 'primary' : 'textSecondary'}>
           {children}
         </ThemedText>
       </ThemedView>

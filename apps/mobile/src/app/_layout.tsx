@@ -2,6 +2,7 @@ import { DefaultTheme, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import AppTabs from '@/components/app-tabs';
+import { StartupLoading } from '@/components/startup-loading';
 import { AttendeeOnboarding } from '@/components/attendee-onboarding';
 import { OrganizerMessages } from '@/components/organizer-messages';
 import { AttendeeProfileProvider, useAttendeeProfile } from '@/contexts/attendee-profile';
@@ -11,7 +12,7 @@ import { OrganizerProvider, useOrganizer } from '@/contexts/organizer';
 function AppContent() {
   const { isLoading, profile } = useAttendeeProfile();
   const organizer = useOrganizer();
-  if (isLoading || organizer.isLoading) return null;
+  if (isLoading || organizer.isLoading) return <StartupLoading />;
   if (organizer.mode === 'organizer') return <OrganizerMessages />;
   return profile ? <ConferenceContentProvider><AppTabs /></ConferenceContentProvider> : <AttendeeOnboarding />;
 }

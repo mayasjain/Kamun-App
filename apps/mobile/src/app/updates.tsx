@@ -6,17 +6,18 @@ import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { formatAnnouncementTime } from '@/lib/date-format';
+import { orderAnnouncements } from '@/lib/announcement-order';
 
 export default function UpdatesScreen() {
   const { content, error, isLoading, source, refresh } = useConferenceContent();
-  const announcements = content?.announcements ?? [];
+  const announcements = orderAnnouncements(content?.announcements ?? []);
 
   return (
     <Screen showBack={false} onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
       <PushNotificationSettings />
       <AdminUpdateComposer />
       {announcements.map((announcement) => (
-        <ContentCard key={announcement.id} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>
+        <ContentCard key={announcement.id} urgent={announcement.priority === 'urgent'} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>
           {announcement.audience !== 'all' ? (
             <ThemedText type="smallBold" themeColor="primary">
               {announcement.audience === 'chair' ? 'For chairs' : 'For delegates'}

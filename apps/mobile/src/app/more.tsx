@@ -4,6 +4,7 @@ import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimension
 
 import { InstagramLinks } from '@/components/instagram-links';
 import { MoreIcon } from '@/components/more-icon';
+import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
@@ -68,7 +69,7 @@ export default function MoreScreen() {
           <ThemedText type="small" themeColor="textSecondary">On Android, open it in Chrome, tap the browser menu, then Install app or Add to Home screen.</ThemedText>
         </View> : null}
       </View> : null}
-      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>STAY CONNECTED</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="primary" style={styles.sectionLabel}>STAY CONNECTED</ThemedText>
       <View style={[styles.card, styles.socialCard, card]}>
         <View style={styles.socialHeading}>
           <View style={styles.socialLogo}><Image source={require('../../assets/branding/instagram.png')} style={styles.instagram} resizeMode="contain" accessible={false} /></View>
@@ -87,7 +88,7 @@ export default function MoreScreen() {
           </Pressable>
         </Link>
       </View>
-      <ThemedText type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
       <View style={[styles.card, card]}>
         <View style={styles.row}>
           <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="identity" color={theme.primary} /></View>
@@ -109,7 +110,25 @@ export default function MoreScreen() {
         </Pressable>
         {signOutError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.error}>{signOutError}</ThemedText> : null}
       </View>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>KAMUN 2026 · Made for delegates</ThemedText>
+      <View style={styles.footerLinks}>
+        <Link href="/privacy" asChild>
+          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.privacyLink, pressed && styles.pressed]}>
+            <ThemedText style={styles.privacyText}>Privacy Policy</ThemedText>
+          </Pressable>
+        </Link>
+        <View style={styles.copyrightPanel}>
+          <ThemedText style={styles.footer}>© KAMUN 2026 · MUNIKA</ThemedText>
+          <ThemedText style={styles.footerCopy}>Conference content and materials are provided for KAMUN participants. Please obtain permission from the organisers before reproducing or distributing them. Third-party materials remain the property of their respective owners.</ThemedText>
+          <View style={styles.contactBlock}>
+            <ThemedText style={styles.footerCopy}>Interested in using this platform for your conference?</ThemedText>
+            <Link href="mailto:vorstand@munika.org" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Email MUNIKA at vorstand@munika.org" style={({ pressed }) => [styles.emailLink, pressed && styles.pressed]}>
+                <ThemedText style={styles.footerCopy}>vorstand@munika.org</ThemedText>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+      </View>
     </Screen>
   );
 }
@@ -132,5 +151,12 @@ const styles = StyleSheet.create({
   socialHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   socialLogo: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   instagram: { width: 38, height: 38 },
-  footer: { textAlign: 'center', fontSize: 12, paddingVertical: 4 },
+  footerLinks: { alignItems: 'center', gap: 8, paddingTop: 8, paddingBottom: 16 },
+  copyrightPanel: { width: '100%', maxWidth: 560, alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, gap: 10 },
+  footerCopy: { color: '#405F80', fontFamily: Fonts.serif, fontStyle: 'italic', textAlign: 'center', fontSize: 12, lineHeight: 18 },
+  contactBlock: { alignItems: 'center', width: '100%' },
+  emailLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 12 },
+  privacyLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 24 },
+  privacyText: { color: '#405F80', fontFamily: Fonts.serif, fontStyle: 'italic', fontSize: 17, lineHeight: 25 },
+  footer: { color: '#405F80', textAlign: 'center', fontSize: 11, lineHeight: 16, letterSpacing: 0.8, fontWeight: '700' },
 });

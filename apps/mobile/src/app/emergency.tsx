@@ -40,7 +40,7 @@ export default function EmergencyScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView edges={['top']} style={styles.header}>
         <View style={styles.headerInner}>
-          <ThemedText type="subtitle" style={styles.headerTitle}>Emergency contacts</ThemedText>
+          <ThemedText accessibilityRole="header" type="subtitle" style={styles.headerTitle}>Emergency contacts</ThemedText>
         </View>
       </SafeAreaView>
 
@@ -57,7 +57,7 @@ export default function EmergencyScreen() {
           </View>
         </View>
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>EMERGENCY SERVICES</ThemedText>
+          <ThemedText accessibilityRole="header" type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>EMERGENCY SERVICES</ThemedText>
           <View style={[styles.serviceCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
             {services.map((service, index) => (
               <View key={service.number}>
@@ -76,7 +76,7 @@ export default function EmergencyScreen() {
         </View>
 
         <View style={styles.section}>
-          <ThemedText type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>STAFF CONTACTS</ThemedText>
+          <ThemedText accessibilityRole="header" type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>STAFF CONTACTS</ThemedText>
           <View style={[styles.staffList, { backgroundColor: theme.backgroundElement }]}>
             {contacts.map((contact, index) => {
               const name = contact.personName ?? contact.label;
