@@ -77,9 +77,11 @@ export default function MoreScreen() {
         </View>
         <InstagramLinks tiles />
         <Link href="https://www.linkedin.com/company/kamun-karlsuhe-model-united-nations/home/" target="_blank" rel="noopener noreferrer" asChild>
-          <Pressable accessibilityRole="link" accessibilityLabel="KAMUN on LinkedIn, opens in your browser" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-            <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="linkedin" color={theme.primary} /></View>
-            <View style={styles.copy}><ThemedText style={styles.rowTitle}>KAMUN on LinkedIn</ThemedText><ThemedText type="small" themeColor="textSecondary">Conference news & community</ThemedText></View>
+          <Pressable accessibilityRole="link" accessibilityLabel="KAMUN on LinkedIn, opens in your browser" style={styles.feedbackLink}>
+            {({ pressed }) => <View style={[styles.linkedinRow, { borderTopColor: theme.border }, pressed && styles.pressed]}>
+              <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><Image source={require('../../assets/branding/linkedin.png')} style={styles.linkedinLogo} resizeMode="contain" accessible={false} /></View>
+              <View style={styles.copy}><ThemedText style={styles.rowTitle}>KAMUN on LinkedIn</ThemedText><ThemedText type="small" themeColor="textSecondary">Conference news & community</ThemedText></View>
+            </View>}
           </Pressable>
         </Link>
       </View>
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
   feedbackLink: { width: '100%' },
   feedbackRow: { width: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 18, minHeight: 64 },
-  iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  iconBox: { flexShrink: 0, width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0, gap: 5 },
   rowTitle: { fontSize: 17, lineHeight: 23, fontWeight: '400' },
   howTo: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, minHeight: 44 },
@@ -153,6 +155,8 @@ const styles = StyleSheet.create({
   sectionLabel: { marginTop: 4, fontSize: 12, lineHeight: 18, letterSpacing: 0.4 },
   pressed: { opacity: 0.6 },
   error: { paddingBottom: 16 },
+  linkedinRow: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingTop: 16, paddingBottom: 2, borderTopWidth: StyleSheet.hairlineWidth },
+  linkedinLogo: { width: 26, height: 26 },
   socialCard: { paddingVertical: 16, gap: 14 },
   socialHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   socialLogo: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
