@@ -1,3 +1,41 @@
 :root {
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+/* A lightly frosted navigation surface; opaque when blur is unsupported. */
+[id^="app-navigation-glass"] {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+@supports ((backdrop-filter: blur(24px)) or (-webkit-backdrop-filter: blur(24px))) {
+  [id^="app-navigation-glass"] {
+    background-color: rgba(255, 255, 255, 0.35) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    backdrop-filter: blur(24px) saturate(1.3);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  [id^="app-navigation-glass"] {
+    background-color: #FFFFFF !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: #5E625A !important;
+  }
+}
+
+[id^="app-navigation-glass"] {
+  min-width: min(100%, 340px);
+  transition: width 220ms ease, max-width 220ms ease, padding 220ms ease;
+}
+[id^="app-navigation-item-"] {
+  transition: min-height 220ms ease;
+}
+#app-navigation-glass-compact [id^="app-navigation-item-"] {
+  min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  [id^="app-navigation-glass"], [id^="app-navigation-item-"] {
+    transition: none;
+  }
+}

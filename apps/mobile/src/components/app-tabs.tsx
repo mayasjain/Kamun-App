@@ -1,13 +1,28 @@
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Platform } from 'react-native';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTheme } from '@/hooks/use-theme';
 import { primaryNavigation } from '@/constants/navigation';
 
 export default function AppTabs() {
   const colors = useTheme();
+  const [reduceTransparency, setReduceTransparency] = useState(true);
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    let active = true;
+    void AccessibilityInfo.isReduceTransparencyEnabled().then(value => {
+      if (active) setReduceTransparency(value);
+    }).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceTransparencyChanged', setReduceTransparency);
+    return () => { active = false; subscription.remove(); };
+  }, []);
+  const glass = Platform.OS === 'ios' && !reduceTransparency;
 
   return (
     <NativeTabs
-      backgroundColor={colors.background}
+      minimizeBehavior="onScrollDown"
+      backgroundColor={glass ? 'rgba(255, 255, 255, 0.35)' : colors.background}
+      blurEffect={glass ? 'systemChromeMaterialLight' : 'none'}
       indicatorColor={colors.backgroundSelected}
       tintColor={colors.primary}
       labelStyle={{ selected: { color: colors.primary, fontWeight: '500' }, default: { color: colors.textSecondary } }}>

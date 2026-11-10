@@ -36,7 +36,7 @@ export default function HomeScreen() {
     : previewDay === '2' ? 'Day 2 - 14 Nov'
     : previewDay === '3' ? 'Day 3 - 15 Nov' : undefined;
   const theme = useTheme();
-  const { profile, clearProfile, restoreError } = useAttendeeProfile();
+  const { profile, clearProfile } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
   const phone = width < 600;
   const compact = width < 375 || fontScale > 1.2;
@@ -67,7 +67,7 @@ export default function HomeScreen() {
     return () => { clearInterval(timer); subscription.remove(); };
   }, []);
 
-  const { content, error, isLoading, source } = useConferenceContent();
+  const { content, isLoading } = useConferenceContent();
   const nextEvent = content?.scheduleEvents.find((event) => Date.parse(event.endsAt) > now);
   const eventIsLive = nextEvent ? Date.parse(nextEvent.startsAt) <= now : false;
   const announcements = orderAnnouncements(content?.announcements ?? []);
@@ -203,12 +203,6 @@ export default function HomeScreen() {
             {ecgError ? <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.danger }}>{ecgError}</ThemedText> : null}
           </View>
 
-          {source === 'cache' || error || restoreError ? (
-            <View accessibilityRole="alert" style={[styles.connectionNotice, { backgroundColor: theme.primarySoft, borderColor: theme.border }]}>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>{source === 'cache' ? 'Saved information' : 'Live information unavailable'}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{restoreError ?? (source === 'cache' ? 'You are viewing the latest conference information saved on this device.' : 'Check your connection and try again shortly.')}</ThemedText>
-            </View>
-          ) : null}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -284,6 +278,5 @@ const styles = StyleSheet.create({
   quickIcon: { alignItems: 'center', borderRadius: 18, height: 56, flexShrink: 0, justifyContent: 'center', width: 56 },
   quickCopy: { flex: 1, minWidth: 0, gap: Spacing.two },
   quickTitle: { fontSize: 18, lineHeight: 24 },
-  connectionNotice: { borderRadius: Radius.card, borderWidth: 1, gap: Spacing.one, padding: Spacing.three },
   pressed: { opacity: 0.76 },
 });
