@@ -76,6 +76,12 @@ export default function MoreScreen() {
           <View style={styles.copy}><ThemedText style={styles.rowTitle}>Follow KAMUN</ThemedText><ThemedText type="small" themeColor="textSecondary">News, memes & conference moments</ThemedText></View>
         </View>
         <InstagramLinks tiles />
+        <Link href="https://www.linkedin.com/company/kamun-karlsuhe-model-united-nations/home/" target="_blank" rel="noopener noreferrer" asChild>
+          <Pressable accessibilityRole="link" accessibilityLabel="KAMUN on LinkedIn, opens in your browser" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="linkedin" color={theme.primary} /></View>
+            <View style={styles.copy}><ThemedText style={styles.rowTitle}>KAMUN on LinkedIn</ThemedText><ThemedText type="small" themeColor="textSecondary">Conference news & community</ThemedText></View>
+          </Pressable>
+        </Link>
       </View>
       <View style={[styles.card, card]}>
         <Link href="https://tally.so/r/Vpjy0M" target="_blank" rel="noopener noreferrer" asChild>

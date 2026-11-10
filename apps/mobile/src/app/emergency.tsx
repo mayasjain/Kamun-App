@@ -1,12 +1,10 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { BackButton } from '@/components/back-button';
+import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 import { secretariat } from '@/constants/secretariat';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
@@ -37,16 +35,7 @@ export default function EmergencyScreen() {
   }
 
   return (
-    <ThemedView style={styles.root}>
-      <SafeAreaView edges={['top']} style={styles.header}>
-        <View style={styles.headerInner}>
-          <ThemedText accessibilityRole="header" type="subtitle" style={styles.headerTitle}>Emergency contacts</ThemedText>
-        </View>
-      </SafeAreaView>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />}>
-        <BackButton />
+    <Screen eyebrow="KAMUN 2026" title="Emergency contacts" subtitle="Support and safety throughout the conference." onRefresh={() => void refresh()} refreshing={isLoading}>
         <View style={styles.safetyBanner}>
           <ThemedText style={styles.safetyTitle}>KAMUN is a safe and inclusive space</ThemedText>
           <ThemedText style={styles.safetyCopy}>If you feel unsafe, uncomfortable or overwhelmed, reach out to the Secretariat or our Safety and Awareness team.</ThemedText>
@@ -77,8 +66,8 @@ export default function EmergencyScreen() {
 
         <View style={styles.section}>
           <ThemedText accessibilityRole="header" type="smallBold" style={[styles.sectionLabel, { color: theme.primary }]}>STAFF CONTACTS</ThemedText>
-          <View style={[styles.staffList, { backgroundColor: theme.backgroundElement }]}>
-            {contacts.map((contact, index) => {
+          <View style={styles.staffList}>
+            {contacts.map((contact) => {
               const name = contact.personName ?? contact.label;
               const portraitName = name === 'Mani Kondapavuluri' || name === 'Mani'
                 ? 'Venkata Mani Madhava Sai Kondapavuluri' : name === 'Mahima' ? 'Mahima Rajpal' : name;
@@ -86,7 +75,7 @@ export default function EmergencyScreen() {
               const callUrl = phoneCallUrl(contact.phone);
               const whatsappUrl = whatsappChatUrl(contact.phone);
               return (
-                <View key={contact.id} style={[styles.staffCard, stacked && styles.staffCardStacked, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border }]}>
+                <View key={contact.id} style={[styles.staffCard, stacked && styles.staffCardStacked, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={styles.staffProfile}>
                     {person ? <View style={{ width: photoSize, height: photoSize, borderRadius: photoSize / 2, overflow: 'hidden', flexShrink: 0, backgroundColor: theme.primarySoft }}>
                       <Image source={person.photo} resizeMode="contain" accessibilityLabel={name}
@@ -126,40 +115,34 @@ export default function EmergencyScreen() {
           </View>
         </View>
         {linkError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert">{linkError}</ThemedText> : null}
-      </ScrollView>
-    </ThemedView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { backgroundColor: Brand.pine },
-  headerInner: { alignItems: 'center', alignSelf: 'center', flexDirection: 'row', maxWidth: MaxContentWidth, minHeight: 72, paddingHorizontal: Spacing.three, width: '100%' },
-  headerTitle: { fontWeight: '400', color: Brand.cream, flex: 1, fontSize: 24, lineHeight: 29, marginLeft: 0 },
-  scroll: { alignSelf: 'center', gap: Spacing.four, maxWidth: MaxContentWidth, paddingBottom: BottomTabInset + Spacing.five, paddingHorizontal: Spacing.three, paddingTop: Spacing.four, width: '100%' },
   section: { gap: 12 },
-  safetyBanner: { backgroundColor: '#E3ECE5', borderRadius: 24, padding: 24, gap: 14 },
-  safetyTitle: { color: Brand.pine, fontWeight: '500', fontSize: 19, lineHeight: 26 },
-  safetyCopy: { color: Brand.pine, fontSize: 17, lineHeight: 26 },
+  safetyBanner: { backgroundColor: '#E3ECE5', borderRadius: 18, padding: 16, gap: 12 },
+  safetyTitle: { color: Brand.pine, fontWeight: '500', fontSize: 16, lineHeight: 22 },
+  safetyCopy: { color: Brand.pine, fontSize: 14, lineHeight: 22 },
   codeWordBanner: { backgroundColor: 'rgba(23,61,44,0.06)', borderRadius: 16, padding: 16, gap: 6 },
   codeWordLabel: { color: Brand.pine, fontSize: 12, letterSpacing: 1.4 },
-  codeWord: { color: Brand.pine, fontSize: 32, fontWeight: '500', lineHeight: 40 },
-  codeWordDescription: { color: Brand.pine, fontSize: 16, lineHeight: 24 },
+  codeWord: { color: Brand.pine, fontSize: 26, fontWeight: '500', lineHeight: 34 },
+  codeWordDescription: { color: Brand.pine, fontSize: 14, lineHeight: 22 },
   sectionLabel: { fontSize: 12, letterSpacing: 1.8 },
-  serviceCard: { borderRadius: 24, borderWidth: 0, overflow: 'hidden', paddingHorizontal: 18 },
+  serviceCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden', paddingHorizontal: 18 },
   divider: { height: 1 },
   serviceRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 76, paddingVertical: 12 },
-  serviceName: { flex: 1, fontSize: 17, lineHeight: 22, paddingRight: Spacing.two },
+  serviceName: { flex: 1, fontSize: 16, lineHeight: 22, paddingRight: Spacing.two },
   serviceAction: { alignItems: 'flex-end', gap: 1 },
   serviceNumber: { fontSize: 22, fontWeight: '500', lineHeight: 26 },
   callHint: { fontSize: 12 },
-  staffList: { borderRadius: 24, paddingHorizontal: 18 },
-  staffCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingVertical: 18 },
+  staffList: { gap: 12 },
+  staffCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: 14, borderRadius: 18, borderWidth: 1 },
   staffCardStacked: { flexDirection: 'column', alignItems: 'stretch', gap: 8 },
   staffIdentity: { gap: 3, flex: 1, minWidth: 0 },
   staffProfile: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 },
-  staffRole: { fontSize: 15, lineHeight: 22 },
-  staffName: { fontSize: 18, lineHeight: 24 },
+  staffRole: { fontSize: 14, lineHeight: 22 },
+  staffName: { fontSize: 16, lineHeight: 22 },
   staffActions: { alignItems: 'flex-end', maxWidth: '52%' },
   staffActionsStacked: { alignItems: 'flex-start', maxWidth: '100%' },
   whatsappLink: { flexDirection: 'row', alignItems: 'center', gap: 6 },
