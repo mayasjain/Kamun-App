@@ -1,8 +1,8 @@
-import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { BottomTabInset, Fonts, MaxContentWidth } from '@/constants/theme';
+import { Screen } from '@/components/screen';
+import { ThemedText } from '@/components/themed-text';
+import { useTheme } from '@/hooks/use-theme';
 
 const sections = [
   {
@@ -36,54 +36,34 @@ const sections = [
 ];
 
 export default function PrivacyScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const phone = useWindowDimensions().width < 600;
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: BottomTabInset + insets.bottom + 32 }}>
-        <View style={styles.hero}>
-          <View style={styles.headerContent}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back to More" onPress={() => router.replace('/more')} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-              <Text style={styles.backText}>← More</Text>
-            </Pressable>
-            <Text accessibilityRole="header" style={styles.title}>Privacy Policy</Text>
-            <Text style={styles.subtitle}>Your conference. Your information.</Text>
-          </View>
+    <Screen compactHeader eyebrow="KAMUN 2026" title="Privacy policy" subtitle="How your conference information is used">
+      <View style={[styles.article, phone && styles.articlePhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <View style={styles.section}>
+          <ThemedText accessibilityRole="header" style={[styles.introTitle, { color: theme.primary }]}>A little clarity on privacy</ThemedText>
+          <ThemedText selectable themeColor="textSecondary" style={phone && styles.bodyPhone}>Here’s how the conference app uses information to keep your access, conference content and updates working.</ThemedText>
         </View>
-        <View style={styles.content}>
-          <View style={styles.intro}>
-            <Text style={styles.eyebrow}>KAMUN 2026</Text>
-            <Text style={styles.introTitle}>A little clarity on privacy</Text>
-            <Text style={styles.body}>Here’s how the conference app uses information to keep your access, conference content and updates working.</Text>
+        {sections.map(section => (
+          <View key={section.title} style={[styles.section, styles.divided, { borderTopColor: theme.border }]}>
+            <ThemedText accessibilityRole="header" style={[styles.sectionTitle, { color: theme.primary }]}>{section.title}</ThemedText>
+            <ThemedText selectable themeColor="textSecondary" style={phone && styles.bodyPhone}>{section.body}</ThemedText>
           </View>
-          {sections.map(section => (
-            <View key={section.title} style={styles.section}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
-              <Text selectable style={styles.body}>{section.body}</Text>
-            </View>
-          ))}
-          <Text style={styles.footer}>KAMUN 2026 · Made for delegates</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        ))}
+      </View>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>KAMUN 2026 · Made for delegates</ThemedText>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F2E8D2' },
-  hero: { backgroundColor: '#567596' },
-  headerContent: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 28, paddingTop: 8, gap: 8 },
-  back: { minHeight: 48, alignSelf: 'flex-start', justifyContent: 'center', paddingRight: 20 },
-  backText: { color: '#FFF8E9', fontSize: 16 },
-  pressed: { opacity: 0.65 },
-  title: { color: '#FFF8E9', fontSize: 32, lineHeight: 40, fontWeight: '700' },
-  subtitle: { color: '#FFF8E9', fontFamily: Fonts.serif, fontStyle: 'italic', fontSize: 18, lineHeight: 27 },
-  content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: 20, gap: 28 },
-  intro: { backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 1, borderColor: '#DFE5EB', padding: 24, gap: 12 },
-  eyebrow: { color: '#405F80', fontSize: 12, lineHeight: 18, letterSpacing: 2, fontWeight: '700' },
-  introTitle: { color: '#202A34', fontSize: 22, lineHeight: 30, fontWeight: '600' },
-  section: { gap: 10, paddingHorizontal: 4 },
-  sectionTitle: { color: '#405F80', fontSize: 16, lineHeight: 24, letterSpacing: 0.5, fontWeight: '700' },
-  body: { color: '#41464B', fontSize: 16, lineHeight: 26 },
-  footer: { color: '#405F80', fontSize: 12, lineHeight: 20, textAlign: 'center', paddingVertical: 12 },
+  article: { borderRadius: 18, borderWidth: 1, padding: 24, gap: 24 },
+  articlePhone: { padding: 16, gap: 20 },
+  section: { gap: 10 },
+  divided: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 20 },
+  introTitle: { fontSize: 20, lineHeight: 27, fontWeight: '500' },
+  sectionTitle: { fontSize: 17, lineHeight: 24, fontWeight: '500' },
+  bodyPhone: { fontSize: 14, lineHeight: 22 },
+  footer: { fontSize: 12, lineHeight: 18, textAlign: 'center', paddingVertical: 8 },
 });

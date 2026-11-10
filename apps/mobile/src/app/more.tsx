@@ -4,7 +4,7 @@ import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimension
 
 import { InstagramLinks } from '@/components/instagram-links';
 import { MoreIcon } from '@/components/more-icon';
-import { Fonts } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
@@ -153,10 +153,10 @@ const styles = StyleSheet.create({
   instagram: { width: 38, height: 38 },
   footerLinks: { alignItems: 'center', gap: 8, paddingTop: 8, paddingBottom: 16 },
   copyrightPanel: { width: '100%', maxWidth: 560, alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, gap: 10 },
-  footerCopy: { color: '#405F80', fontFamily: Fonts.serif, fontStyle: 'italic', textAlign: 'center', fontSize: 12, lineHeight: 18 },
+  footerCopy: { color: Colors.light.primary, fontFamily: Fonts.serif, fontStyle: 'italic', textAlign: 'center', fontSize: 12, lineHeight: 18 },
   contactBlock: { alignItems: 'center', width: '100%' },
   emailLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 12 },
   privacyLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 24 },
-  privacyText: { color: '#405F80', fontFamily: Fonts.serif, fontStyle: 'italic', fontSize: 17, lineHeight: 25 },
-  footer: { color: '#405F80', textAlign: 'center', fontSize: 11, lineHeight: 16, letterSpacing: 0.8, fontWeight: '700' },
+  privacyText: { color: Colors.light.primary, fontFamily: Fonts.serif, fontStyle: 'italic', fontSize: 17, lineHeight: 25 },
+  footer: { color: Colors.light.primary, textAlign: 'center', fontSize: 11, lineHeight: 16, letterSpacing: 0.8, fontWeight: '700' },
 });
