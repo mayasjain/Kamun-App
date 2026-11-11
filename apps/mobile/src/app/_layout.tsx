@@ -1,4 +1,5 @@
 import { DefaultTheme, ThemeProvider } from 'expo-router';
+import { NotificationWorkerUpdater } from '@/components/notification-worker-updater';
 import { StatusBar } from 'expo-status-bar';
 
 import AppTabs from '@/components/app-tabs';
@@ -21,6 +22,7 @@ export default function TabLayout() {
   return (
     <ThemeProvider value={DefaultTheme}>
       <StatusBar style="dark" />
+      <NotificationWorkerUpdater />
       <AttendeeProfileProvider>
         <OrganizerProvider><AppContent /></OrganizerProvider>
       </AttendeeProfileProvider>

@@ -1,3 +1,4 @@
+import { RemoveConfirmation } from '@/components/remove-confirmation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -155,8 +156,8 @@ export default function MemesScreen() {
    <MemePhoto key={m.imageUrl} meme={m} />
    <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
     <MemeDiscussion meme={m} onActivity={activity => setMemes(old => old.map(row => row.id === m.id ? { ...row, activity } : row))} />
-    {m.can_remove && <ActionButton label="Remove" onPress={() => setAction(m)} disabled={busy} />}
-    {m.can_remove && action?.id === m.id ? <View style={{ gap: 12 }}><ThemedText type="smallBold">Remove this meme from the gallery?</ThemedText><ActionButton label={busy ? 'Removing…' : 'Yes, remove'} onPress={() => void confirmAction()} primary disabled={busy} /><ActionButton label="Cancel" onPress={() => setAction(null)} disabled={busy} /></View> : null}
+    {m.can_remove && <RemoveConfirmation confirming={action?.id === m.id} prompt="Remove this meme from the gallery?" label="Remove meme" busy={busy && action?.id === m.id} disabled={busy}
+      onStart={() => setAction(m)} onConfirm={() => void confirmAction()} onCancel={() => setAction(null)} />}
    </View>
   </View>)}
   {more && <ActionButton label={loading ? 'Loading…' : 'Load more memes'} onPress={() => void refresh(memes[memes.length - 1]?.created_at)} primary={false} disabled={loading} />}

@@ -1,3 +1,4 @@
+import { RemoveConfirmation } from './remove-confirmation';
 import { MemeActionIcon } from './meme-action-icon';
 import { createMemeVoteQueue } from '@/lib/meme-vote-queue';
 import { useEffect, useRef, useState } from 'react';
@@ -108,7 +109,8 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
       <ThemedText type="small" themeColor="textSecondary">{new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</ThemedText>
      </View>
      <ThemedText style={styles.commentBody}>{c.body}</ThemedText>
-     {c.can_remove && (confirmRemove === c.id ? <View style={styles.row}><DiscussionButton label="Delete" onPress={() => void mutate(() => removeMemeComment(c.id), 'Comment removed.')} disabled={busy || loading} /><DiscussionButton label="Cancel" onPress={() => setConfirmRemove(null)} disabled={busy || loading} /></View> : <View style={styles.row}><DiscussionButton label="Delete" onPress={() => setConfirmRemove(c.id)} disabled={busy || loading} /></View>)}
+     {c.can_remove && <RemoveConfirmation confirming={confirmRemove === c.id} prompt="Remove this comment?" label="Remove comment" busy={busy && confirmRemove === c.id} disabled={busy || loading}
+       onStart={() => setConfirmRemove(c.id)} onConfirm={() => void mutate(() => removeMemeComment(c.id), 'Comment removed.')} onCancel={() => setConfirmRemove(null)} />}
     </View>
    </View>)}
    {hasMore && <DiscussionButton label="Older comments" onPress={() => void loadComments(true)} disabled={busy || loading} />}
