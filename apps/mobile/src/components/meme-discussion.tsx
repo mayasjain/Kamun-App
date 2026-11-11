@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
  action: { minHeight: 44, minWidth: 48, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24 },
  button: { minHeight: 44, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
  thread: { gap: 20, paddingTop: 4 },
- input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, fontSize: 14, textAlignVertical: 'top' },
+ input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, fontSize: 16, textAlignVertical: 'top' },
  composerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 8 },
  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
