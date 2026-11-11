@@ -41,8 +41,8 @@ configured bundle. ECE suite: 575 tests plus workspace types/builds. KAMUN:
 75 existing tests plus guest handler test, mobile lint/types/configured build,
 and disposable PostgreSQL guest/push regressions pass.
 
-Source is on astra/final-roster in both repositories, awaiting owner-requested
-merge. No participant names/tokens or private backups are committed. The missing
+Source was fast-forward merged into main in both repositories at the owner’s
+request on 11 November 2026 (ECE 880370a; KAMUN c27fdcc). No participant names/tokens or private backups are committed. The missing
 observer token is saved privately by ECE; preserve its generated-token state
 when rerunning final-roster reconciliation. No secret, DNS or frozen-account
 changes occurred.
