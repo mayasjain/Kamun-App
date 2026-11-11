@@ -15,7 +15,7 @@ Deno.serve(async (request) => {
     .select('ecg_person_id,credential_revision,revoked_at,access_type,seat_label,committees!inner(abbreviation)')
     .eq('conference_id', data.conferenceId).eq('user_id', clients.userId).maybeSingle();
   if (error) return reply({ error: 'unavailable' }, 503);
-  if (!binding || binding.revoked_at) return reply({ error: 'unbound' }, 401);
+  if (!binding || binding.revoked_at || !['member','chair'].includes(binding.access_type)) return reply({ error: 'unbound' }, 401);
   const result = await ecgHandoffRequest(binding.ecg_person_id, binding.credential_revision,
     await ecgSessionScope(clients.userId, data.conferenceId));
   const committee = Array.isArray(binding.committees) ? binding.committees[0] : binding.committees;

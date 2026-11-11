@@ -17,9 +17,9 @@ import type { MenuItem, Order } from '@/lib/coffee-types';
 
 export default function CoffeeScreen() {
   const { profile } = useAttendeeProfile();
-  if (!profile || profile.accessType === 'admin' || profile.identitySource !== 'ecg') return (
+  if (!profile || !['member','chair'].includes(profile.accessType) || profile.identitySource !== 'ecg') return (
     <Screen compactHeader eyebrow="KAMUN 2026" title="ECE Coffee Bar" subtitle="Your conference coffee bar">
-      <ThemedText>{profile?.accessType === 'admin' ? 'Coffee ordering is available to delegates and chairs.' : 'Connect coffee ordering with your personal KAMUN code.'}</ThemedText>
+      <ThemedText>{profile && !['member','chair'].includes(profile.accessType) ? 'Coffee ordering is available to delegates and chairs.' : 'Connect coffee ordering with your personal KAMUN code.'}</ThemedText>
       <Link href="/more" asChild><Pressable accessibilityRole="link" style={styles.textButton}><ThemedText themeColor="primary">Open account and access</ThemedText></Pressable></Link>
     </Screen>
   );

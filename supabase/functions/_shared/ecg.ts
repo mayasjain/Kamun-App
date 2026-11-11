@@ -48,14 +48,14 @@ export type EcgParticipantIdentity = {
   revision: string;
 };
 
-export type EcgIdentity = EcgParticipantIdentity | { personId: number; kind: 'kamun_admin'; committee: null; seat: null; revision: string };
+export type EcgIdentity = EcgParticipantIdentity | { personId: number; kind: 'faculty_adviser' | 'observer'; committee: null; seat: null; revision: string } | { personId: number; kind: 'kamun_admin'; committee: null; seat: null; revision: string };
 
 function isIdentity(value: unknown): value is EcgIdentity {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   if (!Number.isSafeInteger(v.personId) || Number(v.personId) <= 0
     || typeof v.revision !== 'string' || !/^[a-f0-9]{64}$/.test(v.revision)) return false;
-  if (v.kind === 'kamun_admin') return v.committee === null && v.seat === null;
+  if (['kamun_admin','faculty_adviser','observer'].includes(String(v.kind))) return v.committee === null && v.seat === null;
   return (v.kind === 'delegate' || v.kind === 'chair')
     && typeof v.committee === 'string' && /^[A-Za-z0-9-]{1,20}$/.test(v.committee)
     && (v.kind === 'chair' ? v.seat === null : typeof v.seat === 'string' && v.seat.length <= 100);
@@ -126,7 +126,7 @@ export async function ecgHandoffRequest(personId: number, revision: string, scop
     const value: unknown = await response.json();
     if (!value || typeof value !== 'object') return { status: 503 };
     const data = value as Record<string, unknown>;
-    if (!isIdentity(data.identity) || data.identity.kind === 'kamun_admin' || typeof data.ticket !== 'string'
+    if (!isIdentity(data.identity) || !['delegate','chair'].includes(data.identity.kind) || typeof data.ticket !== 'string'
       || !/^[A-Za-z0-9_-]{43}$/.test(data.ticket)) return { status: 503 };
     const url = new URL('/', site);
     url.hash = `handoff=${data.ticket}`;

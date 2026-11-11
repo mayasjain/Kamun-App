@@ -32,7 +32,7 @@ Deno.serve(async (request) => {
     return error || !refreshed ? reply({ error: 'unbound' }, 401) : reply({ validForSeconds: 300 });
   }
   const { data: binding, error } = await clients.admin.from('ecg_participant_bindings')
-    .select('ecg_person_id,credential_revision,revoked_at,access_type,seat_label,committees!inner(abbreviation)').eq('conference_id', data.conferenceId)
+    .select('ecg_person_id,credential_revision,revoked_at,access_type,seat_label,committees(abbreviation)').eq('conference_id', data.conferenceId)
     .eq('user_id', clients.userId).maybeSingle();
   if (error) return reply({ error: 'unavailable' }, 503);
   if (!binding || binding.revoked_at) return reply({ error: 'unbound' }, 401);
@@ -41,9 +41,9 @@ Deno.serve(async (request) => {
   const committee = Array.isArray(binding.committees) ? binding.committees[0] : binding.committees;
   const changed = result.identity && (result.identity.personId !== binding.ecg_person_id
     || result.identity.revision !== binding.credential_revision
-    || result.identity.committee !== committee?.abbreviation
+    || result.identity.committee !== (committee?.abbreviation ?? null)
     || result.identity.seat !== binding.seat_label
-    || (result.identity.kind === 'delegate' ? 'member' : 'chair') !== binding.access_type);
+    || (result.identity.kind === 'delegate' ? 'member' : result.identity.kind) !== binding.access_type);
   if (result.status === 401 || changed) {
     await clients.admin.rpc('ecg_revoke_verified_identity', {
       p_conference_id: data.conferenceId, p_ecg_person_id: binding.ecg_person_id,

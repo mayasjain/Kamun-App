@@ -8,7 +8,7 @@ export { KAMUN_CONFERENCE_ID } from '@/lib/conference-id';
 export type ClaimedAttendeeAccess = {
   conferenceId: string;
   conferenceSlug: string;
-  accessType: 'chair' | 'member' | 'admin';
+  accessType: 'chair' | 'member' | 'admin' | 'faculty_adviser' | 'observer';
   accessLabel: string;
   committeeId: string | null;
   committeeName: string | null;
@@ -20,7 +20,7 @@ export type ClaimedAttendeeAccess = {
 type ClaimRow = {
   conference_id: string;
   conference_slug: string;
-  access_type: 'chair' | 'member' | 'admin';
+  access_type: 'chair' | 'member' | 'admin' | 'faculty_adviser' | 'observer';
   access_label: string;
   committee_id: string | null;
   committee_name: string | null;

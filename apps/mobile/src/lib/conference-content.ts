@@ -84,7 +84,7 @@ export type ConferenceContent = {
 export async function fetchConferenceContent(
   conferenceId: string,
   committeeId: string | null,
-  accessType: 'chair' | 'member' | 'admin',
+  accessType: 'chair' | 'member' | 'admin' | 'faculty_adviser' | 'observer',
 ): Promise<ConferenceContent> {
   if (!supabase) throw new Error('The KAMUN backend is not configured.');
 

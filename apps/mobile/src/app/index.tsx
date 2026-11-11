@@ -120,7 +120,7 @@ export default function HomeScreen() {
               <ThemedText accessibilityRole="header" type="subtitle" style={[styles.essentialsTitle, phone && styles.essentialsTitlePhone, { color: theme.primary }]}>Your essentials</ThemedText>
               <ThemedText themeColor="textSecondary" style={phone && styles.bodyPhone}>Everything you need, in one place.</ThemedText>
             </View>
-            {profile?.accessType !== 'admin' && <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            {profile && ['member','chair'].includes(profile.accessType) && <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <View style={[styles.coffeeTopline, compact && styles.coffeeToplineCompact]}>
                 <View style={[styles.coffeeIcon, phone && styles.coffeeIconPhone, { backgroundColor: theme.primarySoft }]}>
                   <HomeIcon name="coffee" size={30} color={Brand.pine} />

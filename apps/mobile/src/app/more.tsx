@@ -103,7 +103,7 @@ export default function MoreScreen() {
           <View style={styles.copy}>
             <ThemedText style={styles.rowTitle}>Your conference identity</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{profile?.committeeName ?? 'KAMUN 2026'}</ThemedText>
-            <View style={[styles.badge, { backgroundColor: theme.primarySoft }]}><ThemedText type="small">{profile?.seatLabel || (profile?.accessType === 'admin' ? 'Administrator' : profile?.accessType === 'chair' ? 'Chair' : 'Delegate')}</ThemedText></View>
+            <View style={[styles.badge, { backgroundColor: theme.primarySoft }]}><ThemedText type="small">{profile?.accessLabel || 'Delegate'}</ThemedText></View>
           </View>
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAccess, disabled: signingOut || changingAccess }} disabled={signingOut || changingAccess} onPress={() => setShowAccess(v => !v)} style={({ pressed }) => [styles.row, divider, pressed && styles.pressed]}>

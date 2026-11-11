@@ -290,3 +290,29 @@ test('admin refresh fails closed on upstream outage and rejects a changed identi
   assert.equal(calls.pop(),'ecg_clear_linked_admin');
  } finally {globalThis.fetch=original;}
 });
+
+test('app-only guests claim and refresh without gaining coffee, chair or administrator identity', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    for (const kind of ['faculty_adviser','observer']) {
+      const who = { personId: 303, kind, committee: null, seat: null, revision: 'c'.repeat(64) };
+      const calls=[];
+      globalThis.__createSupabaseClient = (_url,key) => key === 'public-test-key'
+        ? {auth:{getUser:async()=>({data:{user:{id:'guest-user'}},error:null})}}
+        : { from: table => ({
+            update:()=>({eq:()=>({eq:async()=>({error:null})})}),
+            select:()=>({eq:()=>({eq:()=>({maybeSingle:async()=>({data:table==='ecg_admin_bindings'?null:{ecg_person_id:303,credential_revision:who.revision,revoked_at:null,access_type:kind,seat_label:null,committees:null},error:null})})})}),
+          }),
+          rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='ecg_acquire_claim_attempt'?true:name==='ecg_bind_verified_identity'?[{access_type:kind,access_label:kind}]:true,error:null};},
+        };
+      globalThis.fetch=async(_url,options)=>new Response(JSON.stringify(JSON.parse(options.body).action==='logout'?{ok:true}:who),{status:200});
+      assert.equal((await handlers['ecg-claim'](request({code:'AB2CD',conferenceId}))).status,200);
+      const bind=calls.find(([name])=>name==='ecg_bind_verified_identity')[1];
+      assert.equal(bind.p_kind,kind);assert.equal(bind.p_committee_abbreviation,null);assert.equal(bind.p_seat_label,null);
+      assert.equal(calls.some(([name])=>name==='ecg_bind_verified_admin'),false);
+      assert.equal((await handlers['ecg-refresh'](request({conferenceId}))).status,200);
+      globalThis.fetch=async()=>{throw Error('Guest must never request coffee handoff');};
+      assert.equal((await handlers['ecg-handoff'](request({conferenceId}))).status,401);
+    }
+  } finally {globalThis.fetch=originalFetch;}
+});

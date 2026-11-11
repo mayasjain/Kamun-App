@@ -1,0 +1,25 @@
+FINAL ROSTER ACCESS — 2026-11-11
+
+The owner requested final roster reconciliation in ECE: 184 delegates, 26 chairs,
+nine faculty advisers, one observer and the single roster admin. ECE remains the
+code authority. Participant names/tokens and generated observer code are private.
+
+Faculty advisers and observers have their own app-only identity kinds with null
+committee/seat. They may read conference content with ordinary attendee access;
+they have no coffee, delegate, chair or administrator privileges. Existing
+committee-scoped actions retain their server checks. UI hides their coffee card
+and explains direct coffee links. The KAMUN bridge accepts the new kinds, refreshes
+null committee identities, rejects handoff, and keeps revocation/logout behavior.
+Push identity supports ordinary conference-wide notifications for these roles.
+
+Migration 202611110001_app_only_guests preserves participant/admin identities and
+adds app-only bindings/profiles. It deactivates all remaining legacy attendee
+codes and removes legacy memberships for KAMUN 2026 so they cannot bypass ECE's
+final roster. Organizer messaging credentials are outside participant roster scope.
+ECE revokes old code revisions through the existing callback; five-minute leases
+remain the fallback. No ECE staff passwords, orders or payments are changed here.
+
+Validation: app types/lint/build; existing mobile and bridge tests; guest claim,
+refresh and handoff handler test; disposable PostgreSQL guest scope, profile,
+privilege, refresh and revocation tests with the existing web-push regressions.
+Release state: prepared; production migration/functions/web rollout pending.
