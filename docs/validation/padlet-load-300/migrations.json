@@ -1,0 +1,23 @@
+[
+  "202609300001_initial_kamun.sql",
+  "202609300002_attendee_access.sql",
+  "202610210003_announcement_audiences.sql",
+  "202610210004_organizer_message_codes.sql",
+  "202610210005_emergency_whatsapp_contacts.sql",
+  "202610210006_committee_gossip.sql",
+  "202610270001_ecg_identity.sql",
+  "202610270002_ecg_access_rules.sql",
+  "202610270003_personal_attendee_login.sql",
+  "202611050001_committee_memes.sql",
+  "202611050002_meme_general_gallery.sql",
+  "202611050003_meme_moderation.sql",
+  "202611050004_meme_posting_scope.sql",
+  "202611080001_meme_upload_budget.sql",
+  "202611080002_meme_votes_comments.sql",
+  "202611080003_chairs_meme_gallery.sql",
+  "202611080004_ecg_admin_login.sql",
+  "202611080005_shared_admin_app.sql",
+  "202611080006_admin_content_permissions.sql",
+  "202611090001_web_push.sql",
+  "202611110001_app_only_guests.sql"
+]

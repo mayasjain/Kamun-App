@@ -1,0 +1,183 @@
+{
+  "date": "2026-11-11T22:15:00.327Z",
+  "users": 300,
+  "scope": "Local PostgreSQL, 300 independent sessions; Auth/Storage schemas stubbed, no image bytes or hosted APIs",
+  "scenarios": [
+    {
+      "name": "300 simultaneous reserve / Storage metadata insert / post flows",
+      "elapsed_ms": 536,
+      "accepted": 300,
+      "expected_rejections": 0,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 382,
+        "p95_ms": 526,
+        "max_ms": 535
+      },
+      "errors": {}
+    },
+    {
+      "name": "300 upvotes on one post",
+      "elapsed_ms": 305,
+      "accepted": 300,
+      "expected_rejections": 0,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 155,
+        "p95_ms": 285,
+        "max_ms": 299
+      },
+      "errors": {}
+    },
+    {
+      "name": "300 vote switches on one post",
+      "elapsed_ms": 203,
+      "accepted": 300,
+      "expected_rejections": 0,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 103,
+        "p95_ms": 188,
+        "max_ms": 197
+      },
+      "errors": {}
+    },
+    {
+      "name": "300 comments competing for the 200-comment post cap",
+      "elapsed_ms": 301,
+      "accepted": 200,
+      "expected_rejections": 100,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 166,
+        "p95_ms": 285,
+        "max_ms": 294
+      },
+      "errors": {
+        "54000: This meme has reached its comment limit.": 100
+      }
+    },
+    {
+      "name": "299 distributed comments plus one intentionally full post",
+      "elapsed_ms": 71,
+      "accepted": 299,
+      "expected_rejections": 1,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 58,
+        "p95_ms": 67,
+        "max_ms": 69
+      },
+      "errors": {
+        "54000: This meme has reached its comment limit.": 1
+      }
+    },
+    {
+      "name": "299 own comment removals alongside one thread read",
+      "elapsed_ms": 49,
+      "accepted": 300,
+      "expected_rejections": 0,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 37,
+        "p95_ms": 47,
+        "max_ms": 48
+      },
+      "errors": {}
+    },
+    {
+      "name": "300 readers at 2-second intervals for 15 cycles, with 300 vote writes each cycle",
+      "elapsed_ms": 28609,
+      "viewer_refreshes": 4500,
+      "read_rpc_requests": 18000,
+      "vote_writes": 4500,
+      "refresh_latency": {
+        "count": 4500,
+        "p50_ms": 516,
+        "p95_ms": 653,
+        "max_ms": 864
+      },
+      "write_latency": {
+        "count": 4500,
+        "p50_ms": 45,
+        "p95_ms": 516,
+        "max_ms": 781
+      },
+      "schedule_lag": {
+        "count": 15,
+        "p50_ms": 1,
+        "p95_ms": 2,
+        "max_ms": 2
+      },
+      "unexpected_errors": 0
+    },
+    {
+      "name": "Extreme: 300 viewers each refresh 24 open comment threads plus gallery/totals and vote, five 2-second ticks",
+      "elapsed_ms": 9440,
+      "viewer_refreshes": 1500,
+      "read_rpc_requests": 40500,
+      "vote_writes": 1500,
+      "refresh_latency": {
+        "count": 1500,
+        "p50_ms": 1253,
+        "p95_ms": 1471,
+        "max_ms": 1514
+      },
+      "refreshes_over_2s": 0,
+      "schedule_lag": {
+        "count": 5,
+        "p50_ms": 1,
+        "p95_ms": 1,
+        "max_ms": 1
+      },
+      "unexpected_errors": 0
+    },
+    {
+      "name": "300 upload reservations compete for the last 10 bucket slots",
+      "elapsed_ms": 54,
+      "accepted": 10,
+      "expected_rejections": 290,
+      "unexpected_errors": 0,
+      "latency": {
+        "count": 300,
+        "p50_ms": 37,
+        "p95_ms": 52,
+        "max_ms": 54
+      },
+      "errors": {
+        "54000: The gallery upload capacity has been reached": 290
+      }
+    }
+  ],
+  "migrations": {
+    "202609300001_initial_kamun.sql": "6c5d69b930a660929155bed3b2e9130b388f6bb2f6ddbcefacfa4611e468c974",
+    "202609300002_attendee_access.sql": "771d730ee5076df0d62ce31ab1997ea581374734ba4771afe986d3eb596be9c4",
+    "202610210003_announcement_audiences.sql": "3e8f9d503748f3ad1b66850188fdef7d6a655c8757e6e4da763b2c07a8d2813d",
+    "202610210004_organizer_message_codes.sql": "e960f3f0a19b0763902685d2fe6fb57f3f0040717e62b26ddf746937849fd1ac",
+    "202610210005_emergency_whatsapp_contacts.sql": "8a90f699fa4b0ed619ea695e490a481f708fdd02fe09ef17313bad909efa7116",
+    "202610210006_committee_gossip.sql": "f46a4550120d70c757f2b1215adf8b7412911ca6303c6a407eb3c499434e77c1",
+    "202610270001_ecg_identity.sql": "3a693f0f80d301fc7f508596f4f1c0a6ab096ff30d70ac30da2473138f5f729f",
+    "202610270002_ecg_access_rules.sql": "4a90f3ea615c7c7738d9d8f8330f501b759ed0eda37144f143fc5607e40049ff",
+    "202610270003_personal_attendee_login.sql": "1f6e4b8e9b327ac4492fa94f01179986ffd3c487bf24a091b3557121fa8048b0",
+    "202611050001_committee_memes.sql": "7d2cb00994234c402e15713f0867c06a574f82d8eff708195a5a4e5c679fdcae",
+    "202611050002_meme_general_gallery.sql": "26f0cf640d1ad8e5341cbaecec113f6837740081a36ce482c9a0d834036e0221",
+    "202611050003_meme_moderation.sql": "f4c8291362e7c86fffb3082d41a36933983cd477551217102d901e09a4992a8d",
+    "202611050004_meme_posting_scope.sql": "bc3e6c6c5c94bc6df7284f26f6887e7182e1446f20a7bd69245ffb00a44c2fb4",
+    "202611080001_meme_upload_budget.sql": "858e5d31314fb8187b9aca61771584030cb48734e6d222d6fd7dd24cce5150d0",
+    "202611080002_meme_votes_comments.sql": "c3eeacf180fa4a88f16578a6db5dda8b3a10896f74dc4dec28e66f971d6559d6",
+    "202611080003_chairs_meme_gallery.sql": "5728515afd7d8f3b1bfd1b9c3666ad4677abda7b56558f6b0b3d4dfeed483c83",
+    "202611080004_ecg_admin_login.sql": "86666bdbc28c2d886cb247207aa6c4fae948f9222ca5b0144616d92c07de5417",
+    "202611080005_shared_admin_app.sql": "ff9708a38b49bf16bb52e8e14e7e0a1a5f96479cc8b7eab167644ead3e31a62b",
+    "202611080006_admin_content_permissions.sql": "fafee0196806835d71095baf65815bb3f0b8cb8086ab362422c41637708ad189",
+    "202611090001_web_push.sql": "b078d49b8709d8a21ebf7db73c00121b71a0847681ea544bffb428a860e412cd",
+    "202611110001_app_only_guests.sql": "706cb49198c27e8d41d1e83db03904127dd01e9ecbc93f6e149e9d2b576c5031"
+  },
+  "postgres": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "passed": true
+}
