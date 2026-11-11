@@ -170,8 +170,8 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
             </View>;
           })}
           {[
-            { name: 'Black coffee', emoji: '☕', description: 'Free black coffee in the foyer during committee sessions.' },
-            { name: 'Hot tea', emoji: '🫖', description: 'Free hot tea with tea bags in the foyer during committee sessions.' },
+            { name: 'Black coffee', emoji: '☕', description: 'Free black coffee in the foyer during the coffee breaks.' },
+            { name: 'Hot tea', emoji: '🫖', description: 'Free hot tea with tea bags in the foyer during the coffee breaks.' },
           ].map(item => <View key={item.name} style={[styles.menuItem, card]}>
             <View style={[styles.drinkIcon, { backgroundColor: theme.background }]} accessible={false}>
               <CoffeeDrinkIcon name={item.name} emoji={item.emoji} />
