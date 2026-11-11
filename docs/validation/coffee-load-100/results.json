@@ -1,0 +1,69 @@
+[
+  {
+    "name": "100-order burst alongside 100 full reads: orders",
+    "requests": 100,
+    "elapsedMs": 3709,
+    "statuses": {
+      "201": 100
+    },
+    "medianMs": 3699,
+    "p95Ms": 3700,
+    "maxMs": 3700
+  },
+  {
+    "name": "100-order burst alongside 100 full reads: reads",
+    "requests": 100,
+    "elapsedMs": 3709,
+    "statuses": {
+      "200": 100
+    },
+    "medianMs": 3700,
+    "p95Ms": 3702,
+    "maxMs": 3702
+  },
+  {
+    "name": "100-order burst with 20 places",
+    "requests": 100,
+    "elapsedMs": 1993,
+    "statuses": {
+      "201": 20,
+      "409:round_full": 80
+    },
+    "medianMs": 1990,
+    "p95Ms": 1991,
+    "maxMs": 1991
+  },
+  {
+    "name": "100 delegates double-submit: 200 requests",
+    "requests": 200,
+    "elapsedMs": 3006,
+    "statuses": {
+      "201": 200
+    },
+    "medianMs": 2991,
+    "p95Ms": 3002,
+    "maxMs": 3002
+  },
+  {
+    "name": "30-second polling scenario: 600 full reads",
+    "requests": 600,
+    "elapsedMs": 27234,
+    "statuses": {
+      "200": 600
+    },
+    "medianMs": 2206,
+    "p95Ms": 3662,
+    "maxMs": 3662
+  },
+  {
+    "name": "30-second polling scenario: order burst",
+    "requests": 100,
+    "elapsedMs": 27234,
+    "statuses": {
+      "201": 100
+    },
+    "medianMs": 3684,
+    "p95Ms": 3685,
+    "maxMs": 3685
+  }
+]

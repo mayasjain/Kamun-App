@@ -4,7 +4,6 @@ import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimension
 
 import { InstagramLinks } from '@/components/instagram-links';
 import { MoreIcon } from '@/components/more-icon';
-import { Colors, Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
@@ -18,6 +17,7 @@ export default function MoreScreen() {
   const { width, fontScale } = useWindowDimensions();
   const compact = width < 400 || fontScale > 1.3;
   const [showInstall, setShowInstall] = useState(false);
+  const [privacyHovered, setPrivacyHovered] = useState(false);
   const [showAccess, setShowAccess] = useState(false);
   const { clearProfile, profile } = useAttendeeProfile();
   const [signingOut, setSigningOut] = useState(false);
@@ -120,18 +120,32 @@ export default function MoreScreen() {
       </View>
       <View style={styles.footerLinks}>
         <Link href="/privacy" asChild>
-          <Pressable accessibilityRole="link" style={({ pressed }) => [styles.privacyLink, pressed && styles.pressed]}>
-            <ThemedText style={styles.privacyText}>Privacy Policy</ThemedText>
+          <Pressable accessibilityRole="link" onHoverIn={() => setPrivacyHovered(true)} onHoverOut={() => setPrivacyHovered(false)}
+            style={({ pressed }) => [styles.privacyLink, privacyHovered && { backgroundColor: theme.primarySoft }, pressed && styles.pressed]}>
+            <ThemedText themeColor="primary" style={styles.privacyText}>Privacy Policy</ThemedText>
           </Pressable>
         </Link>
         <View style={styles.copyrightPanel}>
-          <ThemedText style={styles.footer}>© KAMUN 2026 · MUNIKA</ThemedText>
-          <ThemedText style={styles.footerCopy}>Conference content and materials are provided for KAMUN participants. Please obtain permission from the organisers before reproducing or distributing them. Third-party materials remain the property of their respective owners.</ThemedText>
-          <View style={styles.contactBlock}>
-            <ThemedText style={styles.footerCopy}>Interested in using this platform for your conference?</ThemedText>
-            <Link href="mailto:vorstand@munika.org" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Email MUNIKA at vorstand@munika.org" style={({ pressed }) => [styles.emailLink, pressed && styles.pressed]}>
-                <ThemedText style={styles.footerCopy}>vorstand@munika.org</ThemedText>
+          <ThemedText themeColor="primary" style={styles.footer}>© KAMUN 2026 · MUNIKA</ThemedText>
+          <ThemedText themeColor="primary" style={styles.footerCopy}>Conference content and materials are provided for KAMUN participants. Please obtain permission from the organisers before reproducing or distributing them. Third-party materials remain the property of their respective owners.</ThemedText>
+        </View>
+        <View style={styles.developerCredit}>
+          <ThemedText themeColor="primary" style={styles.creditText}>Developed by Mayas Jain</ThemedText>
+          <View style={styles.developerLinks}>
+            <Link href="https://www.linkedin.com/in/mayas-jain-62127227b/" target="_blank" rel="noopener noreferrer" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Mayas Jain on LinkedIn, opens in your browser" style={({ pressed }) => [styles.developerLink, pressed && styles.pressed]}>
+                <View style={styles.developerLinkContent}>
+                  <MoreIcon name="linkedin" size={14} color={theme.primary} />
+                  <ThemedText themeColor="primary" style={[styles.creditText, styles.linkText]}>LinkedIn</ThemedText>
+                </View>
+              </Pressable>
+            </Link>
+            <Link href="https://github.com/mayasjain" target="_blank" rel="noopener noreferrer" asChild>
+              <Pressable accessibilityRole="link" accessibilityLabel="Mayas Jain on GitHub, opens in your browser" style={({ pressed }) => [styles.developerLink, pressed && styles.pressed]}>
+                <View style={styles.developerLinkContent}>
+                  <MoreIcon name="github" size={14} color={theme.primary} />
+                  <ThemedText themeColor="primary" style={[styles.creditText, styles.linkText]}>GitHub</ThemedText>
+                </View>
               </Pressable>
             </Link>
           </View>
@@ -161,12 +175,16 @@ const styles = StyleSheet.create({
   socialHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   socialLogo: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   instagram: { width: 38, height: 38 },
-  footerLinks: { alignItems: 'center', gap: 8, paddingTop: 8, paddingBottom: 16 },
-  copyrightPanel: { width: '100%', maxWidth: 560, alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, gap: 10 },
-  footerCopy: { color: Colors.light.primary, fontFamily: Fonts.serif, fontStyle: 'italic', textAlign: 'center', fontSize: 12, lineHeight: 18 },
-  contactBlock: { alignItems: 'center', width: '100%' },
-  emailLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 12 },
-  privacyLink: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 24 },
-  privacyText: { color: Colors.light.primary, fontFamily: Fonts.serif, fontStyle: 'italic', fontSize: 17, lineHeight: 25 },
-  footer: { color: Colors.light.primary, textAlign: 'center', fontSize: 11, lineHeight: 16, letterSpacing: 0.8, fontWeight: '700' },
+  footerLinks: { alignItems: 'center', alignSelf: 'center', width: '100%', maxWidth: 560, paddingHorizontal: 8, paddingTop: 4, gap: 12 },
+  copyrightPanel: { width: '100%', alignItems: 'center', gap: 8 },
+  footer: { textAlign: 'center', fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  footerCopy: { textAlign: 'center', fontSize: 12, lineHeight: 18 },
+  developerCredit: { alignItems: 'center', width: '100%', paddingTop: 4 },
+  creditText: { textAlign: 'center', fontSize: 12, lineHeight: 18 },
+  developerLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16 },
+  developerLinkContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  developerLink: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'center' },
+  linkText: { textDecorationLine: 'underline' },
+  privacyLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 8 },
+  privacyText: { fontSize: 12, lineHeight: 18, textDecorationLine: 'underline' },
 });

@@ -77,7 +77,7 @@ export default function EmergencyScreen() {
               return (
                 <View key={contact.id} style={[styles.staffCard, stacked && styles.staffCardStacked, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={styles.staffProfile}>
-                    {person ? <View style={{ width: photoSize, height: photoSize, borderRadius: photoSize / 2, overflow: 'hidden', flexShrink: 0, backgroundColor: theme.primarySoft }}>
+                    {person?.photo && person.photoLayout ? <View style={{ width: photoSize, height: photoSize, borderRadius: photoSize / 2, overflow: 'hidden', flexShrink: 0, backgroundColor: theme.primarySoft }}>
                       <Image source={person.photo} resizeMode="contain" accessibilityLabel={name}
                         style={{ position: 'absolute', width: person.photoLayout.width * photoScale, height: person.photoLayout.height * photoScale, left: person.photoLayout.left * photoScale, top: person.photoLayout.top * photoScale }} />
                     </View> : null}

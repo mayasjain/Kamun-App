@@ -18,6 +18,7 @@ export const secretariat = [
  { name: 'Enrico Gerad Uy', role: 'USG of Food and Socials', photo: require('../../assets/secretariat/enrico.png'), photoLayout: portraitLayout.enrico, linkedin: 'https://www.linkedin.com/in/enrico-uy-2846b3290/' },
  { name: 'Rohil Saraf', role: 'USG Logistics', photo: require('../../assets/secretariat/rohil.png'), photoLayout: portraitLayout.rohil, linkedin: 'https://www.linkedin.com/in/rohilsaraf/' },
  { name: 'Karan Chodankar', role: 'USG Logistics', photo: require('../../assets/secretariat/karan.png'), photoLayout: portraitLayout.karan, linkedin: null },
+ { name: 'Mayas Jain', role: 'Logistics and Tech', photo: require('../../assets/secretariat/mayas.png'), photoLayout: portraitLayout.mayas, linkedin: 'https://www.linkedin.com/in/mayas-jain-62127227b/' },
  { name: 'Franziska Heidelberg', role: 'USG Food and Socials', photo: require('../../assets/secretariat/franziska.png'), photoLayout: portraitLayout.franziska, linkedin: null },
  { name: 'Lara Fabienne Hahne', role: 'USG of Marketing', photo: require('../../assets/secretariat/lara.png'), photoLayout: portraitLayout.lara, linkedin: 'https://www.linkedin.com/in/lara-fabienne-h-183392380/' },
  { name: 'Tulip Pednekar', role: 'Marketing, Design and Social Media', photo: require('../../assets/secretariat/tulip.png'), photoLayout: portraitLayout.tulip, linkedin: 'https://www.linkedin.com/in/tulippednekar/' },

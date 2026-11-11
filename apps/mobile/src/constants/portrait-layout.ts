@@ -1,5 +1,6 @@
 // Visible photo bounds from the handbook alpha masks, fitted to 112px frames.
 export const portraitLayout = {
+  "mayas": { "width": 160, "height": 213.33, "left": -24, "top": -68 },
   "lena": {
     "width": 152.04,
     "height": 202.71,

@@ -6,7 +6,6 @@ import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { coffeeRequest, CoffeeError, type CoffeeAction, type CoffeeStateResponse } from '@/lib/coffee-client';
 import { createCoffeeReadyTracker } from '@/lib/coffee-ready';
 import { signalCoffeeReady } from '@/lib/coffee-ready-signal';
-import { activeCoffeeOrder } from '@/lib/coffee-display';
 import { AccessExpiredError } from '@/lib/function-errors';
 import type { Order, State } from '@/lib/coffee-types';
 
@@ -24,32 +23,29 @@ export function useCoffee(conferenceId: string) {
   const active = useRef(false);
   const readVersion = useRef(0);
   const locked = useRef(false);
+  const reading = useRef<number | null>(null);
   const due = useRef(0);
   const clockOffset = useRef(0);
   const visible = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
     && (typeof document === 'undefined' || document.visibilityState !== 'hidden');
   const refresh = useCallback(async (force = false) => {
-    if (!active.current || !visible()) return;
+    if (!active.current || !visible() || (!force && reading.current !== null)) return;
     const version = ++readVersion.current;
+    reading.current = version;
     due.current = Infinity;
-    const saved = current.current;
     let succeeded = false;
     try {
-      const query = !force && saved ? { v: String(saved.version), b: saved.boundary } : undefined;
-      const data = await coffeeRequest<CoffeeStateResponse>(conferenceId, { action: 'state', ...(query ? { query } : {}) });
+      // Settings changes must be fetched even if the upstream version did not advance.
+      const data = await coffeeRequest<CoffeeStateResponse>(conferenceId, { action: 'state' });
       if (!active.current || version !== readVersion.current) return;
-      if (data.unchanged) {
-        if (!saved) throw new CoffeeError('unavailable');
-        current.current = { ...saved, nextBoundaryAt: data.nextBoundaryAt };
-      } else {
-        if (!data.me || !Array.isArray(data.me.orders) || !Array.isArray(data.menu) || !data.schedule || !data.settings)
-          throw new CoffeeError('unavailable');
-        current.current = data;
-        const alerts = readyTracker.update(data.me.orders);
-        setReadyOrders(alerts.visible);
-        if (alerts.newlyReady.length) void signalCoffeeReady(() => active.current && visible());
-        clockOffset.current = Date.parse(data.now) - Date.now();
-      }
+      if (data.unchanged) throw new CoffeeError('unavailable');
+      if (!data.me || !Array.isArray(data.me.orders) || !Array.isArray(data.menu) || !data.schedule || !data.settings)
+        throw new CoffeeError('unavailable');
+      current.current = data;
+      const alerts = readyTracker.update(data.me.orders);
+      setReadyOrders(alerts.visible);
+      if (alerts.newlyReady.length) void signalCoffeeReady(() => active.current && visible());
+      clockOffset.current = Date.parse(data.now) - Date.now();
       setState(current.current);
       succeeded = true;
       setOnline(true);
@@ -61,10 +57,11 @@ export function useCoffee(conferenceId: string) {
       if (cause instanceof AccessExpiredError) { current.current = null; setState(null); setReadyOrders([]); readyTracker.reset(); clearProfile(); }
       if (cause instanceof CoffeeError && cause.code === 'data_purged') { current.current = null; setState(null); setReadyOrders([]); readyTracker.reset(); }
     } finally {
+      if (reading.current === version) reading.current = null;
       if (active.current && version === readVersion.current) {
         setLoading(false);
         const savedState = current.current;
-        const interval = succeeded && savedState?.me.orders.some(activeCoffeeOrder) ? 5_000 : 30_000;
+        const interval = succeeded ? 5_000 : 30_000;
         const boundary = succeeded && savedState?.nextBoundaryAt ? Date.parse(savedState.nextBoundaryAt) - clockOffset.current + 1000 : Infinity;
         due.current = Math.max(Date.now() + 1000, Math.min(Date.now() + interval, boundary));
       }
