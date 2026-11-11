@@ -2,6 +2,7 @@ import { RemoveConfirmation } from '@/components/remove-confirmation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { usePadletPoll } from '@/hooks/use-padlet-poll';
 import { cachedMemes } from '@/lib/meme-cache';
 import { MemeSlideshow } from '@/components/meme-slideshow';
 import { MemeDiscussion } from '@/components/meme-discussion';
@@ -71,6 +72,18 @@ export default function MemesScreen() {
  }, [refresh, request, profile, destination]);
  // Refresh short-lived image URLs while the gallery is open.
  useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
+ usePadletPoll(async () => {
+  if (!profile || loading || mutation.current) return;
+  const version = request.current;
+  const rows = await loadMemes(profile.conferenceId, destination, undefined, true);
+  if (version !== request.current) return;
+  setMore(rows.length === 24);
+  setMemes(old => {
+   const oldest = rows.at(-1)?.created_at;
+   const older = rows.length === 24 && oldest ? old.filter(m => m.created_at < oldest) : [];
+   return [...rows.map(row => ({ ...row, activity: old.find(m => m.id === row.id)?.activity ?? row.activity })), ...older];
+  });
+ }, !!profile);
  async function startSlideshow() {
   if (!profile || preparingSlides) return;
   if (Platform.OS === 'web' && !document.fullscreenElement && document.documentElement.requestFullscreen) {

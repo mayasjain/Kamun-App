@@ -1,3 +1,4 @@
+import { usePadletPoll } from '@/hooks/use-padlet-poll';
 import { RemoveConfirmation } from './remove-confirmation';
 import { MemeActionIcon } from './meme-action-icon';
 import { createMemeVoteQueue } from '@/lib/meme-vote-queue';
@@ -6,7 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { Meme } from '@/lib/committee-memes';
-import { addMemeComment, loadMemeActivity, loadMemeComments, removeMemeComment, voteOnMeme, type MemeActivity, type MemeComment } from '@/lib/meme-interactions';
+import { addMemeComment, loadLiveMemeActivity, loadMemeActivity, loadMemeComments, removeMemeComment, voteOnMeme, type MemeActivity, type MemeComment } from '@/lib/meme-interactions';
 
 export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (activity: MemeActivity) => void }) {
  const theme = useTheme();
@@ -19,6 +20,7 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
  const [error, setError] = useState('');
  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
  const locked = useRef(false);
+ const revision = useRef(0);
  const alive = useRef(true);
  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
  const activity = meme.activity;
@@ -44,8 +46,25 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
    onActivity(voteQueue.current?.pending && current ? { ...rows[0], my_vote: current.my_vote, upvotes: current.upvotes, downvotes: current.downvotes } : rows[0]);
   }
  }
+ usePadletPoll(async () => {
+  if (locked.current) return;
+  const version = revision.current;
+  const row = await loadLiveMemeActivity(meme.id);
+  if (!alive.current || version !== revision.current || locked.current) return;
+  if (row && !voteQueue.current?.pending) latest.current.onActivity(row);
+  if (!expanded) return;
+  // Refresh every loaded page so older comments stay visible and removals disappear.
+  const rows: MemeComment[] = [];
+  let page: MemeComment[];
+  do {
+   page = await loadMemeComments(meme.id, rows.at(-1));
+   rows.push(...page);
+  } while (page.length === 20 && rows.length < comments.length);
+  if (alive.current && !locked.current && version === revision.current) { setComments(rows); setHasMore(page.length === 20); }
+ });
  async function loadComments(more = false) {
   if (locked.current) return;
+  revision.current++;
   locked.current = true; setLoading(true); setError('');
   try {
    const rows = await loadMemeComments(meme.id, more ? comments.at(-1) : undefined);
@@ -57,6 +76,7 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
  }
  async function mutate(operation: () => Promise<void>, saved: string, clearDraft = false) {
   if (locked.current) return;
+  revision.current++;
   locked.current = true; setBusy(true); setError('');
   let committed = false;
   try {
@@ -74,6 +94,7 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
   } finally { locked.current = false; if (alive.current) setBusy(false); }
  }
  function vote(value: -1 | 1) {
+  revision.current++;
   setError('');
   getVoteQueue().toggle(value);
  }

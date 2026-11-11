@@ -8,8 +8,9 @@ import { loadMemeActivity, type MemeActivity } from './meme-interactions';
 export const CHAIRS_GALLERY = 'chairs';
 export type Meme = { chairs_only?: boolean; id: string; committee_id: string | null; image_path: string; caption: string; created_at: string; is_own: boolean; can_remove: boolean; imageUrl: string; activity?: MemeActivity | null };
 const bucket = 'committee-memes';
+const imageUrls = new Map<string, { url: string; expires: number }>();
 function client() { if (!supabase) throw new Error('The gallery is not configured.'); return supabase; }
-export async function loadMemes(conferenceId: string, committeeId: string | null, before?: string): Promise<Meme[]> {
+export async function loadMemes(conferenceId: string, committeeId: string | null, before?: string, live = false): Promise<Meme[]> {
  const db = client();
  const generation = memeCacheGeneration();
  const chairs = committeeId === CHAIRS_GALLERY;
@@ -20,16 +21,18 @@ export async function loadMemes(conferenceId: string, committeeId: string | null
  if (!data?.length) { if (!before) cacheMemes(conferenceId, committeeId, [], Date.now(), generation); return []; }
  const rows = data.filter((m: Meme) => chairs ? m.committee_id === null : m.committee_id === committeeId);
  if (!rows.length) return [];
+ const missingImages = rows.filter((m: Meme) => !live || (imageUrls.get(m.image_path)?.expires ?? 0) <= Date.now());
  const [permission, images, activity] = await Promise.all([
   db.rpc('can_moderate_meme_gallery', { p_conference_id: conferenceId, p_committee_id: chairs ? null : committeeId }),
-  db.storage.from(bucket).createSignedUrls(rows.map((m: Meme) => m.image_path), 300),
+  missingImages.length ? db.storage.from(bucket).createSignedUrls(missingImages.map((m: Meme) => m.image_path), 300) : Promise.resolve({ data: [], error: null }),
   // Keep photos available during backend rollout or an interaction-service error.
-  loadMemeActivity(rows.map((m: Meme) => m.id)).catch(() => []),
+  live ? Promise.resolve([]) : loadMemeActivity(rows.map((m: Meme) => m.id)).catch(() => []),
  ]);
  if (permission.error) throw permission.error;
  if (images.error) throw images.error;
- const urls = new Map(images.data?.map(u => [u.path, u.signedUrl]));
- const result = rows.map((m: Meme) => ({ ...m, chairs_only: chairs, can_remove: permission.data === true, imageUrl: urls.get(m.image_path) ?? '', activity: activity.find(a => a.meme_id === m.id) ?? null }));
+ for (const [path, entry] of imageUrls) if (entry.expires <= Date.now()) imageUrls.delete(path);
+ for (const image of images.data ?? []) if (image.path && image.signedUrl) imageUrls.set(image.path, { url: image.signedUrl, expires: Date.now() + 240000 });
+ const result = rows.map((m: Meme) => ({ ...m, chairs_only: chairs, can_remove: permission.data === true, imageUrl: imageUrls.get(m.image_path)?.url ?? '', activity: activity.find(a => a.meme_id === m.id) ?? null }));
  if (!before) cacheMemes(conferenceId, committeeId, result, Date.now(), generation);
  return result;
 }
