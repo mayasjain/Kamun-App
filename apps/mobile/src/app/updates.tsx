@@ -1,11 +1,10 @@
 import { PushNotificationSettings } from '@/components/push-notification-settings';
 import { AdminUpdateComposer } from '@/components/admin-update-composer';
-import { AdminRemoveButton } from '@/components/admin-remove-button';
+import { AnnouncementCard } from '@/components/announcement-card';
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { useConferenceContent } from '@/contexts/conference-content';
-import { formatAnnouncementTime } from '@/lib/date-format';
 import { orderAnnouncements } from '@/lib/announcement-order';
 
 export default function UpdatesScreen() {
@@ -17,15 +16,7 @@ export default function UpdatesScreen() {
       <PushNotificationSettings />
       <AdminUpdateComposer />
       {announcements.map((announcement) => (
-        <ContentCard key={announcement.id} urgent={announcement.priority === 'urgent'} label={formatAnnouncementTime(announcement.publishedAt).toUpperCase()} title={announcement.title}>
-          {announcement.audience !== 'all' ? (
-            <ThemedText type="smallBold" themeColor="primary">
-              {announcement.audience === 'chair' ? 'For chairs' : 'For delegates'}
-            </ThemedText>
-          ) : null}
-          <ThemedText themeColor="textSecondary">{announcement.body}</ThemedText>
-          <AdminRemoveButton id={announcement.id} title={announcement.title} />
-        </ContentCard>
+        <AnnouncementCard key={announcement.id} announcement={announcement} adminControls />
       ))}
       {!announcements.length ? (
         <ContentCard label="UPDATES" title={isLoading ? 'Loading announcements…' : 'No announcements yet'}>

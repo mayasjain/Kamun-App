@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AnnouncementCard } from '@/components/announcement-card';
 import { HomeIcon } from '@/components/home-icon';
 import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { AppState, Image, Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -102,18 +103,15 @@ export default function HomeScreen() {
                 <ThemedText accessibilityRole="header" type="subtitle" style={[styles.sectionTitle, phone && styles.sectionTitlePhone]}>{urgentAnnouncements.length ? 'Urgent updates' : 'Conference news'}</ThemedText>
               </View>
             </View>
-            {homeAnnouncements.map(announcement => <Link key={announcement?.id ?? 'empty'} href="/updates" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel={`${announcement?.priority === 'urgent' ? 'Urgent update' : 'View updates'}. ${announcement?.title ?? 'No new announcement'}`} style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderLeftColor: announcement?.priority === 'urgent' ? theme.danger : theme.accent }, pressed && styles.pressed]}>
-                {announcement?.priority === 'urgent' ? <View style={[styles.statusBadge, { backgroundColor: theme.danger }]}>
-                  <ThemedText type="smallBold" themeColor="onDanger">URGENT</ThemedText>
-                </View> : null}
-                <ThemedText accessibilityRole="header" type="subtitle" style={[styles.updateTitle, phone && styles.updateTitlePhone]}>{announcement?.title ?? (isLoading ? 'Loading updates…' : 'No new announcements')}</ThemedText>
-                <ThemedText themeColor="textSecondary" style={phone && styles.bodyPhone} numberOfLines={3}>{announcement?.body ?? 'Organiser messages will appear here when published.'}</ThemedText>
-                <View style={[styles.updateAction, { borderTopColor: theme.border }]}>
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>Open updates</ThemedText>
-                </View>
-              </Pressable>
-            </Link>)}
+            {homeAnnouncements.map(announcement => announcement
+              ? <AnnouncementCard key={announcement.id} announcement={announcement} />
+              : <Link key="empty" href="/updates" asChild>
+                <Pressable accessibilityRole="link" style={({ pressed }) => [styles.updateCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderLeftColor: theme.accent }, pressed && styles.pressed]}>
+                  <ThemedText type="subtitle">{isLoading ? 'Loading updates…' : 'No new announcements'}</ThemedText>
+                  <ThemedText themeColor="textSecondary">Organiser messages will appear here when published.</ThemedText>
+                  <ThemedText type="smallBold" themeColor="primary">Open updates</ThemedText>
+                </Pressable>
+              </Link>)}
           </View>
 
           <View style={styles.section}>

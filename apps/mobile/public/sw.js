@@ -8,8 +8,8 @@ self.addEventListener('push', event => {
     if (/^kamun-[0-9a-f-]{36}$/i.test(payload?.tag)) tag = payload.tag;
   } catch { /* Always show a visible notification, even with an empty push. */ }
   event.waitUntil(Promise.all([
-    self.registration.showNotification('New KAMUN update', {
-      body: 'Open Updates to read the latest announcement.',
+    self.registration.showNotification('Secretariat announcement', {
+      body: 'Tap to read the latest update.',
       icon: '/icon-192.png', badge: '/icon-192.png', tag,
       data: { url: '/updates' },
     }),

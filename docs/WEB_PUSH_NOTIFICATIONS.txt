@@ -11,8 +11,7 @@ previous identity's subscription. Sign in and enable again for the new identity.
 
 New updates automatically refresh while the app is visible (within 30 seconds),
 on foreground/reconnect, and immediately when its worker receives a push.
-Push alerts show generic text: New KAMUN update / Open Updates to read the latest
-announcement. Clicking opens /updates. Private titles/bodies are fetched only
+Push alerts show generic text: Secretariat announcement / Tap to read the latest update. Clicking opens /updates. Private titles/bodies are fetched only
 inside the authenticated app. Existing home UI and tile layouts are unchanged.
 The worker never caches HTML, app bundles, API responses or tokens.
 

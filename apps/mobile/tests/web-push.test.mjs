@@ -12,7 +12,7 @@ const self={location:{origin:'https://kamun.example'},addEventListener:(name,fn)
 vm.runInNewContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),{self,URL});
 test('push always displays a generic alert, refreshes visible clients, and never exposes announcement content',async()=>{
  let pending;events.push({data:{json:()=>({tag:'kamun-10000000-0000-4000-8000-000000000001',title:'Private title',url:'https://evil.example'})},waitUntil:p=>{pending=p;}});await pending;
- assert.equal(notifications[0][0],'New KAMUN update');assert.equal(notifications[0][1].body.includes('Private'),false);assert.equal(notifications[0][1].data.url,'/updates');assert.equal(messages[0].type,'KAMUN_UPDATE');
+ assert.equal(notifications[0][0],'Secretariat announcement');assert.equal(notifications[0][1].body,'Tap to read the latest update.');assert.equal(notifications[0][1].body.includes('Private'),false);assert.equal(notifications[0][1].data.url,'/updates');assert.equal(messages[0].type,'KAMUN_UPDATE');
  events.push({data:{json:()=>{throw Error('bad payload');}},waitUntil:p=>{pending=p;}});await pending;assert.equal(notifications.length,2);
 });
 test('notification clicks open only the same-origin Updates route',async()=>{
