@@ -12,7 +12,8 @@ import { usePathname } from 'expo-router';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from './themed-text';
+import { TabIcon } from './tab-icon.web';
+import { useTheme } from '@/hooks/use-theme';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -40,7 +41,7 @@ export default function AppTabs() {
         <CustomTabList>
           {primaryNavigation.map((item) => (
             <TabTrigger key={item.name} name={item.name === 'index' ? 'home' : item.name} href={item.href} asChild>
-              <TabButton section={item.name}>{item.label}</TabButton>
+              <TabButton section={item.name} label={item.label} />
             </TabTrigger>
           ))}
           <TabTrigger name="coffee-privacy" href="/coffee-privacy" style={styles.hiddenTab} />
@@ -58,18 +59,17 @@ export default function AppTabs() {
   );
 }
 
-function TabButton({ children, isFocused, section, ...props }: TabTriggerSlotProps & { section: string }) {
+function TabButton({ isFocused, section, label, ...props }: TabTriggerSlotProps & { section: string; label: string }) {
+  const theme = useTheme();
   const pathname = usePathname().replace(/\/$/, '');
   const selected = parentSections[pathname] ? parentSections[pathname] === section : isFocused;
   return (
-    <Pressable {...props} accessibilityRole="link" aria-current={selected ? 'location' : undefined} style={({ pressed }) => [styles.tabButton, section === 'resources' && styles.resourcesTab, section === 'schedule' && styles.scheduleTab, pressed && styles.pressed]}>
+    <Pressable {...props} accessibilityRole="link" accessibilityLabel={label} aria-current={selected ? 'location' : undefined} style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <ThemedView
         nativeID={`app-navigation-item-${section}`}
         type={selected ? 'backgroundSelected' : 'backgroundElement'}
         style={[styles.tabButtonView, { backgroundColor: selected ? 'rgba(245, 230, 168, 0.6)' : 'transparent' }]}>
-        <ThemedText numberOfLines={1} style={[styles.tabLabel, selected && styles.tabLabelActive]} type="small" themeColor={selected ? 'primary' : 'textSecondary'}>
-          {children}
-        </ThemedText>
+        <TabIcon name={section} color={selected ? theme.primary : theme.textSecondary} selected={!!selected} />
       </ThemedView>
     </Pressable>
   );
@@ -146,13 +146,10 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   tabButton: { flex: 1, minWidth: 44 },
-  resourcesTab: { flex: 1.35 },
-  scheduleTab: { flex: 1.15 },
   hiddenTab: { display: 'none' },
-  tabLabel: { fontSize: 12, textAlign: 'center' },
-  tabLabelActive: { fontWeight: '500' },
   tabButtonView: {
     minHeight: 48,
+    alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.one,
     paddingHorizontal: 2,

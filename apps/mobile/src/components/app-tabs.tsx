@@ -27,8 +27,8 @@ export default function AppTabs() {
       tintColor={colors.primary}
       labelStyle={{ selected: { color: colors.primary, fontWeight: '500' }, default: { color: colors.textSecondary } }}>
       {primaryNavigation.map((item) => (
-        <NativeTabs.Trigger key={item.name} name={item.name}>
-          <NativeTabs.Trigger.Label>{item.label}</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger key={item.name} name={item.name} accessibilityLabel={item.label}>
+          <NativeTabs.Trigger.Label hidden>{item.label}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon sf={item.sfIcon} md={item.materialIcon} />
         </NativeTabs.Trigger>
       ))}
