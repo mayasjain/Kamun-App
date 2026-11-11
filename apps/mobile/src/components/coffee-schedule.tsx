@@ -10,7 +10,6 @@ export function CoffeeSchedule({ schedule }: { schedule: Schedule }) {
   const days = coffeeScheduleDays(schedule.blocks);
   return <View style={styles.section}>
     <ThemedText accessibilityRole="header" style={styles.heading}>Coffee opening times</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">All times are in Karlsruhe (Europe/Berlin). Ordering also depends on the live queue.</ThemedText>
     {!days.length ? <ThemedText type="small" themeColor="textSecondary">Opening times have not been published yet.</ThemedText> : null}
     {days.map(({ day, blocks }) => <View key={day} style={[styles.day, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="primary" style={styles.dayHeading}>{coffeeDayLabel(day)}</ThemedText>

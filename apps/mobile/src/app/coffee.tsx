@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { CoffeeDrinkIcon } from '@/components/coffee-drink-icon';
 import { CoffeeOrderProgress } from '@/components/coffee-order-progress';
 import { CoffeeSchedule } from '@/components/coffee-schedule';
 import { CoffeeOrderSheet, type CoffeeDraft } from '@/components/coffee-order-sheet';
@@ -137,9 +138,11 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
         <View style={styles.section}>
           <ThemedText accessibilityRole="header" style={styles.heading}>Menu</ThemedText>
           {state.settings.paidMode ? <View style={[styles.allowanceNotice, { backgroundColor: theme.primarySoft, borderColor: theme.border }]}>
-            <ThemedText accessibilityRole="header" style={styles.allowanceTitle} themeColor="primary">{state.me.freeLeftToday !== null && state.me.freeLeftToday > 0 ? `${state.me.freeLeftToday} free ${state.me.freeLeftToday === 1 ? 'drink' : 'drinks'} left for the conference` : 'Your conference free drink has been used'}</ThemedText>
-            <ThemedText type="small" themeColor="primary">One free drink per person for the whole conference. After that, menu prices apply.</ThemedText>
-            <ThemedText type="smallBold" themeColor="primary">Cash only · Pay at the counter in the foyer.</ThemedText>
+            <ThemedText accessibilityRole="header" style={styles.allowanceTitle} themeColor="primary">One free coffee bar drink per person</ThemedText>
+            <ThemedText type="small" themeColor="primary">One free coffee bar drink per person for the whole conference. After that, menu prices apply.</ThemedText>
+            <ThemedText type="small" themeColor="primary" style={styles.paymentInfo}>
+              Cash only — Pay at the counter in the foyer.
+            </ThemedText>
           </View> : null}
           {blocked ? <ThemedText type="small" themeColor="textSecondary">{blocked}</ThemedText> : null}
           {!state.menu.length ? <ThemedText type="small" themeColor="textSecondary">The menu is being prepared. Check back shortly.</ThemedText> : null}
@@ -147,7 +150,7 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
             const disabled = !coffee.online || coffee.busy || pending || !!blocked || !item.available;
             return <View key={item.id} style={[styles.menuItem, card]}>
               <View style={[styles.drinkIcon, { backgroundColor: theme.background }]} accessible={false}>
-                <ThemedText style={styles.drinkEmoji}>{item.emoji || '☕'}</ThemedText>
+                <CoffeeDrinkIcon name={item.name} emoji={item.emoji} />
               </View>
               <View style={styles.menuBody}>
                 <View style={styles.menuTopline}>
@@ -166,11 +169,37 @@ function ConnectedCoffee({ conferenceId }: { conferenceId: string }) {
               </Pressable> : null}
             </View>;
           })}
+          {[
+            { name: 'Black coffee', emoji: '☕', description: 'Free black coffee in the foyer during committee sessions.' },
+            { name: 'Hot tea', emoji: '🫖', description: 'Free hot tea with tea bags in the foyer during committee sessions.' },
+          ].map(item => <View key={item.name} style={[styles.menuItem, card]}>
+            <View style={[styles.drinkIcon, { backgroundColor: theme.background }]} accessible={false}>
+              <CoffeeDrinkIcon name={item.name} emoji={item.emoji} />
+            </View>
+            <View style={styles.menuBody}>
+              <View style={styles.menuTopline}>
+                <ThemedText style={styles.menuTitle}>{item.name}</ThemedText>
+                <View style={[styles.freeBadge, { backgroundColor: theme.primarySoft }]}>
+                  <ThemedText style={styles.freeBadgeText} themeColor="primary">FREE</ThemedText>
+                </View>
+              </View>
+              <ThemedText type="small" themeColor="textSecondary">{item.description}</ThemedText>
+              {compactMenu ? <View style={[styles.orderPill, styles.orderPillCompact, { backgroundColor: theme.primarySoft }]}>
+                <ThemedText type="smallBold" themeColor="primary">In foyer</ThemedText>
+              </View> : null}
+            </View>
+            {!compactMenu ? <View style={[styles.orderPill, { backgroundColor: theme.primarySoft }]}>
+              <ThemedText type="smallBold" themeColor="primary">In foyer</ThemedText>
+            </View> : null}
+          </View>)}
         </View>
         {state.me.tabCents !== null ? <View style={[styles.card, card]}><ThemedText type="smallBold">Outstanding balance · {coffeeMoney(state.me.tabCents)}</ThemedText><ThemedText type="small" themeColor="textSecondary">Cash only · Pay at the counter in the foyer.</ThemedText></View> : null}
         {history.length ? <View style={styles.section}><ThemedText accessibilityRole="header" style={styles.heading}>Earlier orders</ThemedText>{history.map(orderCard)}</View> : null}
         <CoffeeSchedule schedule={state.schedule} />
-        <ThemedText type="small" themeColor="textSecondary" style={styles.credit}>Coffee brewed by {state.settings.baristaName}</ThemedText>
+        <View style={styles.credit}>
+          <ThemedText accessible={false}>☕</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">Coffee brewed by {state.settings.baristaName}</ThemedText>
+        </View>
       </> : null}
     </Screen>
     {draft && showOrder && state ? <CoffeeOrderSheet key={draft.key} draft={draft} item={sheetItem ?? { ...draft.item, available: false }} paid={state.settings.paidMode}
@@ -195,14 +224,16 @@ const styles = StyleSheet.create({
   orderTitle: { flex: 1, minWidth: 100, fontSize: 17, lineHeight: 24, fontWeight: '500' },
   menuItem: { borderWidth: 1, borderRadius: 20, minHeight: 96, padding: 16, gap: 14, flexDirection: 'row', alignItems: 'center' },
   drinkIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  drinkEmoji: { fontSize: 30, lineHeight: 38 },
   menuBody: { flex: 1, minWidth: 0, gap: 6 },
   menuTopline: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 4 },
   menuTitle: { fontSize: 16, lineHeight: 23, fontWeight: '600', flexShrink: 1 },
   menuPrice: { fontSize: 16, lineHeight: 23, fontWeight: '600' },
+  paymentInfo: { marginTop: 4 },
+  freeBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  freeBadgeText: { fontSize: 11, lineHeight: 16, fontWeight: '600', letterSpacing: 0.6 },
   orderPill: { minHeight: 44, minWidth: 76, borderRadius: 24, paddingHorizontal: 18, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   orderPillCompact: { alignSelf: 'flex-start', marginTop: 4 },
   loading: { alignItems: 'center', paddingVertical: 24, gap: 16 },
-  credit: { textAlign: 'center', fontSize: 12 },
+  credit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 },
   pressed: { opacity: 0.7 },
 });
