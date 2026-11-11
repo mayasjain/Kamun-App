@@ -22,4 +22,27 @@ remain the fallback. No ECE staff passwords, orders or payments are changed here
 Validation: app types/lint/build; existing mobile and bridge tests; guest claim,
 refresh and handoff handler test; disposable PostgreSQL guest scope, profile,
 privilege, refresh and revocation tests with the existing web-push regressions.
-Release state: prepared; production migration/functions/web rollout pending.
+Release state: LIVE — ECE participant 85e592c9, staff 3fcdc1c3; KAMUN web
+63ff123d-1a91-4aa1-a8b0-7e2ae48cb0ac (source 2df640a). Guest SQL was applied
+through the existing direct-SQL workflow; this project has no migration-history
+table. The ecg_guest_scope/attendee_guest_scope constraints confirm application.
+Claim/refresh/handoff/push-dispatch functions are deployed. Final ECE reconcile
+applied 12 code/account updates and revoked all keys/sessions/tickets for 24
+unlisted accounts; account/history records remain. Exactly 221 active codes.
+
+Live verification: every final code/revision passes; all 25 superseded baseline
+revisions fail. All nine advisers, the observer and representative delegate,
+chair and admin pass KAMUN claim/refresh/profile and coffee/admin/handoff scope
+checks. Two disposable Auth users were deleted; no orders were placed. Remaining
+legacy attendee codes are inactive. ECE orders, payments, staff passwords and
+conference settings/catalogs retain identical before/after digests. Both ECE
+health endpoints are production/200/version 40, and KAMUN coffee loads the new
+configured bundle. ECE suite: 575 tests plus workspace types/builds. KAMUN:
+75 existing tests plus guest handler test, mobile lint/types/configured build,
+and disposable PostgreSQL guest/push regressions pass.
+
+Source is on astra/final-roster in both repositories, awaiting owner-requested
+merge. No participant names/tokens or private backups are committed. The missing
+observer token is saved privately by ECE; preserve its generated-token state
+when rerunning final-roster reconciliation. No secret, DNS or frozen-account
+changes occurred.
