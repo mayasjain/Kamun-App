@@ -129,25 +129,28 @@ export default function MoreScreen() {
           <ThemedText themeColor="primary" style={styles.footer}>© KAMUN 2026 · MUNIKA</ThemedText>
           <ThemedText themeColor="primary" style={styles.footerCopy}>Conference content and materials are provided for KAMUN participants. Please obtain permission from the organisers before reproducing or distributing them. Third-party materials remain the property of their respective owners.</ThemedText>
         </View>
-        <View style={styles.developerCredit}>
-          <ThemedText themeColor="primary" style={styles.creditText}>Developed by Mayas Jain</ThemedText>
-          <View style={styles.developerLinks}>
-            <Link href="https://www.linkedin.com/in/mayas-jain-62127227b/" target="_blank" rel="noopener noreferrer" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Mayas Jain on LinkedIn, opens in your browser" style={({ pressed }) => [styles.developerLink, pressed && styles.pressed]}>
-                <View style={styles.developerLinkContent}>
-                  <MoreIcon name="linkedin" size={14} color={theme.primary} />
-                  <ThemedText themeColor="primary" style={[styles.creditText, styles.linkText]}>LinkedIn</ThemedText>
-                </View>
-              </Pressable>
-            </Link>
-            <Link href="https://github.com/mayasjain" target="_blank" rel="noopener noreferrer" asChild>
-              <Pressable accessibilityRole="link" accessibilityLabel="Mayas Jain on GitHub, opens in your browser" style={({ pressed }) => [styles.developerLink, pressed && styles.pressed]}>
-                <View style={styles.developerLinkContent}>
-                  <MoreIcon name="github" size={14} color={theme.primary} />
-                  <ThemedText themeColor="primary" style={[styles.creditText, styles.linkText]}>GitHub</ThemedText>
-                </View>
-              </Pressable>
-            </Link>
+        <View style={[styles.developerCredit, { borderTopColor: theme.border }]}>
+          <ThemedText themeColor="textSecondary" style={styles.creditHeading}>Developed by</ThemedText>
+          <View style={styles.developers}>
+            {[
+              { name: 'Mayas Jain', github: 'https://github.com/mayasjain', linkedin: 'https://www.linkedin.com/in/mayas-jain-62127227b/' },
+              { name: 'Karan Chodankar', github: 'https://github.com/karan-kc', linkedin: null },
+            ].map(developer => <View key={developer.github} style={styles.developer}>
+              <ThemedText themeColor="primary" style={styles.developerName}>{developer.name}</ThemedText>
+              <View style={styles.developerLinks}>
+                {[
+                  { label: 'GitHub', icon: 'github' as const, url: developer.github },
+                  ...(developer.linkedin ? [{ label: 'LinkedIn', icon: 'linkedin' as const, url: developer.linkedin }] : []),
+                ].map(link => <Link key={link.url} href={link.url as `https://${string}`} target="_blank" rel="noopener noreferrer" asChild>
+                  <Pressable accessibilityRole="link" accessibilityLabel={`${developer.name} on ${link.label}, opens in your browser`} style={({ pressed }) => [styles.developerLink, pressed && styles.pressed]}>
+                    <View style={styles.developerLinkContent}>
+                      <MoreIcon name={link.icon} size={13} color={theme.primary} />
+                      <ThemedText themeColor="primary" style={[styles.creditText, styles.linkText]}>{link.label}</ThemedText>
+                    </View>
+                  </Pressable>
+                </Link>)}
+              </View>
+            </View>)}
           </View>
         </View>
       </View>
@@ -179,9 +182,13 @@ const styles = StyleSheet.create({
   copyrightPanel: { width: '100%', alignItems: 'center', gap: 8 },
   footer: { textAlign: 'center', fontSize: 13, lineHeight: 18, fontWeight: '600' },
   footerCopy: { textAlign: 'center', fontSize: 12, lineHeight: 18 },
-  developerCredit: { alignItems: 'center', width: '100%', paddingTop: 4 },
+  developerCredit: { alignItems: 'center', width: '100%', borderTopWidth: StyleSheet.hairlineWidth, marginTop: 4, paddingTop: 20, gap: 12 },
+  creditHeading: { fontSize: 11, lineHeight: 16, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
+  developers: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 24, rowGap: 16 },
+  developer: { flexGrow: 1, flexBasis: 200, maxWidth: 260, alignItems: 'center', gap: 2 },
+  developerName: { textAlign: 'center', fontSize: 14, lineHeight: 20, fontWeight: '600' },
   creditText: { textAlign: 'center', fontSize: 12, lineHeight: 18 },
-  developerLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16 },
+  developerLinks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 },
   developerLinkContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   developerLink: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'center' },
   linkText: { textDecorationLine: 'underline' },
