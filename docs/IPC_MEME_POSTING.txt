@@ -1,0 +1,55 @@
+IPC assigned-committee meme posting — 13 November 2026
+
+Implemented and deployed:
+- Database: 202611130001_ipc_meme_assignments.sql applied to the existing Kamun
+  Supabase project before publishing the client. This project has no
+  supabase_migrations.schema_migrations relation; the exact SQL was applied
+  transactionally through the authenticated Supabase database query command.
+- Web: https://d53ce90e.kamun-2026-app.pages.dev (production main deployment).
+- Existing login codes, IPC membership, coffee identity and moderation rights
+  remain unchanged. General and IPC posting remain available; each listed IPC
+  journalist additionally receives only their assigned public committee.
+
+Assignments use verified ECG seat labels, not personal names or codes:
+Al Jazeera (IAEA) -> IAEA
+BBC World (ILO) -> ILO
+Charlie Hebdo (European Parliament) -> EP
+China Daily (CUPUOS) -> COPUOS
+Eleanzer Oswald (EIC of the Independent Gazetteer) (US CC) -> USCC
+Financial Times (ILO) -> ILO
+Fox News (UNSC) -> UNSC
+New York Times (WHO) -> WHO
+Russia Today (IAEA) -> IAEA
+The Guardian (DISEC) -> DISEC
+The Island Times (PIF) -> PIF
+
+Preflight:
+- Read-only ECE production roster query confirmed one active delegate for every
+  listed seat label. No codes were read, changed, or stored.
+- All target Kamun committees exist and are published.
+- Five IPC identities had existing unrevoked Kamun bindings. The other six do
+  not need pre-created bindings: their usual login establishes the same verified
+  seat identity and the server resolves its assignment.
+
+Validation:
+- Mobile typecheck and lint pass; all 54 mobile tests pass, including late
+  account-switch responses, leaving the padlet, failed permission loads and retry.
+- Embedded PostgreSQL tests exercise all eleven permission RPC results and real
+  reserve/Storage-metadata/post flows, General/IPC/assigned access, forbidden
+  committees, non-IPC identical labels, unknown labels, revoked/expired access,
+  unpublished targets, cross-conference queries, normalization, and no added
+  membership/moderation/Chairs access. Existing vote/comment/chairs/admin/guest
+  and push regression checks also pass.
+- A read-only production transaction used an existing IPC identity under the
+  authenticated role. Its cached session had expired and correctly received no
+  grants, including to unrelated ILO. No real sessions were extended or changed.
+- Live production bundle contains the new permission RPC and retry interface.
+- An active participant's browser/composer interaction was not visually tested;
+  no production memes, image uploads, votes or comments were created for QA.
+
+Rerun backend tests using a temporary @electric-sql/pglite installation:
+PGLITE_MODULE=/absolute/path/to/pglite/dist/index.js node supabase/tests/run-ipc-meme-assignments.mjs
+
+Participant recovery: reopen the padlet after the web update. If assignment
+loading fails, use "Retry posting access". An expired identity must refresh or
+sign in with its existing code; authorization is always enforced by the server.

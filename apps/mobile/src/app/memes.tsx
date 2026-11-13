@@ -2,6 +2,7 @@ import { RemoveConfirmation } from '@/components/remove-confirmation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useMemePostingCommittees } from '@/hooks/use-meme-posting-committees';
 import { usePadletPoll } from '@/hooks/use-padlet-poll';
 import { cachedMemes } from '@/lib/meme-cache';
 import { MemeSlideshow } from '@/components/meme-slideshow';
@@ -17,6 +18,7 @@ export default function MemesScreen() {
  const theme = useTheme();
  const { height: windowHeight } = useWindowDimensions();
  const { profile } = useAttendeeProfile();
+ const postingCommittees = useMemePostingCommittees(profile);
  const { content } = useConferenceContent();
  const committees = content?.committees ?? [];
  const [slides, setSlides] = useState<Meme[] | null>(null);
@@ -31,7 +33,7 @@ export default function MemesScreen() {
  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
  const isChair = profile?.accessType === 'chair' || profile?.accessType === 'admin';
  const destination = filter === CHAIRS_GALLERY && !isChair ? null : filter;
- const canPost = !!profile && (profile.accessType === 'admin' || destination === null || destination === profile.committeeId || (destination === CHAIRS_GALLERY && isChair));
+ const canPost = !!profile && (profile.accessType === 'admin' || destination === null || destination === profile.committeeId || (destination !== null && postingCommittees.ids.includes(destination)) || (destination === CHAIRS_GALLERY && isChair));
  const destinationName = destination === CHAIRS_GALLERY ? 'Chairs' : committees.find(c => c.id === destination)?.abbreviation ?? 'General';
  const [caption, setCaption] = useState('');
  const [busy, setBusy] = useState(false);
@@ -144,7 +146,11 @@ export default function MemesScreen() {
  return <Screen eyebrow="" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
   {slides && (!slides.some(m => m.chairs_only) || isChair) && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
-  {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General or your own committee.</ThemedText>}
+  {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General, your own committee or your assigned reporting committee.</ThemedText>}
+  {postingCommittees.failed && <View accessibilityLiveRegion="polite" style={styles.panel}>
+   <ThemedText themeColor="textSecondary">Could not check assigned committee posting access. Your usual galleries are still available.</ThemedText>
+   <ActionButton label="Retry posting access" onPress={postingCommittees.retry} />
+  </View>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
   {composing ? <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
    <ThemedText themeColor="textSecondary">Keep it kind and only share photos you have permission to post.</ThemedText>

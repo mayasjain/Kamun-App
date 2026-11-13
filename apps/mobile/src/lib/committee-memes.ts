@@ -66,3 +66,9 @@ export async function removeMeme(meme: Meme) {
  clearMemeCache();
  // Moderation soft-removes the post; private image access expires with signed URLs.
 }
+
+export async function loadMemePostingCommittees(conferenceId: string): Promise<string[]> {
+ const { data, error } = await client().rpc('get_my_meme_posting_committees', { p_conference_id: conferenceId });
+ if (error) throw error;
+ return data ?? [];
+}
