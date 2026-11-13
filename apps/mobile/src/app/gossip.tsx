@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useConferenceContent } from '@/contexts/conference-content';
 import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
@@ -14,34 +15,48 @@ type Gossip = { id: string; committee_id: string; message: string; status: Gossi
 export default function GossipScreen() {
   const theme = useTheme();
   const { profile } = useAttendeeProfile();
+  const { content } = useConferenceContent();
+  const committees = content?.committees ?? [];
+  const isAdmin = profile?.accessType === 'admin';
+  const [adminCommittee, setAdminCommittee] = useState<string | null>(null);
+  const request = useRef(0);
   const isChair = profile?.accessType === 'chair';
   const selectedCommittee = profile?.committeeId;
   const [message, setMessage] = useState('');
-  const [inbox, setInbox] = useState<Gossip[]>([]);
+  const [inboxState, setInboxState] = useState<{ profile: typeof profile; committee: string | null; rows: Gossip[]; more: boolean } | null>(null);
+  const inbox = inboxState?.profile === profile && inboxState?.committee === adminCommittee ? inboxState.rows : [];
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  const refresh = useCallback(async () => {
-    if (!isChair || !supabase) return;
+  const refresh = useCallback(async (before?: Gossip) => {
+    if ((!isChair && !isAdmin) || !profile || !supabase) return;
+    const version = ++request.current;
     setLoading(true);
     try {
-      const { data, error: loadError } = await supabase.rpc('my_chair_gossip');
+      const { data, error: loadError } = isAdmin
+        ? await supabase.rpc('my_admin_gossip', { p_conference_id: profile.conferenceId, p_committee_id: adminCommittee, p_before: before?.created_at ?? null, p_before_id: before?.id ?? null })
+        : await supabase.rpc('my_chair_gossip');
+      if (version !== request.current) return;
       if (loadError) throw loadError;
-      setInbox((data ?? []) as Gossip[]);
+      const rows = (data ?? []) as Gossip[];
+      setInboxState(old => ({ profile, committee: adminCommittee, more: isAdmin && rows.length === 100, rows: before && old?.profile === profile && old.committee === adminCommittee ? [...old.rows, ...rows.filter(row => !old.rows.some(item => item.id === row.id))] : rows }));
       setError('');
     } catch {
-      setError('Could not load your committee inbox. Check that you used its chair code.');
+      if (version === request.current) setError('Could not load the gossip inbox. Check your connection and access, then try again.');
     } finally {
-      setLoading(false);
+      if (version === request.current) setLoading(false);
     }
-  }, [isChair]);
+  }, [isChair, isAdmin, profile, adminCommittee]);
 
   useEffect(() => {
-    if (isChair) void Promise.resolve().then(() => refresh());
-  }, [isChair, refresh]);
+    let active = true;
+    const invalidate = () => { request.current++; };
+    if (isChair || isAdmin) void Promise.resolve().then(() => { if (active) void refresh(); });
+    return () => { active = false; invalidate(); };
+  }, [isChair, isAdmin, refresh]);
 
   async function submit() {
     const body = message.trim();
@@ -75,7 +90,7 @@ export default function GossipScreen() {
         p_gossip_id: id, p_status: status,
       });
       if (updateError || !data) throw updateError ?? new Error('Chair access required');
-      setInbox((items) => items.map((item) => item.id === id ? { ...item, status } : item));
+      setInboxState(old => old?.profile === profile ? { ...old, rows: old.rows.map(item => item.id === id ? { ...item, status } : item) } : old);
     } catch {
       setError('Could not update this message. Check your chair access and try again.');
     } finally {
@@ -87,30 +102,34 @@ export default function GossipScreen() {
   const dismissedMessages = inbox.filter((item) => item.status === 'dismissed');
   const visibleMessages = showDismissed ? dismissedMessages : activeMessages;
 
-  if (profile?.accessType === 'admin') return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle="Private committee messages">
-    <ThemedText>Gossip submissions are private to each committee’s chairs.</ThemedText>
-  </Screen>;
-
-  if (isChair) {
-    return <Screen eyebrow="CHAIR INBOX" title="Gossip box" subtitle={profile?.committeeName ?? 'Messages for your committee'}
+  if (isChair || isAdmin) {
+    return <Screen eyebrow={isAdmin ? 'ADMIN INBOX' : 'CHAIR INBOX'} title="Gossip box" subtitle={isAdmin ? 'Messages from all committee gossip boxes' : profile?.committeeName ?? 'Messages for your committee'}
       onRefresh={() => void refresh()} refreshing={loading}>
-      <ThemedText type="small" themeColor="textSecondary">Private submissions for your committee. Check each message before reading it aloud.</ThemedText>
-      {error ? <ThemedText themeColor="danger">{error}</ThemedText> : null}
+      <ThemedText type="small" themeColor="textSecondary">{isAdmin ? 'Read-only access to all committee gossip boxes. Sender identities are hidden.' : 'Private submissions for your committee. Check each message before reading it aloud.'}</ThemedText>
+      {isAdmin && <View style={styles.committeeFilters}>
+        {[{ id: null, abbreviation: 'All committees' }, ...committees].map(committee => <Pressable key={committee.id ?? 'all'} accessibilityRole="button" accessibilityState={{ selected: adminCommittee === committee.id }}
+          onPress={() => { setAdminCommittee(committee.id); setShowDismissed(false); }}
+          style={[styles.committeeFilter, { backgroundColor: adminCommittee === committee.id ? theme.primary : theme.primarySoft }]}>
+          <ThemedText type="smallBold" style={{ color: adminCommittee === committee.id ? theme.onPrimary : theme.primary }}>{committee.abbreviation}</ThemedText>
+        </Pressable>)}
+      </View>}
+      {error ? <View><ThemedText themeColor="danger">{error}</ThemedText><Pressable accessibilityRole="button" onPress={() => void refresh()} style={styles.viewToggle}><ThemedText themeColor="primary">Try again</ThemedText></Pressable></View> : null}
       {loading && !inbox.length ? <ThemedText themeColor="textSecondary">Loading messages…</ThemedText> : null}
       <View style={styles.inboxHeading}>
         <ThemedText type="smallBold">{showDismissed ? 'Dismissed' : 'Messages'} · {visibleMessages.length}</ThemedText>
-        {dismissedMessages.length ? <Pressable accessibilityRole="button" onPress={() => setShowDismissed((value) => !value)} style={styles.viewToggle}>
+        {showDismissed || dismissedMessages.length ? <Pressable accessibilityRole="button" onPress={() => setShowDismissed((value) => !value)} style={styles.viewToggle}>
           <ThemedText type="smallBold" themeColor="primary">{showDismissed ? 'Back to messages' : `View dismissed (${dismissedMessages.length})`}</ThemedText>
         </Pressable> : null}
       </View>
       {!loading && !visibleMessages.length ? <ThemedText themeColor="textSecondary">{showDismissed ? 'No dismissed messages.' : 'No messages to review yet.'}</ThemedText> : null}
       {visibleMessages.map((item) => <View key={item.id} style={[styles.inboxItem, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <View style={styles.inboxMeta}>
+          {isAdmin && <ThemedText type="smallBold" themeColor="primary">{committees.find(committee => committee.id === item.committee_id)?.abbreviation ?? 'Committee'}</ThemedText>}
           <ThemedText type="smallBold" themeColor={item.status === 'new' ? 'primary' : 'textSecondary'}>{item.status === 'new' ? 'New' : item.status === 'read' ? 'Read' : 'Dismissed'}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{new Date(item.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}</ThemedText>
         </View>
         <ThemedText style={styles.messageText}>{item.message}</ThemedText>
-        <View style={styles.actions}>
+        {isChair && <View style={styles.actions}>
           {item.status === 'new' ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => void setStatus(item.id, 'read')} style={[styles.smallButton, { backgroundColor: theme.primary }]}>
             <ThemedText type="smallBold" themeColor="onPrimary">Mark read</ThemedText>
           </Pressable> : null}
@@ -119,14 +138,17 @@ export default function GossipScreen() {
           </Pressable> : <Pressable accessibilityRole="button" disabled={busy} onPress={() => void setStatus(item.id, 'dismissed')} style={[styles.smallButton, { backgroundColor: theme.primarySoft }]}>
             <ThemedText type="smallBold" themeColor="primary">Dismiss</ThemedText>
           </Pressable>}
-        </View>
+        </View>}
       </View>)}
+      {isAdmin && inboxState?.profile === profile && inboxState.committee === adminCommittee && inboxState.more && <Pressable accessibilityRole="button" disabled={loading} onPress={() => void refresh(inbox.at(-1))} style={styles.viewToggle}>
+        <ThemedText type="smallBold" themeColor="primary">{loading ? 'Loading…' : 'Load older messages'}</ThemedText>
+      </Pressable>}
     </Screen>;
   }
 
   return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle={profile?.committeeName ? `Send some tea to the chairs of the ${profile.committeeName}.` : 'Send some tea to your committee chairs.'}>
     <View style={styles.form}>
-        <ThemedText type="small" themeColor="textSecondary">Only your Committee Chairs can view all gossip and you remain anonymous.</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">Your committee chairs and conference administrators can read your message. Your identity is not shown to them.</ThemedText>
         {!selectedCommittee ? <ThemedText themeColor="danger">Your account has no committee assigned. Please contact the organisers.</ThemedText> : null}
         <ThemedText type="smallBold">YOUR MESSAGE</ThemedText>
         <TextInput accessibilityLabel="Gossip message" multiline maxLength={500} value={message}
@@ -146,6 +168,8 @@ export default function GossipScreen() {
 }
 
 const styles = StyleSheet.create({
+  committeeFilters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  committeeFilter: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 22, justifyContent: 'center' },
   form: { gap: Spacing.three },
   input: { borderRadius: 12, borderWidth: 1, fontSize: 16, minHeight: 130, padding: Spacing.three },
   submit: { alignItems: 'center', borderRadius: 12, justifyContent: 'center', minHeight: 52 },

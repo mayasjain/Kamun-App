@@ -1,0 +1,35 @@
+Admin gossip inboxes — 13 November 2026
+
+Conference administrators can now read gossip boxes across all ten committees.
+The admin page provides All committees, individual committee filters, dismissed
+messages, pull-to-refresh, retries and cursor-based older-message loading.
+Each RPC page is limited to 100 messages; timestamp/UUID cursors prevent tied
+creation timestamps from dropping messages. No sender identity is returned.
+
+Admins have read-only access. Chairs retain their own inbox and status controls.
+Delegates retain submission access only. The submission notice now explicitly
+states that committee chairs and conference administrators can read messages.
+Responses are scoped to the current profile and selected committee, and stale
+requests are invalidated when either changes.
+
+Deployment:
+- Applied supabase/migrations/202611130002_admin_gossip_inboxes.sql to the
+  existing Kamun production Supabase project.
+- Published https://4d534de7.kamun-2026-app.pages.dev to production main.
+
+Validation:
+- Mobile typecheck, lint, web build and all 54 mobile tests pass.
+- PostgreSQL tests cover all ten boxes, per-committee filtering, dismissed
+  visibility, sender privacy, raw-table denial, conference isolation,
+  invalid committee/cursor handling, timestamp-tied pagination, expired and
+  revoked admins, recovery admins, chair isolation and delegate denial.
+- Existing IPC/vote/comment/chair/admin/guest/push regressions also pass.
+- A production transaction declared READ ONLY set the authenticated role and
+  an existing admin identity, then successfully queried message counts for
+  each of the ten published committees. No message bodies, sender IDs or codes
+  were returned. No production messages or statuses were changed for testing.
+- Verified the production web bundle contains the new RPC and interface.
+- A real administrator's browser interaction has not been visually checked.
+
+Rerun database tests:
+PGLITE_MODULE=/absolute/path/to/pglite/dist/index.js node supabase/tests/run-ipc-meme-assignments.mjs
