@@ -32,7 +32,7 @@ export async function loadMemes(conferenceId: string, committeeId: string | null
  if (images.error) throw images.error;
  for (const [path, entry] of imageUrls) if (entry.expires <= Date.now()) imageUrls.delete(path);
  for (const image of images.data ?? []) if (image.path && image.signedUrl) imageUrls.set(image.path, { url: image.signedUrl, expires: Date.now() + 240000 });
- const result = rows.map((m: Meme) => ({ ...m, chairs_only: chairs, can_remove: permission.data === true, imageUrl: imageUrls.get(m.image_path)?.url ?? '', activity: activity.find(a => a.meme_id === m.id) ?? null }));
+ const result = rows.map((m: Meme) => ({ ...m, chairs_only: chairs, can_remove: m.is_own || permission.data === true, imageUrl: imageUrls.get(m.image_path)?.url ?? '', activity: activity.find(a => a.meme_id === m.id) ?? null }));
  if (!before) cacheMemes(conferenceId, committeeId, result, Date.now(), generation);
  return result;
 }

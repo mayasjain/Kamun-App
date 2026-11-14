@@ -51,6 +51,11 @@ try {
  await db.exec(await readFile(new URL('../migrations/202611130002_admin_gossip_inboxes.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('./admin_gossip_inboxes.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('./chair_meme_destinations.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../migrations/202611140002_meme_author_removal.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./meme_author_removal.sql',import.meta.url),'utf8'));
+ await db.exec((await readFile(new URL('./chairs_meme_gallery.sql',import.meta.url),'utf8')).replace(/^insert into public.committees.*;$/m,''));
+ await db.exec(await readFile(new URL('./shared_admin_app.sql',import.meta.url),'utf8'));
+ console.log('PASS: author removal in General, committee and Chairs; foreign/revoked/private access denied.');
  console.log('PASS: chairs can reserve, upload and post to General, their own committee and Chairs, but not other committees.');
  console.log('PASS: admin gossip access to all ten boxes, privacy, conference scope, expiry and chair isolation.');
  console.log('PASS: IPC assigned posting and existing vote, comment, chairs and admin permissions.');

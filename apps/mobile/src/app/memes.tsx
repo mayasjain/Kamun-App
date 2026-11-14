@@ -209,7 +209,7 @@ export default function MemesScreen() {
    <MemePhoto key={m.imageUrl} meme={m} />
    <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
     <MemeDiscussion meme={m} onEditingChange={onCommentEditingChange} onActivity={updateMemeActivity} />
-    {m.can_remove && <RemoveConfirmation confirming={action?.id === m.id} prompt="Remove this meme from the gallery?" label="Remove meme" busy={busy && action?.id === m.id} disabled={busy}
+    {m.can_remove && <RemoveConfirmation confirming={action?.id === m.id} prompt={m.is_own ? 'Delete your meme from this gallery?' : 'Remove this meme from the gallery?'} label={m.is_own ? 'Delete my meme' : 'Remove meme'} busy={busy && action?.id === m.id} disabled={busy}
       onStart={() => setAction(m)} onConfirm={() => void confirmAction()} onCancel={() => setAction(null)} />}
    </View>
   </View>)}
