@@ -72,10 +72,11 @@ export default function GossipScreen() {
       });
       if (submitError) throw submitError;
       setMessage('');
-      setNotice('Sent to the chairs. They will decide whether to read it aloud.');
+      setNotice('Sent to your committee gossip box.');
+      if (isChair) await refresh();
     } catch (cause) {
       const detail = cause instanceof Error ? cause.message : '';
-      setError(detail.includes('Submission limit') ? 'You have sent several messages recently. Please try again later.' : 'Could not send your message. Check your connection and delegate code.');
+      setError(detail.includes('Submission limit') ? 'You have sent several messages recently. Please try again later.' : 'Could not send your message. Check your connection and participant access.');
     } finally {
       setBusy(false);
     }
@@ -102,10 +103,31 @@ export default function GossipScreen() {
   const dismissedMessages = inbox.filter((item) => item.status === 'dismissed');
   const visibleMessages = showDismissed ? dismissedMessages : activeMessages;
 
+  const composer = (
+    <View style={styles.form}>
+        <ThemedText type="small" themeColor="textSecondary">Your committee chairs and conference administrators can read your message. Your identity is not shown to them.</ThemedText>
+        {!selectedCommittee ? <ThemedText themeColor="danger">Your account has no committee assigned. Please contact the organisers.</ThemedText> : null}
+        <ThemedText type="smallBold">YOUR MESSAGE</ThemedText>
+        <TextInput accessibilityLabel="Gossip message" multiline maxLength={500} value={message}
+          onChangeText={(value) => { setMessage(value); setNotice(''); }}
+          placeholder="Write a short, respectful message…" placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+          textAlignVertical="top" />
+        <ThemedText type="small" themeColor="textSecondary">{message.length}/500 characters · Please do not send insults, private information, or safety concerns here. For help, use Emergency contacts.</ThemedText>
+        {error ? <ThemedText themeColor="danger">{error}</ThemedText> : null}
+        {notice ? <ThemedText themeColor="primary">{notice}</ThemedText> : null}
+        <Pressable accessibilityRole="button" disabled={busy || !selectedCommittee || message.trim().length < 3}
+          onPress={() => void submit()} style={[styles.submit, { backgroundColor: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledBackground : theme.primary }]}>
+          <ThemedText type="smallBold" style={{ color: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledText : theme.onPrimary }}>{busy ? 'Sending…' : isChair ? 'Send gossip' : 'Send to chairs'}</ThemedText>
+        </Pressable>
+    </View>
+  );
+
   if (isChair || isAdmin) {
     return <Screen eyebrow={isAdmin ? 'ADMIN INBOX' : 'CHAIR INBOX'} title="Gossip box" subtitle={isAdmin ? 'Messages from all committee gossip boxes' : profile?.committeeName ?? 'Messages for your committee'}
       onRefresh={() => void refresh()} refreshing={loading}>
       <ThemedText type="small" themeColor="textSecondary">{isAdmin ? 'Read-only access to all committee gossip boxes. Sender identities are hidden.' : 'Private submissions for your committee. Check each message before reading it aloud.'}</ThemedText>
+      {isChair && composer}
       {isAdmin && <View style={styles.committeeFilters}>
         {[{ id: null, abbreviation: 'All committees' }, ...committees].map(committee => <Pressable key={committee.id ?? 'all'} accessibilityRole="button" accessibilityState={{ selected: adminCommittee === committee.id }}
           onPress={() => { setAdminCommittee(committee.id); setShowDismissed(false); }}
@@ -147,23 +169,7 @@ export default function GossipScreen() {
   }
 
   return <Screen eyebrow="KAMUN 2026" title="Gossip box" subtitle={profile?.committeeName ? `Send some tea to the chairs of the ${profile.committeeName}.` : 'Send some tea to your committee chairs.'}>
-    <View style={styles.form}>
-        <ThemedText type="small" themeColor="textSecondary">Your committee chairs and conference administrators can read your message. Your identity is not shown to them.</ThemedText>
-        {!selectedCommittee ? <ThemedText themeColor="danger">Your account has no committee assigned. Please contact the organisers.</ThemedText> : null}
-        <ThemedText type="smallBold">YOUR MESSAGE</ThemedText>
-        <TextInput accessibilityLabel="Gossip message" multiline maxLength={500} value={message}
-          onChangeText={(value) => { setMessage(value); setNotice(''); }}
-          placeholder="Write a short, respectful message…" placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
-          textAlignVertical="top" />
-        <ThemedText type="small" themeColor="textSecondary">{message.length}/500 characters · Please do not send insults, private information, or safety concerns here. For help, use Emergency contacts.</ThemedText>
-        {error ? <ThemedText themeColor="danger">{error}</ThemedText> : null}
-        {notice ? <ThemedText themeColor="primary">{notice}</ThemedText> : null}
-        <Pressable accessibilityRole="button" disabled={busy || !selectedCommittee || message.trim().length < 3}
-          onPress={() => void submit()} style={[styles.submit, { backgroundColor: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledBackground : theme.primary }]}>
-          <ThemedText type="smallBold" style={{ color: busy || !selectedCommittee || message.trim().length < 3 ? theme.disabledText : theme.onPrimary }}>{busy ? 'Sending…' : 'Send to chairs'}</ThemedText>
-        </Pressable>
-    </View>
+    {composer}
   </Screen>;
 }
 

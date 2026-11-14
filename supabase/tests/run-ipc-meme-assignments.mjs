@@ -59,6 +59,10 @@ try {
  console.log('PASS: chairs can reserve, upload and post to General, their own committee and Chairs, but not other committees.');
  console.log('PASS: admin gossip access to all ten boxes, privacy, conference scope, expiry and chair isolation.');
  console.log('PASS: IPC assigned posting and existing vote, comment, chairs and admin permissions.');
+ await db.exec(await readFile(new URL('../migrations/202611140003_chair_gossip_submission.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./chair_gossip_submission.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('./gossip_posting_scope.sql',import.meta.url),'utf8'));
+ console.log('PASS: chairs submit to their own inbox; delegate scope, validation, rate limits and revoked access preserved.');
  await db.exec(await readFile(new URL('./app_only_guests.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('./web_push.sql',import.meta.url),'utf8'));
  console.log('PASS: app-only guest role validation, claims/profiles, refresh, revocation and privilege isolation.');
