@@ -21,7 +21,7 @@ type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean; 
 const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help & contacts', href: '/emergency', urgent: true },
   { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
-  { title: 'Song requests', detail: 'Send a song to the DJs', href: 'https://tally.so/r/NqDZPN', external: true },
+  { title: 'Song requests', detail: 'Send a song to the DJs', href: 'https://tally.so/r/1WdQpO', external: true },
   { title: 'Your KAMUN Padlet', detail: 'Meme it till you make it.', href: '/memes' },
   { title: 'Secretariat', detail: 'Meet the team', href: '/secretariat' },
   { title: 'Sponsors & Partners', detail: 'Our pillars of support', href: '/partners' },
