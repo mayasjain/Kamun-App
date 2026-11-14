@@ -71,7 +71,10 @@ export default function ScheduleScreen() {
           <View key={day} style={styles.dayPanel}>
             <ThemedText accessibilityRole="header" style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
             {dayEvents.map((event, index) => {
-              const mapUrl = scheduleVenueMapUrl(event.roomName);
+              const roomName = event.eventType === 'session' && event.roomName === 'Committee rooms'
+                ? content?.committees.find(committee => committee.id === profile?.committeeId)?.roomName ?? event.roomName
+                : event.roomName;
+              const mapUrl = scheduleVenueMapUrl(roomName);
               const cuisine = mealCuisines[event.id];
               return (
                 <View key={event.id} style={[styles.event, index > 0 && styles.eventDivider]}>
@@ -83,11 +86,11 @@ export default function ScheduleScreen() {
                     {formatEventTime(event.startsAt, event.endsAt)}
                   </ThemedText>
                   {mapUrl ? (
-                    <Pressable accessibilityRole="link" accessibilityLabel={`View ${event.roomName} on Google Maps`}
+                    <Pressable accessibilityRole="link" accessibilityLabel={`View ${roomName} on Google Maps`}
                       onPress={() => void openMap(mapUrl)} style={({ pressed }) => [styles.mapLink, pressed && styles.pressed]}>
-                      <ThemedText style={styles.mapLinkText}>{event.roomName} ↗</ThemedText>
+                      <ThemedText style={styles.mapLinkText}>{roomName} ↗</ThemedText>
                     </Pressable>
-                  ) : <ThemedText style={styles.eventDetail}>{event.roomName || 'Venue to be announced'}</ThemedText>}
+                  ) : <ThemedText style={styles.eventDetail}>{roomName || 'Venue to be announced'}</ThemedText>}
                   {event.description ? <ThemedText style={styles.eventDescription}>{event.description}</ThemedText> : null}
                 </View>
               );

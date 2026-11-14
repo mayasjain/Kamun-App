@@ -65,6 +65,7 @@ function CommitteeCard({ committee }: { committee: Committee }) {
 export default function CommitteesScreen() {
   const { content, error, isLoading, refresh } = useConferenceContent();
   const committees = content?.committees ?? [];
+  const facultyRoom = content?.locations.find(location => location.name === 'Faculty adviser room');
 
   return (
     <Screen
@@ -81,6 +82,11 @@ export default function CommitteesScreen() {
           <ThemedText type="small" themeColor="textSecondary">beginner to expert</ThemedText>
         </View>
       </View>
+
+      {facultyRoom && <View style={[styles.detailBlock, { padding: 14, borderRadius: 12 }]}>
+        <ThemedText type="smallBold" themeColor="primary">Faculty adviser room</ThemedText>
+        <ThemedText themeColor="textSecondary">{facultyRoom.address}</ThemedText>
+      </View>}
 
       {committees.map((committee) => (
         <View key={committee.id} style={styles.committeeGroup}>
