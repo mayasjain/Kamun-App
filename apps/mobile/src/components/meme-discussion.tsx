@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import type { Meme } from '@/lib/committee-memes';
 import { addMemeComment, loadLiveMemeActivity, loadMemeActivity, loadMemeComments, removeMemeComment, voteOnMeme, type MemeActivity, type MemeComment } from '@/lib/meme-interactions';
 
-export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (activity: MemeActivity) => void }) {
+export function MemeDiscussion({ meme, onActivity, onEditingChange }: { meme: Meme; onActivity: (activity: MemeActivity) => void; onEditingChange: (id: string, editing: boolean) => void }) {
  const theme = useTheme();
  const [expanded, setExpanded] = useState(false);
  const [comments, setComments] = useState<MemeComment[]>([]);
@@ -19,10 +19,23 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState('');
  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+ const threadOpen = useRef(false);
+ const focused = useRef(false);
  const locked = useRef(false);
  const revision = useRef(0);
  const alive = useRef(true);
  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+ useEffect(() => () => onEditingChange(meme.id, false), [meme.id, onEditingChange]);
+ function changeDraft(value: string) {
+  revision.current++;
+  setDraft(value);
+  onEditingChange(meme.id, threadOpen.current && (focused.current || value.length > 0));
+ }
+ function changeFocus(value: boolean) {
+  focused.current = value;
+  revision.current++;
+  onEditingChange(meme.id, threadOpen.current && (value || draft.length > 0));
+ }
  const activity = meme.activity;
  const latest = useRef({ activity, onActivity });
  useEffect(() => { latest.current = { activity, onActivity }; }, [activity, onActivity]);
@@ -52,7 +65,7 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
   const row = await loadLiveMemeActivity(meme.id);
   if (!alive.current || version !== revision.current || locked.current) return;
   if (row && !voteQueue.current?.pending) latest.current.onActivity(row);
-  if (!expanded) return;
+  if (!expanded || focused.current || draft.length > 0) return;
   // Refresh every loaded page so older comments stay visible and removals disappear.
   const rows: MemeComment[] = [];
   let page: MemeComment[];
@@ -82,7 +95,7 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
   try {
    await operation(); committed = true;
    if (!alive.current) return;
-   if (clearDraft) setDraft('');
+   if (clearDraft) changeDraft('');
    setConfirmRemove(null);
    await refreshActivity();
    if (expanded) {
@@ -105,7 +118,13 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
     <View style={[styles.voteDivider, { backgroundColor: theme.border }]} />
     <ActionButton icon={activity.my_vote === -1 ? 'arrow-down' : 'arrow-down-outline'} label="Downvote" count={activity.downvotes} onPress={() => vote(-1)} selected={activity.my_vote === -1} />
    </View>
-   <ActionButton icon="chatbubble-outline" label="Comments" count={activity.comment_count} expanded={expanded} onPress={() => { setExpanded(!expanded); if (!expanded) void loadComments(); }} />
+   <ActionButton icon="chatbubble-outline" label="Comments" count={activity.comment_count} expanded={expanded} onPress={() => {
+    threadOpen.current = !expanded;
+    revision.current++;
+    onEditingChange(meme.id, !expanded && draft.length > 0);
+    setExpanded(!expanded);
+    if (!expanded) void loadComments();
+   }} />
   </View> : <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">Votes and comments are unavailable.</ThemedText><DiscussionButton label="Retry" onPress={() => void mutate(refreshActivity, 'Totals refreshed.')} disabled={busy || loading} /></View>}
   {error ? <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="danger">{error}</ThemedText> : null}
   {expanded && activity && <View style={styles.thread}>
@@ -113,11 +132,11 @@ export function MemeDiscussion({ meme, onActivity }: { meme: Meme; onActivity: (
    <View style={styles.commentRow}>
     <Avatar label="You" />
     <View style={styles.commentContent}>
-     <TextInput accessibilityLabel="Add a comment" placeholder="Add a comment…" placeholderTextColor={theme.textSecondary} value={draft} onChangeText={setDraft} maxLength={500} multiline editable={!busy} style={[styles.input, { color: theme.text, borderBottomColor: theme.border }]} />
-     {draft.length > 0 && <View style={styles.composerActions}>
-      <DiscussionButton label="Cancel" onPress={() => setDraft('')} disabled={busy} />
+     <TextInput accessibilityLabel="Add a comment" placeholder="Add a comment…" placeholderTextColor={theme.textSecondary} value={draft} onChangeText={changeDraft} onFocus={() => changeFocus(true)} onBlur={() => changeFocus(false)} maxLength={500} multiline editable={!busy} style={[styles.input, { color: theme.text, borderBottomColor: theme.border }]} />
+     <View style={styles.composerActions}>
+      <DiscussionButton label="Cancel" onPress={() => changeDraft('')} disabled={busy} />
       <DiscussionButton label={busy ? 'Posting…' : 'Comment'} onPress={() => void mutate(() => addMemeComment(meme.id, draft), 'Comment posted.', true)} disabled={busy || loading || !draft.trim()} filled />
-     </View>}
+     </View>
     </View>
    </View>
    {loading && <ActivityIndicator color={theme.primary} accessibilityLabel="Loading comments" />}
@@ -163,7 +182,7 @@ const styles = StyleSheet.create({
  action: { minHeight: 44, minWidth: 48, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 24 },
  button: { minHeight: 44, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
  thread: { gap: 20, paddingTop: 4 },
- input: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, fontSize: 16, textAlignVertical: 'top' },
+ input: { height: 88, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, fontSize: 16, textAlignVertical: 'top' },
  composerActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingTop: 8 },
  commentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

@@ -4,8 +4,10 @@ import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, TextInput, u
 import * as ImagePicker from 'expo-image-picker';
 import { useMemePostingCommittees } from '@/hooks/use-meme-posting-committees';
 import { usePadletPoll } from '@/hooks/use-padlet-poll';
+import { sameMemeActivity, type MemeActivity } from '@/lib/meme-interactions';
 import { cachedMemes } from '@/lib/meme-cache';
 import { MemeSlideshow } from '@/components/meme-slideshow';
+import { MemeDropZone } from '@/components/meme-drop-zone';
 import { MemeDiscussion } from '@/components/meme-discussion';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
@@ -31,6 +33,10 @@ export default function MemesScreen() {
  const [notice, setNotice] = useState('');
  const [composing, setComposing] = useState(false);
  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+ // Release browser previews when replaced, cancelled, posted or unmounted.
+ useEffect(() => () => {
+  if (Platform.OS === 'web' && photo?.uri.startsWith('blob:')) URL.revokeObjectURL(photo.uri);
+ }, [photo]);
  const isChair = profile?.accessType === 'chair' || profile?.accessType === 'admin';
  const destination = filter === CHAIRS_GALLERY && !isChair ? null : filter;
  const canPost = !!profile && (profile.accessType === 'admin' || destination === null || destination === profile.committeeId || (destination !== null && postingCommittees.ids.includes(destination)) || (destination === CHAIRS_GALLERY && isChair));
@@ -40,6 +46,17 @@ export default function MemesScreen() {
  const [action, setAction] = useState<Meme | null>(null);
  const request = useRef(0);
  const mutation = useRef(false);
+ const editingComments = useRef(new Set<string>());
+ const onCommentEditingChange = useCallback((id: string, editing: boolean) => {
+  if (editing) editingComments.current.add(id); else editingComments.current.delete(id);
+ }, []);
+ const updateMemeActivity = useCallback((activity: MemeActivity) => {
+  setMemes(old => {
+   const current = old.find(row => row.id === activity.meme_id);
+   if (!current || sameMemeActivity(current.activity, activity)) return old;
+   return old.map(row => row.id === activity.meme_id ? { ...row, activity } : row);
+  });
+ }, []);
  const fullscreenOwned = useRef(false);
  function closeSlideshow() {
   setSlides(null);
@@ -48,16 +65,16 @@ export default function MemesScreen() {
    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
   }
  }
- const refresh = useCallback(async (before?: string) => {
+ const refresh = useCallback(async (before?: string, background = false) => {
   if (!profile) return;
   const version = ++request.current;
-  setLoading(true); setError('');
+  if (!background) { setLoading(true); setError(''); }
   try {
    const rows = await loadMemes(profile.conferenceId, destination, before);
-   if (version !== request.current) return;
+   if (version !== request.current || (background && editingComments.current.size)) return;
    setMemes(old => before ? [...old, ...rows.filter(row => !old.some(m => m.id === row.id))] : rows);
    setMore(rows.length === 24);
-  } catch { if (version === request.current) setError('Could not load the gallery. Check your connection and try again.'); }
+  } catch { if (!background && version === request.current) setError('Could not load the gallery. Check your connection and try again.'); }
   finally { if (version === request.current) setLoading(false); }
  }, [profile, destination, request]);
  useEffect(() => {
@@ -73,12 +90,12 @@ export default function MemesScreen() {
   return () => { active = false; invalidate(); };
  }, [refresh, request, profile, destination]);
  // Refresh short-lived image URLs while the gallery is open.
- useEffect(() => { const timer = setInterval(() => void refresh(), 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
+ useEffect(() => { const timer = setInterval(() => { if (!editingComments.current.size) void refresh(undefined, true); }, 4 * 60 * 1000); return () => clearInterval(timer); }, [refresh]);
  usePadletPoll(async () => {
-  if (!profile || loading || mutation.current) return;
+  if (!profile || loading || mutation.current || editingComments.current.size) return;
   const version = request.current;
   const rows = await loadMemes(profile.conferenceId, destination, undefined, true);
-  if (version !== request.current) return;
+  if (version !== request.current || editingComments.current.size) return;
   setMore(rows.length === 24);
   setMemes(old => {
    const oldest = rows.at(-1)?.created_at;
@@ -143,9 +160,14 @@ export default function MemesScreen() {
   } catch { setError('Could not complete that action. Check your connection and try again.'); }
   finally { mutation.current = false; setBusy(false); }
  }
+ const dropZone = <MemeDropZone disabled={busy || !canPost} onError={setError} onImage={asset => {
+  if (!canPost || mutation.current) return;
+  setPhoto(asset); setComposing(true); setAction(null); setNotice(''); setError('');
+ }} />;
  return <Screen eyebrow="" title={composing ? 'New meme' : 'Committee memes'} subtitle={composing ? `Posting to ${destinationName}` : 'Memes from every committee, all in one place.'} onRefresh={() => void refresh()} refreshing={loading && memes.length > 0}>
   {slides && (!slides.some(m => m.chairs_only) || isChair) && <MemeSlideshow slides={slides} title={destinationName} onClose={closeSlideshow} />}
   {!composing && canPost && <ActionButton label={'Meme the Moment'} onPress={() => { setComposing(true); setAction(null); setNotice(''); setError(''); }} primary={true} />}
+  {!composing && canPost && dropZone}
   {!composing && !canPost && <ThemedText themeColor="textSecondary">You can browse this gallery. To post, select General, your own committee or your assigned reporting committee.</ThemedText>}
   {postingCommittees.failed && <View accessibilityLiveRegion="polite" style={styles.panel}>
    <ThemedText themeColor="textSecondary">Could not check assigned committee posting access. Your usual galleries are still available.</ThemedText>
@@ -153,7 +175,19 @@ export default function MemesScreen() {
   </View>}
   {notice ? <ThemedText accessibilityLiveRegion="polite" themeColor="primary">{notice}</ThemedText> : null}
   {composing ? <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+   <ThemedText type="smallBold">Post to</ThemedText>
+   <View style={styles.chips}>
+    {[
+     { id: null, label: 'General' },
+     ...(isChair ? [{ id: CHAIRS_GALLERY, label: 'Chairs' }] : []),
+     ...committees.filter(committee => profile?.accessType === 'admin' || committee.id === profile?.committeeId || postingCommittees.ids.includes(committee.id)).map(committee => ({ id: committee.id, label: committee.abbreviation })),
+    ].map(gallery => <Pressable key={gallery.id ?? 'general'} accessibilityRole="button" accessibilityLabel={`Post to ${gallery.label}`} accessibilityState={{ selected: destination === gallery.id, disabled: busy }} disabled={busy}
+      onPress={() => setFilter(gallery.id)} style={({ pressed }) => [styles.chip, { backgroundColor: destination === gallery.id ? theme.primary : theme.backgroundElement, borderColor: theme.border }, pressed && { opacity: 0.65 }]}>
+      <ThemedText type="smallBold" style={{ color: destination === gallery.id ? theme.onPrimary : theme.text }}>{gallery.label}</ThemedText>
+     </Pressable>)}
+   </View>
    <ThemedText themeColor="textSecondary">Keep it kind and only share photos you have permission to post.</ThemedText>
+   {dropZone}
    {photo && <Image source={{ uri: photo.uri }} accessibilityLabel="Selected meme preview" style={[styles.image, { height: Math.min(220, windowHeight * 0.28), maxWidth: 360, alignSelf: 'center' }]} resizeMode="contain" />}
    {<ActionButton label={photo ? 'Choose another photo' : 'Choose a photo'} onPress={() => void pick()} primary={false} disabled={busy} />}
    <ThemedText type="small" themeColor="textSecondary">JPG, PNG or WebP · up to 8 MB</ThemedText>
@@ -162,7 +196,7 @@ export default function MemesScreen() {
    <ThemedText type="small" themeColor="textSecondary">{caption.length}/180</ThemedText>
 
    {<ActionButton label={busy ? 'Posting…' : 'Post the meme'} onPress={() => void post()} primary={true} disabled={busy || !photo || !canPost} />}
-   {<ActionButton label={'Cancel'} onPress={() => setComposing(false)} primary={false} disabled={busy} />}
+   {<ActionButton label={'Cancel'} onPress={() => { setComposing(false); setPhoto(null); setCaption(''); }} primary={false} disabled={busy} />}
   </View> : null}
   {error ? <View accessibilityLiveRegion="polite" style={styles.panel}><ThemedText themeColor="danger">{error}</ThemedText>{!composing && !action && <ActionButton label={'Try again'} onPress={() => void refresh()} />}</View> : null}
   {!composing && <>
@@ -174,7 +208,7 @@ export default function MemesScreen() {
    <View style={styles.cardBody}><ThemedText type="smallBold" themeColor="primary">{m.chairs_only ? 'Chairs' : committees.find(c => c.id === m.committee_id)?.abbreviation ?? 'General'}</ThemedText><ThemedText type="small" themeColor="textSecondary">{new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{m.is_own ? ' · Your meme' : ''}</ThemedText></View>
    <MemePhoto key={m.imageUrl} meme={m} />
    <View style={styles.cardBody}>{m.caption ? <ThemedText>{m.caption}</ThemedText> : null}
-    <MemeDiscussion meme={m} onActivity={activity => setMemes(old => old.map(row => row.id === m.id ? { ...row, activity } : row))} />
+    <MemeDiscussion meme={m} onEditingChange={onCommentEditingChange} onActivity={updateMemeActivity} />
     {m.can_remove && <RemoveConfirmation confirming={action?.id === m.id} prompt="Remove this meme from the gallery?" label="Remove meme" busy={busy && action?.id === m.id} disabled={busy}
       onStart={() => setAction(m)} onConfirm={() => void confirmAction()} onCancel={() => setAction(null)} />}
    </View>
@@ -189,8 +223,7 @@ function ActionButton({ label, onPress, primary = false, disabled = false }: { l
 }
 function MemePhoto({ meme }: { meme: Meme }) {
  const [failed, setFailed] = useState(false);
- const { height } = useWindowDimensions();
- return failed || !meme.imageUrl ? <View style={styles.panel}><ThemedText>Photo unavailable. Pull to refresh and try again.</ThemedText></View> : <Image source={{ uri: meme.imageUrl }} accessibilityLabel={meme.caption || 'Committee meme'} resizeMode="contain" style={[styles.image, { height: Math.min(420, height * 0.5) }]} onError={() => setFailed(true)} />;
+ return failed || !meme.imageUrl ? <View style={styles.panel}><ThemedText>Photo unavailable. Pull to refresh and try again.</ThemedText></View> : <Image source={{ uri: meme.imageUrl }} accessibilityLabel={meme.caption || 'Committee meme'} resizeMode="contain" style={[styles.image, { aspectRatio: 1, maxHeight: 420 }]} onError={() => setFailed(true)} />;
 }
 const styles = StyleSheet.create({
  button: { borderRadius: 16, minHeight: 48, paddingHorizontal: 20, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },

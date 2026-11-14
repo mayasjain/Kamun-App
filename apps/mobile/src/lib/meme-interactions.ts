@@ -53,3 +53,8 @@ export function loadLiveMemeActivity(id: string): Promise<MemeActivity | undefin
   }, 30);
  });
 }
+
+export function sameMemeActivity(a: MemeActivity | null | undefined, b: MemeActivity): boolean {
+ return !!a && a.meme_id === b.meme_id && a.upvotes === b.upvotes && a.downvotes === b.downvotes
+  && a.my_vote === b.my_vote && a.comment_count === b.comment_count;
+}
