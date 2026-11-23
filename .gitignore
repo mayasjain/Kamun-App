@@ -28,3 +28,6 @@ supabase/.temp/
 
 # Team portraits stay local and are bundled only for website deployment.
 apps/mobile/assets/secretariat/
+
+# Private local database backups
+.local-backups/
