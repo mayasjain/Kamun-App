@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 .expo/
 .next/
 node_modules/
@@ -11,6 +13,7 @@ coverage/
 
 # Local planning documents and skills
 *.[mM][dD]
+!/README.md
 .skill-build/
 .skills/
 skills/
@@ -31,4 +34,6 @@ apps/mobile/assets/secretariat/
 
 # Private local database backups
 .local-backups/
-kamun2026_tokens_final.csv
+*.backup
+*.dump
+*_tokens_*.csv

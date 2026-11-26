@@ -1,3 +1,17 @@
+insert into public.conferences (
+  id, slug, name, theme, starts_at, ends_at, timezone, venue_name, published
+) values (
+  '10000000-0000-4000-8000-000000000001',
+  'kamun-2026',
+  'KAMUN 2026',
+  'From the Black Forest to the Global Stage',
+  '2026-11-13 08:00:00+01',
+  '2026-11-15 18:00:00+01',
+  'Europe/Berlin',
+  'Karlsruhe Institute of Technology',
+  true
+) on conflict (id) do nothing;
+
 insert into public.committees (
   id, conference_id, name, abbreviation, topic, colour, room_name, published
 ) values
