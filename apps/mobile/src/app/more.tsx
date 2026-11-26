@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'expo-router';
-import { Alert, Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { InstagramLinks } from '@/components/instagram-links';
 import { MoreIcon } from '@/components/more-icon';
 import { useTheme } from '@/hooks/use-theme';
-import { AttendeeProfileForm } from '@/components/attendee-profile-form';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
-import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { signOutOfBothApps } from '@/lib/ecg-session';
-import { supabase } from '@/lib/supabase';
 
 export default function MoreScreen() {
   const theme = useTheme();
@@ -18,42 +14,6 @@ export default function MoreScreen() {
   const compact = width < 400 || fontScale > 1.3;
   const [showInstall, setShowInstall] = useState(false);
   const [privacyHovered, setPrivacyHovered] = useState(false);
-  const [showAccess, setShowAccess] = useState(false);
-  const { clearProfile, profile } = useAttendeeProfile();
-  const [signingOut, setSigningOut] = useState(false);
-  const [changingAccess, setChangingAccess] = useState(false);
-  const [signOutError, setSignOutError] = useState('');
-
-  function confirmSignOut() {
-    if (signingOut || changingAccess) return;
-    if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to sign out?')) void signOut();
-      return;
-    }
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
-    ]);
-  }
-
-  async function signOut() {
-    if (signingOut || changingAccess) return;
-    setSigningOut(true);
-    setSignOutError('');
-    try {
-      if (profile?.identitySource === 'ecg') await signOutOfBothApps();
-      else if (supabase) {
-        const { error } = await supabase.auth.signOut({ scope: 'local' });
-        if (error) throw error;
-      }
-      clearProfile();
-    } catch (error) {
-      setSignOutError(error instanceof Error ? error.message : 'Could not sign out. Check your connection and try again.');
-    } finally {
-      setSigningOut(false);
-    }
-  }
-
   const card = { backgroundColor: theme.backgroundElement };
   const divider = { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border };
   return (
@@ -95,28 +55,6 @@ export default function MoreScreen() {
             </View>}
           </Pressable>
         </Link>
-      </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="primary" style={styles.sectionLabel}>ACCOUNT & ACCESS</ThemedText>
-      <View style={[styles.card, card]}>
-        <View style={styles.row}>
-          <View style={[styles.iconBox, { backgroundColor: theme.primarySoft }]}><MoreIcon name="identity" color={theme.primary} /></View>
-          <View style={styles.copy}>
-            <ThemedText style={styles.rowTitle}>Your conference identity</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{profile?.committeeName ?? 'KAMUN 2026'}</ThemedText>
-            <View style={[styles.badge, { backgroundColor: theme.primarySoft }]}><ThemedText type="small">{profile?.accessLabel || 'Delegate'}</ThemedText></View>
-          </View>
-        </View>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAccess, disabled: signingOut || changingAccess }} disabled={signingOut || changingAccess} onPress={() => setShowAccess(v => !v)} style={({ pressed }) => [styles.row, divider, pressed && styles.pressed]}>
-          <MoreIcon name="key" color={theme.primary} />
-          <View style={styles.copy}><ThemedText style={styles.rowTitle}>Change access code</ThemedText><ThemedText type="small" themeColor="textSecondary">Switch your assigned access on this device</ThemedText></View>
-          <MoreIcon name={showAccess ? 'chevronDown' : 'chevron'} color={theme.textSecondary} size={18} />
-        </Pressable>
-        {showAccess ? <View style={styles.expanded}><AttendeeProfileForm submitLabel="Update access" disabled={signingOut} onSubmittingChange={setChangingAccess} /></View> : null}
-        <Pressable accessibilityRole="button" disabled={signingOut || changingAccess} accessibilityState={{ disabled: signingOut || changingAccess, busy: signingOut }} onPress={confirmSignOut} style={({ pressed }) => [styles.row, divider, (pressed || signingOut || changingAccess) && styles.pressed]}>
-          <MoreIcon name="logout" color={theme.danger} />
-          <ThemedText style={[styles.rowTitle, styles.copy, { color: theme.danger }]}>{signingOut ? 'Signing out…' : 'Sign out'}</ThemedText>
-        </Pressable>
-        {signOutError ? <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.error}>{signOutError}</ThemedText> : null}
       </View>
       <View style={styles.footerLinks}>
         <Link href="/privacy" asChild>
@@ -168,10 +106,8 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 17, lineHeight: 23, fontWeight: '400' },
   howTo: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, minHeight: 44 },
   expanded: { gap: 12, paddingVertical: 16 },
-  badge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 3, alignSelf: 'flex-start' },
   sectionLabel: { marginTop: 4, fontSize: 12, lineHeight: 18, letterSpacing: 0.4 },
   pressed: { opacity: 0.6 },
-  error: { paddingBottom: 16 },
   linkedinRow: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 72, paddingTop: 16, paddingBottom: 2, borderTopWidth: StyleSheet.hairlineWidth },
   linkedinLogo: { width: 26, height: 26 },
   socialCard: { paddingVertical: 16, gap: 14 },

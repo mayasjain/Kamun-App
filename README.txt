@@ -1,6 +1,6 @@
 KAMUN 2026
 
-Attendee app: apps/mobile (Expo for iOS, Android and web)
+Public conference guide: apps/mobile (Expo for iOS, Android and web)
 Organiser dashboard: apps/admin (Next.js)
 Database schema and backend functions: supabase/
 
@@ -27,16 +27,11 @@ Local setup
 3. From the repository root, start the attendee app with npm run dev:mobile.
 4. Start the organiser dashboard with npm run dev:admin in another terminal.
 
-The attendee web app is published at https://kamun-2026-app.pages.dev.
-Coffee ordering is integrated at /coffee; its server bridge targets production https://kamun-ece-cafe.pages.dev.
-Implementation, validation and rollback: docs/IN_APP_COFFEE.txt.
-Staff/admin: https://kamun-ece-covfefe.pages.dev. Use production ECE-issued codes.
-Production secret pairing and live verification are required; see the release checklist.
-Current deployment requirements and verification: docs/ECG_SHARED_CODE_RELEASE.txt
-ECE source patch and installation instructions: integrations/ece/README.txt
-Legacy KAMUN test codes do not establish an ECE identity.
-ECE personal code routing accepts five or eight alphanumeric characters after
-whitespace/dash normalization; identity and permissions are verified server-side.
+The public conference guide is published at https://app.kamun.org and
+https://kamun-2026-app.pages.dev. It displays the published schedule, public
+updates, committees and resources without an account. The separate organiser
+dashboard uses Supabase Auth. Documentation for the former ECE integration is
+in docs/IN_APP_COFFEE.txt and docs/ECG_SHARED_CODE_RELEASE.txt.
 
 Validation
 - From the repository root: npm run check (lint, type checks and automated tests).
@@ -58,4 +53,4 @@ Cloudflare attendee web deployment
 - Build-time variables in .env.local: EXPO_PUBLIC_SUPABASE_URL,
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
 - Only the attendee static web export is uploaded; the organiser dashboard stays separate.
-- The published origin has its own saved login, so enter your ECE code once there.
+- Production Supabase project: dqfmmpqppacamwjrjlcj.

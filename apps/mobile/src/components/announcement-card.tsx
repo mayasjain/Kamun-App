@@ -2,31 +2,28 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AdminRemoveButton } from '@/components/admin-remove-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { Announcement } from '@/lib/conference-content';
 import { formatAnnouncementTime } from '@/lib/date-format';
 
-export function AnnouncementCard({ announcement, adminControls = false }: { announcement: Announcement; adminControls?: boolean }) {
+export function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const urgent = announcement.priority === 'urgent';
   const date = formatAnnouncementTime(announcement.publishedAt);
-  const audience = announcement.audience === 'chair' ? 'For chairs' : announcement.audience === 'member' ? 'For delegates' : null;
   const close = () => setOpen(false);
   const badges = <View style={styles.badges}>
-    {urgent ? <View style={[styles.badge, { backgroundColor: theme.danger }]}><ThemedText type="smallBold" themeColor="onDanger">URGENT</ThemedText></View> : null}
-    {audience ? <ThemedText type="smallBold" themeColor="primary">{audience}</ThemedText> : null}
+    <View style={[styles.badge, { backgroundColor: theme.danger }]}><ThemedText type="smallBold" themeColor="onDanger">URGENT</ThemedText></View>
   </View>;
 
   return <View>
     <Pressable accessibilityRole="button" accessibilityLabel={`Read ${urgent ? 'urgent announcement: ' : ''}${announcement.title}`}
       accessibilityHint="Opens the full announcement" onPress={() => setOpen(true)}
       style={({ pressed }) => [styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border, borderLeftColor: urgent ? theme.danger : theme.primary }, pressed && styles.pressed]}>
-      {urgent || audience ? badges : null}
+      {urgent ? badges : null}
       <ThemedText type="smallBold" style={styles.title} numberOfLines={2}>{announcement.title}</ThemedText>
       <ThemedText themeColor="textSecondary" numberOfLines={2}>{announcement.body}</ThemedText>
       <View style={styles.cardFooter}>
@@ -34,13 +31,12 @@ export function AnnouncementCard({ announcement, adminControls = false }: { anno
         <ThemedText type="smallBold" themeColor="primary">Read more →</ThemedText>
       </View>
     </Pressable>
-    {adminControls ? <AdminRemoveButton id={announcement.id} title={announcement.title} /> : null}
     {open ? <Modal visible transparent animationType="fade" onRequestClose={close}>
       <View style={[styles.overlay, { paddingTop: Math.max(16, insets.top), paddingBottom: Math.max(16, insets.bottom) }]}>
         <Pressable accessibilityElementsHidden importantForAccessibility="no-hide-descendants" accessible={false} focusable={false} onPress={close} style={styles.backdrop} />
         <View accessibilityViewIsModal style={[styles.dialog, { backgroundColor: theme.backgroundElement, maxHeight: Math.max(160, height - Math.max(16, insets.top) - Math.max(16, insets.bottom)) }]}>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.message}>
-            {urgent || audience ? badges : null}
+            {urgent ? badges : null}
             <ThemedText accessibilityRole="header" style={styles.dialogTitle}>{announcement.title}</ThemedText>
             <ThemedText selectable style={styles.body}>{announcement.body}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{date}</ThemedText>

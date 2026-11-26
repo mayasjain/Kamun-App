@@ -3,9 +3,10 @@ import '../lib/install-local-storage';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppState } from 'react-native';
-import { useAttendeeProfile } from '@/contexts/attendee-profile';
-import { supabase } from '@/lib/supabase';
 import { fetchConferenceContent, type ConferenceContent } from '@/lib/conference-content';
+import { KAMUN_CONFERENCE_ID } from '@/lib/conference-id';
+
+const cacheKey = `kamun.content.public.${process.env.EXPO_PUBLIC_SUPABASE_URL}.${KAMUN_CONFERENCE_ID}.v1`;
 
 type ContentSource = 'live' | 'cache' | null;
 
@@ -15,27 +16,23 @@ type ConferenceContentContextValue = {
   isLoading: boolean;
   source: ContentSource;
   refresh: () => Promise<void>;
-  removeAnnouncement: (id: string) => Promise<void>;
 };
 
 const ConferenceContentContext = createContext<ConferenceContentContextValue | null>(null);
 
 export function ConferenceContentProvider({ children }: PropsWithChildren) {
-  const { profile } = useAttendeeProfile();
   const [content, setContent] = useState<ConferenceContent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [source, setSource] = useState<ContentSource>(null);
-  const cacheKey = `kamun.content.${profile?.conferenceId ?? 'none'}.${profile?.accessType ?? 'none'}.${profile?.committeeId ?? 'all'}.v4`;
   const requestVersion = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
-    if (!profile) return;
     const version = ++requestVersion.current;
     if (!silent) setIsLoading(true);
     setError(null);
     try {
-      const liveContent = await fetchConferenceContent(profile.conferenceId, profile.committeeId, profile.accessType);
+      const liveContent = await fetchConferenceContent(KAMUN_CONFERENCE_ID);
       if (version !== requestVersion.current) return;
       setContent(liveContent);
       setSource('live');
@@ -49,14 +46,12 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
     } finally {
       if (version === requestVersion.current) setIsLoading(false);
     }
-  }, [cacheKey, profile]);
+  }, []);
 
   useEffect(() => {
     let active = true;
     Promise.resolve().then(async () => {
-      if (!active || !profile) return;
-      setContent(null);
-      setSource(null);
+      if (!active) return;
       try {
         const cached = globalThis.localStorage?.getItem(cacheKey);
         if (cached) {
@@ -72,10 +67,9 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
       active = false;
       requestVersion.current += 1;
     };
-  }, [cacheKey, profile, refresh]);
+  }, [refresh]);
 
   useEffect(() => {
-    if (!profile) return;
     let pending = false;
     const refreshVisible = () => {
       if (pending || AppState.currentState !== 'active'
@@ -88,36 +82,16 @@ export function ConferenceContentProvider({ children }: PropsWithChildren) {
       if (state === 'active') refreshVisible();
     });
     const onVisible = () => refreshVisible();
-    const onPush = (event: MessageEvent) => {
-      if (event.data?.type === 'KAMUN_UPDATE') refreshVisible();
-    };
     if (typeof window !== 'undefined') window.addEventListener('online', onVisible);
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', onPush);
     return () => {
       clearInterval(timer); subscription.remove();
       if (typeof window !== 'undefined') window.removeEventListener('online', onVisible);
       if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisible);
-      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) navigator.serviceWorker.removeEventListener('message', onPush);
     };
-  }, [profile, refresh]);
+  }, [refresh]);
 
-  const removeAnnouncement = useCallback(async (id: string) => {
-    if (!supabase || profile?.accessType !== 'admin') throw new Error('Administrator access required.');
-    const { data, error } = await supabase.rpc('remove_conference_content', {
-      p_conference_id: profile.conferenceId, p_table: 'announcements', p_id: id,
-    });
-    if (error || !data) throw new Error('Could not remove this item. Check your connection and admin access.');
-    setContent(current => {
-      if (!current) return current;
-      const next = { ...current, announcements: current.announcements.filter(item => item.id !== id) };
-      try { globalThis.localStorage?.setItem(cacheKey, JSON.stringify(next)); } catch { /* Storage may be unavailable. */ }
-      return next;
-    });
-    await refresh();
-  }, [profile, cacheKey, refresh]);
-
-  const value = useMemo(() => ({ content, error, isLoading, source, refresh, removeAnnouncement }), [content, error, isLoading, source, refresh, removeAnnouncement]);
+  const value = useMemo(() => ({ content, error, isLoading, source, refresh }), [content, error, isLoading, source, refresh]);
   return <ConferenceContentContext.Provider value={value}>{children}</ConferenceContentContext.Provider>;
 }
 

@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { useTheme } from '@/hooks/use-theme';
 import { formatEventTime } from '@/lib/date-format';
@@ -20,9 +19,10 @@ type QuickLink = { title: string; detail: string; href: Href; urgent?: boolean; 
 
 const quickLinks: QuickLink[] = [
   { title: 'Emergency', detail: 'Help & contacts', href: '/emergency', urgent: true },
-  { title: 'Gossip Box', detail: 'Share a message', href: '/gossip' },
   { title: 'Song requests', detail: 'Send a song to the DJs', href: 'https://tally.so/r/1WdQpO', external: true },
-  { title: 'Your KAMUN Padlet', detail: 'Meme it till you make it.', href: '/memes' },
+];
+
+const conferenceLinks: QuickLink[] = [
   { title: 'Secretariat', detail: 'Meet the team', href: '/secretariat' },
   { title: 'Sponsors & Partners', detail: 'Our pillars of support', href: '/partners' },
 ];
@@ -35,7 +35,6 @@ export default function HomeScreen() {
     : previewDay === '2' ? 'Day 2 - 14 Nov'
     : previewDay === '3' ? 'Day 3 - 15 Nov' : undefined;
   const theme = useTheme();
-  const { profile } = useAttendeeProfile();
   const { width, fontScale } = useWindowDimensions();
   const phone = width < 600;
   const compact = width < 375 || fontScale > 1.2;
@@ -120,39 +119,15 @@ export default function HomeScreen() {
               <ThemedText accessibilityRole="header" type="subtitle" style={[styles.essentialsTitle, phone && styles.essentialsTitlePhone, { color: theme.primary }]}>Your essentials</ThemedText>
               <ThemedText themeColor="textSecondary" style={phone && styles.bodyPhone}>Everything you need, in one place.</ThemedText>
             </View>
-            {profile && ['member','chair'].includes(profile.accessType) && <View style={[styles.coffeeCard, phone && styles.coffeeCardPhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              <View style={[styles.coffeeTopline, compact && styles.coffeeToplineCompact]}>
-                <View style={[styles.coffeeIcon, phone && styles.coffeeIconPhone, { backgroundColor: theme.primarySoft }]}>
-                  <HomeIcon name="coffee" size={30} color={Brand.pine} />
-                </View>
-                <View style={styles.coffeeCopy}>
-                  <ThemedText type="subtitle" style={[styles.coffeeTitle, phone && styles.coffeeTitlePhone, { color: theme.text }]}>ECE Coffee Bar</ThemedText>
-                  <ThemedText style={[styles.coffeeDescription, { color: theme.textSecondary }]}>Your next coffee, one tap away</ThemedText>
-                </View>
-                {profile?.identitySource !== 'ecg' ? (
-                  <View style={styles.setupBadge}>
-                    <ThemedText type="smallBold" style={{ color: Brand.pine }}>Setup needed</ThemedText>
-                  </View>
-                ) : null}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push(profile?.identitySource === 'ecg' ? '/coffee' : '/more')}
-                style={({ pressed }) => [styles.coffeeButton, pressed && styles.pressed]}>
-                <ThemedText type="smallBold" style={styles.coffeeButtonText}>
-                  {profile?.identitySource === 'ecg' ? 'Order coffee' : 'Connect coffee ordering'}
-                </ThemedText>
-              </Pressable>
-            </View>}
             <View style={styles.quickGrid}>
-              {quickLinks.slice(0, 4).map((item) => (
+              {quickLinks.map((item) => (
                 <Pressable key={item.title} onPress={() => item.external ? void Linking.openURL(String(item.href)) : router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}${item.external ? ', opens in your browser' : ''}`}
                   style={({ pressed }) => [styles.quickTile, phone && styles.quickTilePhone, compact && styles.quickTileStacked, { backgroundColor: pressed ? theme.primarySoft : theme.backgroundElement, borderColor: theme.border }]}>
                   <View style={[styles.quickIcon, phone && styles.quickIconPhone, { backgroundColor: item.urgent ? `${theme.danger}12` : theme.primarySoft }]}>
                     {item.urgent
                       ? <HomeIcon name="emergency" size={27} color={theme.danger} />
-                      : <HomeIcon name={item.external ? 'music' : item.href === '/secretariat' ? 'secretariat' : item.href === '/partners' ? 'partners' : item.href === '/memes' ? 'memes' : 'gossip'} size={27} color={theme.primary} />}
+                      : <HomeIcon name="music" size={27} color={theme.primary} />}
                   </View>
                   <View style={styles.quickCopy}>
                     <ThemedText type="smallBold" style={[styles.quickTitle, phone && styles.quickTitlePhone]}>{item.title}</ThemedText>
@@ -163,7 +138,7 @@ export default function HomeScreen() {
             </View>
             <ThemedText accessibilityRole="header" type="small" style={[styles.conferenceLabel, { color: theme.primary }]}>CONFERENCE INFO</ThemedText>
             <View style={[styles.conferenceList, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              {quickLinks.slice(4).map((item, index) => (
+              {conferenceLinks.map((item, index) => (
                 <Pressable key={item.title} onPress={() => router.push(item.href)}
                   accessibilityRole="link" accessibilityLabel={`${item.title}, ${item.detail}`}
                   style={({ pressed }) => [styles.conferenceRow, index > 0 && { borderTopWidth: 1, borderTopColor: theme.border }, pressed && styles.pressed]}>
@@ -196,9 +171,6 @@ const styles = StyleSheet.create({
   heroCopyPhone: { padding: 18 },
   scheduleCardPhone: { minHeight: 0, paddingHorizontal: 18, paddingVertical: 20 },
   eventTitlePhone: { fontSize: 21, lineHeight: 27 },
-  coffeeCardPhone: { padding: 16, gap: 12 },
-  coffeeIconPhone: { width: 40, height: 40, borderRadius: 14 },
-  coffeeTitlePhone: { fontSize: 18, lineHeight: 24 },
   quickTilePhone: { padding: 16, gap: 14, minHeight: 164 },
   quickIconPhone: { width: 40, height: 40, borderRadius: 14 },
   quickTitlePhone: { fontSize: 15, lineHeight: 20 },
@@ -238,16 +210,6 @@ const styles = StyleSheet.create({
   conferenceLabel: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8, marginTop: 4 },
   conferenceList: { borderWidth: 1, borderRadius: 22, overflow: 'hidden' },
   conferenceRow: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 18, minHeight: 96 },
-  coffeeCard: { borderWidth: 1, borderRadius: Radius.feature, padding: Spacing.four, gap: Spacing.three },
-  coffeeTopline: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three },
-  coffeeToplineCompact: { alignItems: 'flex-start' },
-  coffeeCopy: { flex: 1, minWidth: 140, gap: Spacing.two },
-  coffeeIcon: { backgroundColor: Brand.parchment, width: 48, height: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  setupBadge: { backgroundColor: Brand.parchment, borderRadius: Radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  coffeeTitle: { color: Brand.black, fontSize: 20, lineHeight: 26 },
-  coffeeDescription: { color: Brand.black, fontSize: 16, lineHeight: 24 },
-  coffeeButton: { backgroundColor: Brand.pine, flexDirection: 'row', gap: Spacing.twoAndHalf, minHeight: 52, borderRadius: 16, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
-  coffeeButtonText: { color: Brand.white, textAlign: 'center' },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'stretch' },
   quickTile: { width: '47%', flexGrow: 1, flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, minHeight: 190, padding: 20, borderRadius: 22, borderWidth: 1, gap: 20 },
   quickTileStacked: { width: '100%', flexDirection: 'row', alignItems: 'center', minHeight: 100 },

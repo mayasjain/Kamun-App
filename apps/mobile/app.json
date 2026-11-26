@@ -27,7 +27,16 @@
       "favicon": "./public/icon-192.png"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "redirects": [
+            { "source": "/coffee", "destination": "/" },
+            { "source": "/gossip", "destination": "/" },
+            { "source": "/memes", "destination": "/" }
+          ]
+        }
+      ],
       [
         "expo-splash-screen",
         {

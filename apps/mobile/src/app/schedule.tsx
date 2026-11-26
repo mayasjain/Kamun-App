@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAttendeeProfile } from '@/contexts/attendee-profile';
 import { useConferenceContent } from '@/contexts/conference-content';
 import { formatDay, formatEventTime } from '@/lib/date-format';
 import { scheduleVenueMapUrl } from '@/lib/schedule-maps';
@@ -34,7 +33,6 @@ const cuisineFlags: Record<string, string> = { German: '🇩🇪', Turkish: '�
 
 export default function ScheduleScreen() {
   const [mapError, setMapError] = useState('');
-  const { profile } = useAttendeeProfile();
   const { content, error, isLoading, source, refresh } = useConferenceContent();
   const events = content?.scheduleEvents ?? [];
   const groupedEvents = events.reduce<Record<string, typeof events>>((groups, event) => {
@@ -42,7 +40,6 @@ export default function ScheduleScreen() {
     (groups[day] ??= []).push(event);
     return groups;
   }, {});
-  const audience = profile?.committeeAbbreviation ?? profile?.accessLabel ?? 'KAMUN 2026';
 
   async function openMap(url: string) {
     setMapError('');
@@ -59,7 +56,7 @@ export default function ScheduleScreen() {
       <View style={styles.header}>
         <View style={styles.headerInner}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>Schedule</ThemedText>
-          <ThemedText style={styles.headerSubtitle}>{audience} · KAMUN 2026</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>KAMUN 2026</ThemedText>
         </View>
       </View>
       <ScrollView
@@ -71,9 +68,7 @@ export default function ScheduleScreen() {
           <View key={day} style={styles.dayPanel}>
             <ThemedText accessibilityRole="header" style={styles.dayTitle}>{day.toUpperCase()}</ThemedText>
             {dayEvents.map((event, index) => {
-              const roomName = event.eventType === 'session' && event.roomName === 'Committee rooms'
-                ? content?.committees.find(committee => committee.id === profile?.committeeId)?.roomName ?? event.roomName
-                : event.roomName;
+              const roomName = event.roomName;
               const mapUrl = scheduleVenueMapUrl(roomName);
               const cuisine = mealCuisines[event.id];
               return (

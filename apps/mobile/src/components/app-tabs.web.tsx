@@ -23,12 +23,9 @@ import { createNavigationScrollTracker } from '@/lib/navigation-scroll';
 // Detail destinations retain the visible selection of their parent section.
 const parentSections: Record<string, string> = {
   '/privacy': 'more',
-  '/coffee': 'index',
-  '/coffee-privacy': 'index',
+  '/coffee-privacy': 'more',
   '/committees': 'resources',
   '/emergency': 'index',
-  '/memes': 'index',
-  '/gossip': 'index',
   '/partners': 'index',
   '/secretariat': 'index',
 };
@@ -45,12 +42,9 @@ export default function AppTabs() {
             </TabTrigger>
           ))}
           <TabTrigger name="coffee-privacy" href="/coffee-privacy" style={styles.hiddenTab} />
-          <TabTrigger name="coffee" href="/coffee" style={styles.hiddenTab} />
           <TabTrigger name="privacy" href="/privacy" style={styles.hiddenTab} />
           <TabTrigger name="committees" href="/committees" style={styles.hiddenTab} />
           <TabTrigger name="emergency" href="/emergency" style={styles.hiddenTab} />
-          <TabTrigger name="memes" href="/memes" style={styles.hiddenTab} />
-          <TabTrigger name="gossip" href="/gossip" style={styles.hiddenTab} />
           <TabTrigger name="partners" href="/partners" style={styles.hiddenTab} />
           <TabTrigger name="secretariat" href="/secretariat" style={styles.hiddenTab} />
         </CustomTabList>

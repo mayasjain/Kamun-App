@@ -31,3 +31,4 @@ apps/mobile/assets/secretariat/
 
 # Private local database backups
 .local-backups/
+kamun2026_tokens_final.csv

@@ -1,5 +1,3 @@
-import { PushNotificationSettings } from '@/components/push-notification-settings';
-import { AdminUpdateComposer } from '@/components/admin-update-composer';
 import { AnnouncementCard } from '@/components/announcement-card';
 import { ContentCard } from '@/components/content-card';
 import { Screen } from '@/components/screen';
@@ -13,10 +11,8 @@ export default function UpdatesScreen() {
 
   return (
     <Screen showBack={false} onRefresh={() => void refresh()} refreshing={isLoading} eyebrow="LIVE INFORMATION" title="Updates" subtitle="Official announcements from the Secretariat">
-      <PushNotificationSettings />
-      <AdminUpdateComposer />
       {announcements.map((announcement) => (
-        <AnnouncementCard key={announcement.id} announcement={announcement} adminControls />
+        <AnnouncementCard key={announcement.id} announcement={announcement} />
       ))}
       {!announcements.length ? (
         <ContentCard label="UPDATES" title={isLoading ? 'Loading announcements…' : 'No announcements yet'}>

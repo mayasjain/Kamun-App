@@ -21,9 +21,9 @@ const sections = [
 export default function CoffeePrivacyScreen() {
   const theme = useTheme();
   const phone = useWindowDimensions().width < 600;
-  return <Screen compactHeader eyebrow="KAMUN 2026" title="Coffee privacy" subtitle="How ECE handles your coffee-order information">
+  return <Screen compactHeader eyebrow="KAMUN 2026" title="Coffee privacy" subtitle="Coffee ordering during the conference">
     <View style={[styles.article, phone && styles.articlePhone, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-      <ThemedText selectable themeColor="textSecondary" style={phone && styles.bodyPhone}>Coffee ordering happens inside KAMUN and is processed by ECE, the conference coffee service. This notice brings ECE’s participant information into the app and explains the connection between the two services.</ThemedText>
+      <ThemedText selectable themeColor="textSecondary" style={phone && styles.bodyPhone}>This notice describes how ECE processed coffee orders placed through KAMUN during the conference.</ThemedText>
       {sections.map(section => <View key={section.title} style={[styles.section, { borderTopColor: theme.border }]}>
         <ThemedText accessibilityRole="header" style={[styles.sectionTitle, { color: theme.primary }]}>{section.title}</ThemedText>
         <ThemedText selectable themeColor="textSecondary" style={phone && styles.bodyPhone}>{section.body}</ThemedText>
@@ -33,7 +33,6 @@ export default function CoffeePrivacyScreen() {
         <Link href="https://kamun.org/impressum" target="_blank" rel="noopener noreferrer" asChild><Pressable accessibilityRole="link" accessibilityLabel="KAMUN Impressum, opens in your browser" style={styles.link}><ThemedText type="small" themeColor="primary">Official organiser and contact details</ThemedText></Pressable></Link>
         <Link href="https://kamun.org/datenSchutz" target="_blank" rel="noopener noreferrer" asChild><Pressable accessibilityRole="link" accessibilityLabel="KAMUN data protection information, opens in your browser" style={styles.link}><ThemedText type="small" themeColor="primary">Organisers’ data-protection information</ThemedText></Pressable></Link>
         <Link href="/privacy" asChild><Pressable accessibilityRole="link" style={styles.link}><ThemedText type="small" themeColor="primary">KAMUN app privacy policy</ThemedText></Pressable></Link>
-        <Link href="/coffee" asChild><Pressable accessibilityRole="link" style={styles.link}><ThemedText type="small" themeColor="primary">Back to Coffee Bar</ThemedText></Pressable></Link>
       </View>
     </View>
   </Screen>;
